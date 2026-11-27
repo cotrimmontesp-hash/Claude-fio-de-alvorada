@@ -1,6 +1,6 @@
 // ================= HISTÓRIA, MISSÕES, HUD, MENUS =================
 const NPCS = [];
-function npc(key, x, z, yaw = 0, o = {}) { const n = { key, rig: CAST[key](), pos: [x, 0, z], yaw, act: o.act || null, sp: 0, ph: rnd(0, 6), to: null, face: null, run: false, name: o.name, show: true, talk: o.talk }; NPCS.push(n); return n; }
+function npc(key, x, z, yaw = 0, o = {}) { const n = { key, rig: CAST[npcKey(key)](), pos: [x, 0, z], yaw, act: o.act || null, sp: 0, ph: rnd(0, 6), to: null, face: null, run: false, name: o.name, show: true, talk: o.talk }; NPCS.push(n); return n; }
 function npcBy(k) { return NPCS.find(n => n.key === k); }
 function updNpcs(dt) {
   for (const n of NPCS) { if (!n.show) continue;
@@ -34,6 +34,7 @@ function tickWaiters() { for (let i = MIS.waiters.length - 1; i >= 0; i--) { con
 const WHO = { Orven: '#e8c98a', Nera: '#f1dfb8', Lira: '#a8d48a', Iaro: '#e3a45a', Ruan: '#8fb4ff', Mireia: '#8fd8cf', Oren: '#a9e6ff', 'Tia Brena': '#e0b090', Destrem: '#e77aa8', 'Pastor Tomé': '#d8c090', 'Rasga-Dobra': '#d07ae0', '': '#d8d0c0' };
 let DLG = null;
 function showLine(l, auto) {
+  l = { ...l, who: swapNome(l.who), t: swapNome(l.t) };
   return new Promise(res => { const box = $('dlg'); box.classList.add('on'); box.querySelector('.who').textContent = l.who || ''; box.querySelector('.who').style.color = WHO[l.who || ''] || '#ddd';
     box.classList.toggle('narr', !l.who); box.classList.toggle('voice', !!l.voice);
     DLG = { txt: l.t, shown: 0, res, auto, t0: performance.now(), done: false }; box.querySelector('.tx').textContent = ''; });
@@ -388,7 +389,8 @@ let PREV = 'menu';
 function openPause() { if (S.mode !== 'play') return; S.mode = 'pause'; showScr('pause'); unlockPtr(); }
 function bindMouseBtn() { const b = $('mouseBtn'); if (!b) return; if (TOUCH) { b.style.display = 'none'; return; } b.addEventListener('click', e => { e.stopPropagation(); toggleMouseCam(); }); }
 function closePause() { hideScr(); S.mode = 'play'; $('hud').classList.remove('hide'); grabMouse(); }
-function toMenu() { MIS.token++; MIS.waiters.length = 0; clearCombat(); DLG = null; $('dlg').classList.remove('on'); $('lb').classList.remove('on'); $('skip').classList.remove('on'); S.mode = 'menu'; CAM.script = null; stage(0); P.pos = [0, 0, -9]; refreshMenu(); showScr('menu'); AU.music('calm'); }
+function toMenu() { return toLobbyFull(); }
+function toLobbyFull() { MIS.token++; MIS.waiters.length = 0; clearCombat(); DLG = null; $('dlg').classList.remove('on'); $('lb').classList.remove('on'); $('skip').classList.remove('on'); CAM.script = null; P.pos = [0, 0, -9]; refreshMenu(); toLobby(); }
 function refreshMenu() { const s = readSave(); const b = $('bCont'); b.disabled = !s; $('saveInfo').textContent = s ? `Save solo · ${s.done ? 'Capítulos 1 e 2 concluídos' : 'Capítulo ' + (s.m < 3 ? 1 : 2) + ' · missão ' + (s.m % 3 + 1) + ' de 3'} · nível ${s.level} · ${new Date(s.t).toLocaleDateString('pt-BR')}` : 'Nenhuma jornada salva'; }
 const TREE = [
   { k: 'afiado', n: 'Corte Afiado', c: 1, d: 'Corte de Fio causa +30% de dano e recarrega 1,5 s mais rápido.' },
@@ -401,10 +403,10 @@ function renderTree() { $('ptsN').textContent = P.pts; $('treeL').innerHTML = TR
 function bindUI() {
   const on = (id, f) => $(id).addEventListener('click', e => { AU.init(); AU.ui(); f(e); });
   on('bNew', () => { if (readSave()) { showScr('confirm'); } else startNew(); });
-  on('bYes', () => startNew()); on('bNo', () => { refreshMenu(); showScr('menu'); });
+  on('bYes', () => startNew()); on('bNo', () => { refreshMenu(); toLobby(); });
   on('bCont', () => { const s = readSave(); if (!s) return; progLoad(s); MIS.flags = {}; MIS.CP = null; runMission(Math.min(s.m, MISSIONS.length - 1), s.m >= MISSIONS.length, false); });
   on('bOpt', () => { PREV = S.mode === 'pause' ? 'pause' : 'menu'; fillOpts(); showScr('opts'); });
-  on('bQuit', () => showScr('bye')); on('bBye', () => { refreshMenu(); showScr('menu'); });
+  on('bQuit', () => showScr('bye')); on('bBye', () => { refreshMenu(); toLobby(); });
   on('bRes', closePause); on('bTree', () => { renderTree(); showScr('tree'); }); on('bOpt2', () => { PREV = 'pause'; fillOpts(); showScr('opts'); }); on('bMenu', toMenu);
   on('bTreeBack', () => showScr('pause')); on('bOptBack', () => { saveOpts(); showScr(PREV); });
   on('bRetry', () => { runMission(MIS.cur, true); }); on('bOverMenu', toMenu); on('bEndMenu', toMenu); on('bNext', () => { runMission(3, false); });
@@ -456,6 +458,7 @@ function frame(now) {
     camUpdate(dt, { lx: 0, ly: 0 });
   } else if (S.mode === 'dialog') { cutPlayer(0); camUpdate(rdt, { lx: 0, ly: 0 }); }
   else if (S.mode === 'pause' && I.pause) { closePause(); camUpdate(0, { lx: 0, ly: 0 }); }
+  else if (S.mode === 'lobby') { S.time += rdt; lobbyFrame(rdt); }
   else if (S.mode === 'menu') { const t = now / 1000 * .06; CAM.script = null; R.setCam([Math.sin(t) * 22, 7 + Math.sin(t * 2) * 1.5, -10 + Math.cos(t) * 22], [0, 3, -12]); S.time += rdt; RIFT.ts = 0; }
   else { camUpdate(0, { lx: 0, ly: 0 }); }
   if (S.mode === 'play' && !window.FIXDT) { frame.acc = (frame.acc || 0) + raw; if (frame.acc > 5) { frame.acc = 0; if (fpsA < (OPT.economia ? 24 : 32) && OPT.quality > .5) { OPT.quality = Math.max(.5, OPT.quality - .25); window.QUALITY = OPT.quality; resize(); saveOpts(); } } }
@@ -467,16 +470,16 @@ function frame(now) {
   // desenhar
   const vdt = S.mode === 'play' || S.mode === 'cut' ? dt : rdt * .3;
   drawWorld(S.time);
-  if (S.mode !== 'menu') P.rig.draw(); updNpcs(vdt); drawNpcs();
+  if (S.mode !== 'menu') P.rig.draw(); if (S.mode !== 'lobby') { updNpcs(vdt); drawNpcs(); }
   for (const e of ENEMIES) enemyDraw(e, (S.mode === 'play' || S.mode === 'cut') ? dt : 0);
   drawTrail(); updWaves(S.mode === 'play' ? dt : 0); updUlt(S.mode === 'play' ? dt : 0); drawRift(vdt); updParts(S.mode === 'pause' || S.mode === 'over' ? 0 : vdt);
   if (MIS.barrier) { for (const [z, w] of [[-68.4, 3.2], [-95.6, 4]]) for (let k = 0; k < 5; k++) { const y = .3 + k * .45; drawThread([-w, y, z], [w, y + .1, z], .05, [1, .3, .5], .05, S.time + k, false); } }
   if (!W.gate.off && !MIS.barrier) for (let k = 0; k < 4; k++) { const y = .4 + k * .5; drawThread([-3.6, y, -96], [3.6, y, -96], .1, [.9, .3, .5], .04, S.time + k, false); }
   { const pa = MIS.cur === 4 && NPCS.find(n => n.key === 'pastor' && n.act === 'kneel'); if (pa) for (let k = 0; k < 8; k++) { const an = k / 8 * 6.28 + S.time * .2; drawThread([pa.pos[0] + Math.sin(an) * 1.1, 0, pa.pos[2] + Math.cos(an) * 1.1], [pa.pos[0] + Math.sin(an + .6) * .4, 2.2, pa.pos[2] + Math.cos(an + .6) * .4], .05, [.95, .3, .6], .05, S.time + k, false); } }
   if (MARK && S.mode === 'play') { R.ring(MARK[0], MARK[2], 1.1 + Math.sin(S.time * 3) * .1, .12, [1, .85, .5], .7); R.light([MARK[0], 1.5, MARK[2]], [1, .8, .4], 4); }
-  if (window.NORENDER) { R.items.length = 0; R.lights.length = 0; fxN = 0; } else R.render(S.mode === 'menu' ? [0, 0, -12] : P.pos, S.time);
+  if (window.NORENDER) { R.items.length = 0; R.lights.length = 0; fxN = 0; } else R.render(S.mode === 'menu' ? [0, 0, -12] : S.mode === 'lobby' ? LP : P.pos, S.time);
   updNums(S.mode === 'play' || S.mode === 'cut' ? rdt : 0);
-  if (S.mode !== 'menu' && S.mode !== 'load') hud(rdt);
+  if (S.mode !== 'menu' && S.mode !== 'load' && S.mode !== 'lobby') hud(rdt);
 }
 function KP_skip(I) { return I.pause; }
 function cutPlayer(dt) {
@@ -498,14 +501,14 @@ async function loadAssets() {
   try {
     const lib = await loadModel(ASSETS.anims);
     for (const k in ASSETS) { if (k === 'anims') continue; try { const m = await loadModel(ASSETS[k]); bindAnims(m, lib); MODELS[k] = m; $('load').textContent = 'Costurando Orlavento… ' + Object.keys(MODELS).length; } catch (e) { console.error('modelo ' + k, e); } }
-    window.NERA_MODEL = MODELS.nera; P.rig = CAST.nera(); P.rig.pos = [...P.pos]; P.rig.update();
+    window.NERA_MODEL = MODELS.nera; lobLoad(); P.rig = CAST[HERO.k](); P.rig.pos = [...P.pos]; P.rig.update();
   } catch (e) { console.error('Falha ao carregar os personagens do Mixamo:', e); }
 }
 async function boot() {
   await loadAssets();
   buildWorld(); W.gate = { b: [-3.6, 3.6, -95.6, -96.6], off: false }; W.obst.push(W.gate);
   bindUI(); bindTouch(); bindMouseBtn(); stage(0); P.pos = [0, 0, -9]; P.rig.update(); refreshMenu();
-  $('load').style.display = 'none'; S.mode = 'menu'; showScr('menu'); requestAnimationFrame(frame);
-  window.DBG = { get fps() { return fpsA; }, SKANIM, P, MIS, ENEMIES, runMission, S, spawn, W, CAM, NPCS, hurtEnemy };
+  $('load').style.display = 'none'; lobLoad(); buildLobby(); toLobby(); requestAnimationFrame(frame);
+  window.DBG = { get fps() { return fpsA; }, HEROIS, LOB, escolherHeroi, get HERO() { return HERO; }, SKANIM, P, MIS, ENEMIES, runMission, S, spawn, W, CAM, NPCS, hurtEnemy };
 }
 setTimeout(() => { try { boot(); } catch (e) { $('load').textContent = 'Erro ao carregar: ' + e.message; throw e; } }, 30);

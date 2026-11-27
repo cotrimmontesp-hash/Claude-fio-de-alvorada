@@ -127,6 +127,49 @@ input[type=checkbox]{width:22px;height:22px;accent-color:#d9a650}
 .rot #obj{font-size:16px;top:10px}.rot #bossbar{top:40px}.rot #pl{left:12px;bottom:12px}.rot #ab{right:12px;bottom:auto;top:12px;transform:scale(.75);transform-origin:right top}.rot #hint{top:22%;max-width:45%;font-size:13px}.rot .panel h1{font-size:44px}.rot .panel .sub{margin:6px 0 14px}.rot .btns{gap:6px}.rot button{padding:8px 14px}.rot .keys{display:none}.rot #dlg .tx{font-size:16px;min-height:44px}.rot #dlg{padding:10px 18px 12px}
 .rot .keys{display:none}
 @media(max-width:600px){html:not(.rot) #pl .pt{display:none}html:not(.rot) #ab{bottom:auto;top:90px;right:12px;transform:scale(.8);transform-origin:right top}html:not(.rot) #hint{top:20%;max-width:70%}html:not(.rot) #obj{font-size:17px}}
+
+/* ---------- lobby ---------- */
+#lobby{background:linear-gradient(90deg,rgba(8,6,5,.82) 0,rgba(8,6,5,.25) 30%,rgba(8,6,5,0) 55%,rgba(8,6,5,.55) 100%);padding:0;align-items:stretch;justify-content:stretch}
+#lbPalco{position:absolute;inset:0}
+#lbTopo{position:absolute;left:2.2vw;top:2vh;display:flex;align-items:center;gap:14px;z-index:2}
+#lbTopo h1{font:700 clamp(20px,3.4vh,34px) var(--tf);color:var(--lume);margin:0;text-shadow:0 2px 10px #000}
+#lbNomeIn{width:170px;background:rgba(0,0,0,.45);border:1px solid rgba(243,217,160,.35);color:var(--txt);font:500 14px var(--uf);padding:6px 10px;border-radius:4px}
+#lbHerois{position:absolute;left:2.2vw;top:11vh;bottom:4vh;width:min(250px,26vw);display:flex;flex-direction:column;gap:1.1vh;overflow:auto;z-index:2}
+#lbHerois .hc{--c:var(--lume);text-align:left;display:flex;flex-direction:column;padding:1.1vh 14px;background:rgba(10,8,6,.62);border:1px solid rgba(255,255,255,.08);border-left:3px solid transparent;min-height:0;transition:.15s;cursor:pointer}
+#lbHerois .hc b{font:700 clamp(15px,2.4vh,20px) var(--tf);color:var(--txt)}
+#lbHerois .hc span{font-size:clamp(11px,1.6vh,13px);color:var(--dim)}
+#lbHerois .hc:hover{background:rgba(30,24,18,.75)}
+#lbHerois .hc.on{border-left-color:var(--c);background:linear-gradient(90deg,rgba(255,255,255,.12),rgba(10,8,6,.62));box-shadow:0 0 18px -6px var(--c)}
+#lbHerois .hc.on b{color:var(--c)}
+#lbInfo{position:absolute;left:calc(2.2vw + min(250px,26vw) + 3vw);bottom:5vh;width:min(330px,30vw);z-index:2;text-shadow:0 2px 8px #000}
+#lbNome{font:700 clamp(30px,7vh,64px)/1 var(--tf)}
+#lbPapel{font:600 clamp(13px,2.2vh,18px) var(--uf);letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:.6vh 0 1vh}
+#lbTxt{font-size:clamp(12px,2vh,15px);margin-bottom:1.4vh}
+.lbBar{display:flex;align-items:center;gap:8px;font-size:clamp(11px,1.7vh,13px);color:var(--dim);margin:.5vh 0}
+.lbBar em{font-style:normal;width:80px}.lbBar div{flex:1;height:6px;background:rgba(0,0,0,.5);border-radius:3px;overflow:hidden}.lbBar i{display:block;height:100%;background:linear-gradient(90deg,var(--lume2),var(--lume));transition:width .3s}
+#lbLado{position:absolute;right:2.2vw;top:2vh;width:min(250px,24vw);z-index:2;display:flex;flex-direction:column;gap:.9vh}
+#lbSala{font:600 13px var(--uf);color:var(--dim);letter-spacing:.08em;text-transform:uppercase}
+#lbSlots{display:flex;flex-direction:column;gap:.9vh}
+.slot{display:flex;flex-direction:column;padding:.9vh 12px;background:rgba(10,8,6,.62);border:1px solid rgba(255,255,255,.1);border-radius:4px;min-height:5.2vh;justify-content:center}
+.slot b{font:600 clamp(13px,2vh,16px) var(--uf);color:var(--txt)}.slot span{font-size:clamp(11px,1.6vh,12px);color:var(--dim)}
+.slot.eu{border-color:rgba(243,217,160,.55)}
+.slot.vazio{flex-direction:row;align-items:center;gap:10px;border-style:dashed;cursor:pointer;color:var(--dim)}
+.slot.vazio i{font:700 22px var(--uf);font-style:normal;color:var(--lume);width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(243,217,160,.5);border-radius:50%}
+.slot.vazio:hover{background:rgba(30,24,18,.8)}
+#lbConv{min-height:0;padding:1vh 12px;font:600 14px var(--uf)}
+#lbAcao{position:absolute;right:2.2vw;bottom:4vh;display:flex;flex-direction:column;align-items:flex-end;gap:1vh;z-index:2}
+#lbJogar{font:800 clamp(24px,5.4vh,42px) var(--uf);letter-spacing:.06em;padding:1.6vh 6vw;background:linear-gradient(180deg,#ffd76a,#e2a12a);color:#2a1a05;border:0;border-radius:6px;box-shadow:0 6px 24px -6px #e2a12a,inset 0 -3px 0 rgba(0,0,0,.2);min-height:0;cursor:pointer}
+#lbJogar:hover{filter:brightness(1.08)}
+#lbSub{font-size:clamp(11px,1.7vh,13px);color:var(--txt);text-shadow:0 1px 4px #000}
+#lbMini{display:flex;gap:8px}#lbMini button{min-height:0;padding:.8vh 12px;font:500 13px var(--uf);background:rgba(10,8,6,.62)}
+#lbDica{position:absolute;left:50%;bottom:1.2vh;transform:translateX(-50%);font-size:12px;color:var(--dim);z-index:2;text-shadow:0 1px 3px #000}
+#conv{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6)}
+#conv.on{display:flex}
+#conv .panel{width:min(460px,92%);max-height:94%;overflow:auto;text-align:center;background:rgba(16,12,9,.96);border:1px solid rgba(243,217,160,.35);padding:2.4vh 22px;border-radius:6px}#conv h2{font-size:clamp(20px,4.4vh,30px);margin:0 0 4px}#conv .info{margin:4px 0}
+#cvCode{font:700 44px/1.1 var(--uf);letter-spacing:.2em;color:var(--lume);margin:8px 0 14px}
+#conv .row2{display:flex;gap:8px;justify-content:center;margin:8px 0}
+#cvCod{width:130px;text-transform:uppercase;text-align:center;background:rgba(0,0,0,.45);border:1px solid rgba(243,217,160,.35);color:var(--txt);font:600 18px var(--uf);padding:6px;letter-spacing:.15em}
+#cvMsg{min-height:20px;font-size:14px;color:var(--vig);margin-top:8px;word-break:break-all}
 </style>
 </head>
 <body>
@@ -152,6 +195,20 @@ input[type=checkbox]{width:22px;height:22px;accent-color:#d9a650}
 <div id="dlg"><div class="who"></div><div class="tx"></div><div class="more">▸</div></div>
 <div id="banner"></div><div id="card"></div>
 
+<div class="scr" id="lobby"><div id="lbPalco"></div>
+  <div id="lbTopo"><h1>Fio de Alvorada</h1><input id="lbNomeIn" maxlength="16" placeholder="Seu nome"></div>
+  <div id="lbHerois"></div>
+  <div id="lbInfo"><div id="lbNome">Nera</div><div id="lbPapel"></div><div id="lbTxt"></div>
+    <div class="lbBar"><em>Força</em><div><i id="lbF"></i></div></div><div class="lbBar"><em>Vida</em><div><i id="lbV"></i></div></div><div class="lbBar"><em>Velocidade</em><div><i id="lbR"></i></div></div></div>
+  <div id="lbLado"><div id="lbSala">Esquadrão 1/5</div><div id="lbSlots"></div><button id="lbConv">Convidar amigos</button></div>
+  <div id="lbAcao"><button id="lbJogar">JOGAR</button><div id="lbSub"></div><div id="lbMini"><button id="lbNova">Nova jornada</button><button id="lbOpt">Opções</button><button id="lbSair">Sair</button></div></div>
+  <div id="lbDica">Arraste para girar o personagem</div>
+</div>
+<div id="conv"><div class="panel"><h2>Chamar amigos</h2><p class="info">Código da sua sala:</p><div id="cvCode">…</div>
+  <div class="row2"><button id="cvCopiar">Copiar link</button><button id="cvZap">Mandar no WhatsApp</button></div>
+  <p class="info" style="margin-top:14px">Recebeu um código? Entre na sala do amigo:</p>
+  <div class="row2"><input id="cvCod" maxlength="6" placeholder="CÓDIGO"><button id="cvEntrar">Entrar</button></div>
+  <div id="cvMsg"></div><div class="row2"><button id="cvFechar">Fechar</button></div></div></div>
 <div class="scr" id="menu"><div class="panel">
   <h1>Fio de Alvorada</h1><p class="sub">Seis espadachins recosturam o mundo golpe a golpe.</p>
   <div class="btns"><button id="bNew">Nova jornada</button><button id="bCont">Continuar</button><button id="bOpt">Opções</button><button id="bQuit">Sair</button></div>

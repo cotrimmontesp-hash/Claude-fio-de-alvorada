@@ -154,8 +154,8 @@ const P = {
   unl: { q: false, e: false, r: false }, trail: [], heal: null, vigT: 0, hits: 0, hitT: 0, dodgeDir: [0, 0, 1], cur: null, combatT: 0, pull: null, stats: { moved: 0, dodges: 0, dummy: 0, dummyHeavy: 0 }
 };
 const XPT = [0, 60, 150, 270, 420, 600, 820, 1080];
-const maxHp = () => 100 + (P.level - 1) * 14;
-const atk = () => (10 + (P.level - 1) * 2.4) * (1 + P.wlvl * .15);
+const maxHp = () => Math.round((100 + (P.level - 1) * 14) * (typeof HERO !== 'undefined' ? HERO.hp : 1));
+const atk = () => (10 + (P.level - 1) * 2.4) * (1 + P.wlvl * .15) * (typeof HERO !== 'undefined' ? HERO.dmg : 1);
 const ATK = [
   { dur: .4, hit: .15, range: 2.5, arc: 1.9, mult: 1, post: 7, step: 1.1, pose: 's1', kind: 'w' },
   { dur: .4, hit: .15, range: 2.5, arc: 1.9, mult: 1.05, post: 7, step: 1.1, pose: 's2', kind: 'w' },
@@ -195,7 +195,7 @@ function playerUpdate(dt, I) {
     const red = P.nodes.contra ? .5 : .3; for (const k in P.cd) P.cd[k] *= (1 - red); P.lume = Math.min(100, P.lume + 20);
   }
   if (P.st === 'move') {
-    const run = I.run && ml > .1 && P.vig > 1; let spd = (run ? 7.4 : 4.4) * ml * (P.slow > 0 ? .55 : 1);
+    const run = I.run && ml > .1 && P.vig > 1; let spd = (run ? 7.4 : 4.4) * ml * (P.slow > 0 ? .55 : 1) * (typeof HERO !== 'undefined' ? HERO.spd : 1);
     if (run) { P.vig -= 14 * dt; P.vigT = .5; }
     if (ml > .05) { moveEnt(P.pos, mv[0] / ml * spd * dt, mv[1] / ml * spd * dt, .35); P.stats.moved += spd * dt;
       const ty = (P.lock && !P.lock.dead && !run) ? Math.atan2(P.lock.pos[0] - P.pos[0], P.lock.pos[2] - P.pos[2]) : Math.atan2(mv[0], mv[1]); P.yaw += angDiff(P.yaw, ty) * (1 - Math.exp(-14 * dt)); }
@@ -245,7 +245,7 @@ function playerUpdate(dt, I) {
 }
 function drawTrail() {
   const T = P.trail; for (let k = 1; k < T.length; k++) { const a = T[k - 1], b = T[k], al = b[2] / .22;
-    const col = P.cur && P.cur.kind === 'c' ? [1, .5, .3] : [1, .85, .55];
+    const col = P.cur && P.cur.kind === 'c' ? [1, .5, .3] : (typeof HERO !== 'undefined' ? HERO.cor : [1, .85, .55]);
     R.quad(a[0], a[1], b[1], b[0], col, .55 * al, 1, 0, [[0, -1], [0, 1], [0, 1], [0, -1]]); }
 }
 function doHit(d) {

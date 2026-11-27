@@ -127,6 +127,49 @@ input[type=checkbox]{width:22px;height:22px;accent-color:#d9a650}
 .rot #obj{font-size:16px;top:10px}.rot #bossbar{top:40px}.rot #pl{left:12px;bottom:12px}.rot #ab{right:12px;bottom:auto;top:12px;transform:scale(.75);transform-origin:right top}.rot #hint{top:22%;max-width:45%;font-size:13px}.rot .panel h1{font-size:44px}.rot .panel .sub{margin:6px 0 14px}.rot .btns{gap:6px}.rot button{padding:8px 14px}.rot .keys{display:none}.rot #dlg .tx{font-size:16px;min-height:44px}.rot #dlg{padding:10px 18px 12px}
 .rot .keys{display:none}
 @media(max-width:600px){html:not(.rot) #pl .pt{display:none}html:not(.rot) #ab{bottom:auto;top:90px;right:12px;transform:scale(.8);transform-origin:right top}html:not(.rot) #hint{top:20%;max-width:70%}html:not(.rot) #obj{font-size:17px}}
+
+/* ---------- lobby ---------- */
+#lobby{background:linear-gradient(90deg,rgba(8,6,5,.82) 0,rgba(8,6,5,.25) 30%,rgba(8,6,5,0) 55%,rgba(8,6,5,.55) 100%);padding:0;align-items:stretch;justify-content:stretch}
+#lbPalco{position:absolute;inset:0}
+#lbTopo{position:absolute;left:2.2vw;top:2vh;display:flex;align-items:center;gap:14px;z-index:2}
+#lbTopo h1{font:700 clamp(20px,3.4vh,34px) var(--tf);color:var(--lume);margin:0;text-shadow:0 2px 10px #000}
+#lbNomeIn{width:170px;background:rgba(0,0,0,.45);border:1px solid rgba(243,217,160,.35);color:var(--txt);font:500 14px var(--uf);padding:6px 10px;border-radius:4px}
+#lbHerois{position:absolute;left:2.2vw;top:11vh;bottom:4vh;width:min(250px,26vw);display:flex;flex-direction:column;gap:1.1vh;overflow:auto;z-index:2}
+#lbHerois .hc{--c:var(--lume);text-align:left;display:flex;flex-direction:column;padding:1.1vh 14px;background:rgba(10,8,6,.62);border:1px solid rgba(255,255,255,.08);border-left:3px solid transparent;min-height:0;transition:.15s;cursor:pointer}
+#lbHerois .hc b{font:700 clamp(15px,2.4vh,20px) var(--tf);color:var(--txt)}
+#lbHerois .hc span{font-size:clamp(11px,1.6vh,13px);color:var(--dim)}
+#lbHerois .hc:hover{background:rgba(30,24,18,.75)}
+#lbHerois .hc.on{border-left-color:var(--c);background:linear-gradient(90deg,rgba(255,255,255,.12),rgba(10,8,6,.62));box-shadow:0 0 18px -6px var(--c)}
+#lbHerois .hc.on b{color:var(--c)}
+#lbInfo{position:absolute;left:calc(2.2vw + min(250px,26vw) + 3vw);bottom:5vh;width:min(330px,30vw);z-index:2;text-shadow:0 2px 8px #000}
+#lbNome{font:700 clamp(30px,7vh,64px)/1 var(--tf)}
+#lbPapel{font:600 clamp(13px,2.2vh,18px) var(--uf);letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:.6vh 0 1vh}
+#lbTxt{font-size:clamp(12px,2vh,15px);margin-bottom:1.4vh}
+.lbBar{display:flex;align-items:center;gap:8px;font-size:clamp(11px,1.7vh,13px);color:var(--dim);margin:.5vh 0}
+.lbBar em{font-style:normal;width:80px}.lbBar div{flex:1;height:6px;background:rgba(0,0,0,.5);border-radius:3px;overflow:hidden}.lbBar i{display:block;height:100%;background:linear-gradient(90deg,var(--lume2),var(--lume));transition:width .3s}
+#lbLado{position:absolute;right:2.2vw;top:2vh;width:min(250px,24vw);z-index:2;display:flex;flex-direction:column;gap:.9vh}
+#lbSala{font:600 13px var(--uf);color:var(--dim);letter-spacing:.08em;text-transform:uppercase}
+#lbSlots{display:flex;flex-direction:column;gap:.9vh}
+.slot{display:flex;flex-direction:column;padding:.9vh 12px;background:rgba(10,8,6,.62);border:1px solid rgba(255,255,255,.1);border-radius:4px;min-height:5.2vh;justify-content:center}
+.slot b{font:600 clamp(13px,2vh,16px) var(--uf);color:var(--txt)}.slot span{font-size:clamp(11px,1.6vh,12px);color:var(--dim)}
+.slot.eu{border-color:rgba(243,217,160,.55)}
+.slot.vazio{flex-direction:row;align-items:center;gap:10px;border-style:dashed;cursor:pointer;color:var(--dim)}
+.slot.vazio i{font:700 22px var(--uf);font-style:normal;color:var(--lume);width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(243,217,160,.5);border-radius:50%}
+.slot.vazio:hover{background:rgba(30,24,18,.8)}
+#lbConv{min-height:0;padding:1vh 12px;font:600 14px var(--uf)}
+#lbAcao{position:absolute;right:2.2vw;bottom:4vh;display:flex;flex-direction:column;align-items:flex-end;gap:1vh;z-index:2}
+#lbJogar{font:800 clamp(24px,5.4vh,42px) var(--uf);letter-spacing:.06em;padding:1.6vh 6vw;background:linear-gradient(180deg,#ffd76a,#e2a12a);color:#2a1a05;border:0;border-radius:6px;box-shadow:0 6px 24px -6px #e2a12a,inset 0 -3px 0 rgba(0,0,0,.2);min-height:0;cursor:pointer}
+#lbJogar:hover{filter:brightness(1.08)}
+#lbSub{font-size:clamp(11px,1.7vh,13px);color:var(--txt);text-shadow:0 1px 4px #000}
+#lbMini{display:flex;gap:8px}#lbMini button{min-height:0;padding:.8vh 12px;font:500 13px var(--uf);background:rgba(10,8,6,.62)}
+#lbDica{position:absolute;left:50%;bottom:1.2vh;transform:translateX(-50%);font-size:12px;color:var(--dim);z-index:2;text-shadow:0 1px 3px #000}
+#conv{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6)}
+#conv.on{display:flex}
+#conv .panel{width:min(460px,92%);max-height:94%;overflow:auto;text-align:center;background:rgba(16,12,9,.96);border:1px solid rgba(243,217,160,.35);padding:2.4vh 22px;border-radius:6px}#conv h2{font-size:clamp(20px,4.4vh,30px);margin:0 0 4px}#conv .info{margin:4px 0}
+#cvCode{font:700 44px/1.1 var(--uf);letter-spacing:.2em;color:var(--lume);margin:8px 0 14px}
+#conv .row2{display:flex;gap:8px;justify-content:center;margin:8px 0}
+#cvCod{width:130px;text-transform:uppercase;text-align:center;background:rgba(0,0,0,.45);border:1px solid rgba(243,217,160,.35);color:var(--txt);font:600 18px var(--uf);padding:6px;letter-spacing:.15em}
+#cvMsg{min-height:20px;font-size:14px;color:var(--vig);margin-top:8px;word-break:break-all}
 </style>
 </head>
 <body>
@@ -152,6 +195,20 @@ input[type=checkbox]{width:22px;height:22px;accent-color:#d9a650}
 <div id="dlg"><div class="who"></div><div class="tx"></div><div class="more">▸</div></div>
 <div id="banner"></div><div id="card"></div>
 
+<div class="scr" id="lobby"><div id="lbPalco"></div>
+  <div id="lbTopo"><h1>Fio de Alvorada</h1><input id="lbNomeIn" maxlength="16" placeholder="Seu nome"></div>
+  <div id="lbHerois"></div>
+  <div id="lbInfo"><div id="lbNome">Nera</div><div id="lbPapel"></div><div id="lbTxt"></div>
+    <div class="lbBar"><em>Força</em><div><i id="lbF"></i></div></div><div class="lbBar"><em>Vida</em><div><i id="lbV"></i></div></div><div class="lbBar"><em>Velocidade</em><div><i id="lbR"></i></div></div></div>
+  <div id="lbLado"><div id="lbSala">Esquadrão 1/5</div><div id="lbSlots"></div><button id="lbConv">Convidar amigos</button></div>
+  <div id="lbAcao"><button id="lbJogar">JOGAR</button><div id="lbSub"></div><div id="lbMini"><button id="lbNova">Nova jornada</button><button id="lbOpt">Opções</button><button id="lbSair">Sair</button></div></div>
+  <div id="lbDica">Arraste para girar o personagem</div>
+</div>
+<div id="conv"><div class="panel"><h2>Chamar amigos</h2><p class="info">Código da sua sala:</p><div id="cvCode">…</div>
+  <div class="row2"><button id="cvCopiar">Copiar link</button><button id="cvZap">Mandar no WhatsApp</button></div>
+  <p class="info" style="margin-top:14px">Recebeu um código? Entre na sala do amigo:</p>
+  <div class="row2"><input id="cvCod" maxlength="6" placeholder="CÓDIGO"><button id="cvEntrar">Entrar</button></div>
+  <div id="cvMsg"></div><div class="row2"><button id="cvFechar">Fechar</button></div></div></div>
 <div class="scr" id="menu"><div class="panel">
   <h1>Fio de Alvorada</h1><p class="sub">Seis espadachins recosturam o mundo golpe a golpe.</p>
   <div class="btns"><button id="bNew">Nova jornada</button><button id="bCont">Continuar</button><button id="bOpt">Opções</button><button id="bQuit">Sair</button></div>
@@ -1276,8 +1333,8 @@ const P = {
   unl: { q: false, e: false, r: false }, trail: [], heal: null, vigT: 0, hits: 0, hitT: 0, dodgeDir: [0, 0, 1], cur: null, combatT: 0, pull: null, stats: { moved: 0, dodges: 0, dummy: 0, dummyHeavy: 0 }
 };
 const XPT = [0, 60, 150, 270, 420, 600, 820, 1080];
-const maxHp = () => 100 + (P.level - 1) * 14;
-const atk = () => (10 + (P.level - 1) * 2.4) * (1 + P.wlvl * .15);
+const maxHp = () => Math.round((100 + (P.level - 1) * 14) * (typeof HERO !== 'undefined' ? HERO.hp : 1));
+const atk = () => (10 + (P.level - 1) * 2.4) * (1 + P.wlvl * .15) * (typeof HERO !== 'undefined' ? HERO.dmg : 1);
 const ATK = [
   { dur: .4, hit: .15, range: 2.5, arc: 1.9, mult: 1, post: 7, step: 1.1, pose: 's1', kind: 'w' },
   { dur: .4, hit: .15, range: 2.5, arc: 1.9, mult: 1.05, post: 7, step: 1.1, pose: 's2', kind: 'w' },
@@ -1317,7 +1374,7 @@ function playerUpdate(dt, I) {
     const red = P.nodes.contra ? .5 : .3; for (const k in P.cd) P.cd[k] *= (1 - red); P.lume = Math.min(100, P.lume + 20);
   }
   if (P.st === 'move') {
-    const run = I.run && ml > .1 && P.vig > 1; let spd = (run ? 7.4 : 4.4) * ml * (P.slow > 0 ? .55 : 1);
+    const run = I.run && ml > .1 && P.vig > 1; let spd = (run ? 7.4 : 4.4) * ml * (P.slow > 0 ? .55 : 1) * (typeof HERO !== 'undefined' ? HERO.spd : 1);
     if (run) { P.vig -= 14 * dt; P.vigT = .5; }
     if (ml > .05) { moveEnt(P.pos, mv[0] / ml * spd * dt, mv[1] / ml * spd * dt, .35); P.stats.moved += spd * dt;
       const ty = (P.lock && !P.lock.dead && !run) ? Math.atan2(P.lock.pos[0] - P.pos[0], P.lock.pos[2] - P.pos[2]) : Math.atan2(mv[0], mv[1]); P.yaw += angDiff(P.yaw, ty) * (1 - Math.exp(-14 * dt)); }
@@ -1367,7 +1424,7 @@ function playerUpdate(dt, I) {
 }
 function drawTrail() {
   const T = P.trail; for (let k = 1; k < T.length; k++) { const a = T[k - 1], b = T[k], al = b[2] / .22;
-    const col = P.cur && P.cur.kind === 'c' ? [1, .5, .3] : [1, .85, .55];
+    const col = P.cur && P.cur.kind === 'c' ? [1, .5, .3] : (typeof HERO !== 'undefined' ? HERO.cor : [1, .85, .55]);
     R.quad(a[0], a[1], b[1], b[0], col, .55 * al, 1, 0, [[0, -1], [0, 1], [0, 1], [0, -1]]); }
 }
 function doHit(d) {
@@ -1700,9 +1757,119 @@ function irmaAI(e, dt, d, pd) {
   e.sp += ((mv ? mv / 4.4 : 0) - e.sp) * (1 - Math.exp(-8 * dt)); e.ph += dt * (2 + mv * 1.6);
 }
 
+// ================= LOBBY (escolha do personagem e esquadrão) =================
+const HEROIS = [
+  { k: 'nera', nome: 'Nera', papel: 'Recosturadeira', txt: 'Equilibrada: golpes rápidos e cura de fio.', dmg: 1, hp: 1, spd: 1, cor: [1, .85, .55], css: '#f3d9a0' },
+  { k: 'iaro', nome: 'Iaro', papel: 'Paladino da Brasa', txt: 'Lâmina pesada: bate forte, anda devagar.', dmg: 1.22, hp: 1.15, spd: .9, cor: [1, .55, .25], css: '#e3a45a' },
+  { k: 'lira', nome: 'Lira', papel: 'Lâmina do Vento', txt: 'A mais veloz: entra e sai das lutas.', dmg: .92, hp: .9, spd: 1.16, cor: [.65, 1, .5], css: '#a8d48a' },
+  { k: 'ruan', nome: 'Ruan', papel: 'Guarda de Ferro', txt: 'Muita vida: aguenta a pancada pelo grupo.', dmg: .95, hp: 1.32, spd: .95, cor: [.55, .7, 1], css: '#8fb4ff' },
+  { k: 'mireia', nome: 'Mireia', papel: 'Fiandeira da Maré', txt: 'Golpes que cortam fundo, mas é frágil.', dmg: 1.12, hp: .9, spd: 1.05, cor: [.5, 1, .9], css: '#8fd8cf' },
+  { k: 'oren', nome: 'Oren', papel: 'Mestre da Tempestade', txt: 'Veterano: forte e resistente.', dmg: 1.15, hp: 1.06, spd: 1, cor: [.7, .9, 1], css: '#a9e6ff' },
+];
+let HERO = HEROIS[0];
+const LOB = { yaw: 0, drag: null, amigos: [], rigs: {}, nome: '', peer: null, conns: [], host: null, sala: null, souHost: false };
+const LP = [0, 0, -15]; // onde o personagem fica em pé no lobby (praça de Orlavento)
+const SLOTS = [[-1.55, 0, -15.9], [1.55, 0, -15.9], [-3, 0, -17], [3, 0, -17]];
+function heroBy(k) { return HEROIS.find(h => h.k === k) || HEROIS[0]; }
+function lobSave() { try { localStorage.setItem('fio_lobby', JSON.stringify({ k: HERO.k, nome: LOB.nome })); } catch (e) { } }
+function lobLoad() { try { const s = JSON.parse(localStorage.getItem('fio_lobby') || '{}'); if (s.k) HERO = heroBy(s.k); if (s.nome) LOB.nome = s.nome; } catch (e) { } }
+// troca de nomes na história: quem você escolhe vira o protagonista e a Nera assume o lugar dele
+function swapNome(t) {
+  if (!t || HERO.k === 'nera') return t;
+  return t.replace(new RegExp('\\b(Nera|' + HERO.nome + ')\\b', 'g'), m => m === 'Nera' ? HERO.nome : 'Nera');
+}
+function npcKey(k) { return HERO.k !== 'nera' && k === HERO.k ? 'nera' : k; }
+function escolherHeroi(k) {
+  HERO = heroBy(k); P.rig = CAST[HERO.k](); P.rig.pos = [...LP]; P.rig.update(); lobSave(); lobUI(); lobSend({ t: 'eu', nome: LOB.nome, k: HERO.k });
+  AU.chime && AU.chime(); for (let q = 0; q < 26; q++) part([LP[0] + rnd(-.5, .5), rnd(0, 2), LP[2] + rnd(-.5, .5)], [rnd(-1, 1), rnd(1, 3), rnd(-1, 1)], .8, .08, HERO.cor);
+}
+function lobUI() {
+  const h = HERO; $('lbNome').textContent = h.nome; $('lbNome').style.color = h.css; $('lbPapel').textContent = h.papel; $('lbTxt').textContent = h.txt;
+  const bar = (id, v) => { $(id).style.width = Math.round(clamp(v, 0, 1.4) / 1.4 * 100) + '%'; };
+  bar('lbF', h.dmg); bar('lbV', h.hp); bar('lbR', h.spd);
+  document.querySelectorAll('#lbHerois .hc').forEach(b => b.classList.toggle('on', b.dataset.k === h.k));
+  const sv = readSave(); $('lbJogar').textContent = sv ? 'JOGAR' : 'JOGAR'; $('lbSub').textContent = sv ? (sv.done ? 'Capítulos 1 e 2 concluídos' : 'Continuar: Capítulo ' + (sv.m < 3 ? 1 : 2) + ' · missão ' + (sv.m % 3 + 1)) : 'Nova jornada · Capítulo 1';
+  // esquadrão
+  const sl = $('lbSlots'); sl.innerHTML = '';
+  const eu = document.createElement('div'); eu.className = 'slot eu'; eu.innerHTML = '<b>' + esc(LOB.nome || 'Você') + '</b><span>' + h.nome + (LOB.souHost || !LOB.sala ? ' · líder' : '') + '</span>'; sl.appendChild(eu);
+  for (let i = 0; i < 4; i++) { const a = LOB.amigos[i], d = document.createElement('div');
+    if (a) { d.className = 'slot'; d.innerHTML = '<b>' + esc(a.nome || 'Amigo') + '</b><span>' + heroBy(a.k).nome + (a.host ? ' · líder' : '') + '</span>'; }
+    else { d.className = 'slot vazio'; d.innerHTML = '<i>+</i><span>Chamar amigo</span>'; d.onclick = abrirConvite; }
+    sl.appendChild(d); }
+  $('lbSala').textContent = LOB.sala ? 'Sala ' + LOB.sala + ' · ' + (1 + LOB.amigos.length) + '/5' : 'Esquadrão 1/5';
+}
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function buildLobby() {
+  const box = $('lbHerois'); box.innerHTML = '';
+  for (const h of HEROIS) { const b = document.createElement('button'); b.className = 'hc'; b.dataset.k = h.k; b.style.setProperty('--c', h.css);
+    b.innerHTML = '<b>' + h.nome + '</b><span>' + h.papel + '</span>'; b.onclick = e => { e.stopPropagation(); escolherHeroi(h.k); }; box.appendChild(b); }
+  $('lbNomeIn').value = LOB.nome; $('lbNomeIn').oninput = e => { LOB.nome = e.target.value.slice(0, 16); lobSave(); lobUI(); lobSend({ t: 'eu', nome: LOB.nome, k: HERO.k }); };
+  $('lbJogar').onclick = () => { const s = readSave(); if (s) { progLoad(s); MIS.flags = {}; MIS.CP = null; runMission(Math.min(s.m, MISSIONS.length - 1), s.m >= MISSIONS.length, false); } else startNew(); };
+  $('lbNova').onclick = () => { if (readSave()) showScr('confirm'); else startNew(); };
+  $('lbOpt').onclick = () => { PREV = 'lobby'; fillOpts(); showScr('opts'); };
+  $('lbSair').onclick = () => showScr('bye');
+  $('lbConv').onclick = abrirConvite; $('cvFechar').onclick = () => $('conv').classList.remove('on');
+  $('cvCopiar').onclick = async () => { const l = linkSala(); try { await navigator.clipboard.writeText(l); $('cvMsg').textContent = 'Link copiado! Mande pros seus amigos.'; } catch (e) { $('cvMsg').textContent = l; } };
+  $('cvZap').onclick = () => { const l = linkSala(), t = 'Bora jogar Fio de Alvorada comigo! Entra na minha sala: ' + l; if (navigator.share) navigator.share({ title: 'Fio de Alvorada', text: t, url: l }).catch(() => { }); else open('https://wa.me/?text=' + encodeURIComponent(t), '_blank'); };
+  $('cvEntrar').onclick = () => { const c = $('cvCod').value.trim().toUpperCase(); if (c.length >= 4) entrarSala(c); };
+  // girar o personagem arrastando
+  const sc = $('lobby');
+  sc.addEventListener('pointerdown', e => { if (e.target === sc || e.target.id === 'lbPalco') LOB.drag = lobTp(e).x; });
+  addEventListener('pointermove', e => { if (LOB.drag != null) { const x = lobTp(e).x; LOB.yaw += (x - LOB.drag) * .012; LOB.drag = x; } });
+  addEventListener('pointerup', () => { LOB.drag = null; });
+  const q = new URLSearchParams(location.search).get('sala') || (() => { try { return new URLSearchParams(parent.location.search).get('sala'); } catch (e) { return null; } })();
+  if (q) setTimeout(() => entrarSala(q.toUpperCase()), 400);
+}
+function lobTp(e) { return ROT ? { x: e.clientY, y: innerWidth - e.clientX } : { x: e.clientX, y: e.clientY }; }
+function toLobby() { S.mode = 'lobby'; P.rig = CAST[HERO.k](); P.rig.pos = [...LP]; P.rig.update(); stage(0); lobUI(); showScr('lobby'); AU.music('calm'); }
+function lobbyFrame(dt) {
+  // câmera de vitrine: personagem à direita do centro, um pouco de baixo pra cima
+  const t = S.time; R.setCam([LP[0] - 1.0, 1.45, LP[2] + 4.3], [LP[0] - .55, 1.05, LP[2]], .9);
+  LOB.yaw *= 1 - Math.min(1, dt * .2);
+  animAny(P.rig, { ph: t * 2, sp: 0, act: null, t: 0, ready: true }, dt);
+  P.rig.pos = [...LP]; P.rig.yaw = Math.PI + LOB.yaw + Math.sin(t * .5) * .08; P.rig.pitch = 0; P.rig.update();
+  R.ring(LP[0], LP[2], .95, .08, HERO.cor, .8); R.ring(LP[0], LP[2], 1.25 + Math.sin(t * 2) * .05, .03, HERO.cor, .5); R.light([LP[0], 2.2, LP[2] + 1.2], V.sc(HERO.cor, 2.2), 6);
+  if (Math.random() < .3) part([LP[0] + rnd(-.8, .8), 0, LP[2] + rnd(-.8, .8)], [0, rnd(.5, 1.5), 0], 1.4, .05, HERO.cor);
+  LOB.amigos.forEach((a, i) => { if (i >= SLOTS.length) return; let r = LOB.rigs[a.id]; if (!r || r.k !== a.k) { r = LOB.rigs[a.id] = CAST[a.k](); r.k = a.k; }
+    const s = SLOTS[i]; animAny(r, { ph: t * 2 + i, sp: 0, act: null, t: 0, ready: false }, dt); r.pos = [...s]; r.yaw = Math.PI + (s[0] < 0 ? .35 : -.35); r.pitch = 0; r.scale = .97; r.update(); r.draw();
+    R.ring(s[0], s[2], .75, .05, heroBy(a.k).cor, .5); });
+}
+// ---------- esquadrão online (PeerJS: conexão direta entre os aparelhos) ----------
+function linkSala() { let base = location.href.split('?')[0]; try { if (parent !== window) base = parent.location.href.split('?')[0]; } catch (e) { } return base + '?sala=' + LOB.sala; }
+function carregaPeer() { return window.Peer ? Promise.resolve() : new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js'; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
+function novoCodigo() { const L = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let c = ''; for (let i = 0; i < 5; i++) c += L[Math.floor(Math.random() * L.length)]; return c; }
+async function abrirConvite() {
+  $('conv').classList.add('on'); $('cvMsg').textContent = '';
+  if (LOB.sala) { $('cvCode').textContent = LOB.sala; return; }
+  $('cvCode').textContent = '…'; $('cvMsg').textContent = 'Criando sua sala…';
+  try { await carregaPeer(); } catch (e) { $('cvMsg').textContent = 'Sem internet para criar a sala.'; return; }
+  const cod = novoCodigo(); const peer = new Peer('fioalv-' + cod); LOB.peer = peer;
+  peer.on('open', () => { LOB.sala = cod; LOB.souHost = true; $('cvCode').textContent = cod; $('cvMsg').textContent = 'Sala criada! Mande o link ou o código pros amigos.'; lobUI(); });
+  peer.on('error', e => { $('cvMsg').textContent = 'Não deu para criar a sala (' + e.type + '). Tente de novo.'; LOB.peer = null; });
+  peer.on('connection', c => { if (LOB.conns.length >= 4) { c.on('open', () => { c.send({ t: 'cheia' }); setTimeout(() => c.close(), 300); }); return; }
+    c.on('open', () => { LOB.conns.push(c); }); c.on('data', d => hostRecebe(c, d)); c.on('close', () => { LOB.conns = LOB.conns.filter(x => x !== c); LOB.amigos = LOB.amigos.filter(a => a.id !== c.peer); delete LOB.rigs[c.peer]; hostParty(); lobUI(); }); });
+}
+function hostRecebe(c, d) {
+  if (d.t === 'eu') { let a = LOB.amigos.find(a => a.id === c.peer); if (!a) { a = { id: c.peer }; LOB.amigos.push(a); banner('Chegou no esquadrão', esc(d.nome || 'Amigo')); } a.nome = d.nome; a.k = heroBy(d.k).k; hostParty(); lobUI(); }
+}
+function hostParty() { const lista = [{ id: 'host', nome: LOB.nome || 'Líder', k: HERO.k, host: true }, ...LOB.amigos.map(a => ({ id: a.id, nome: a.nome, k: a.k }))];
+  for (const c of LOB.conns) if (c.open) c.send({ t: 'party', lista }); }
+function lobSend(m) { if (LOB.souHost) hostParty(); else if (LOB.host && LOB.host.open) LOB.host.send(m); }
+async function entrarSala(cod) {
+  $('conv').classList.add('on'); $('cvCode').textContent = cod; $('cvMsg').textContent = 'Entrando na sala ' + cod + '…';
+  try { await carregaPeer(); } catch (e) { $('cvMsg').textContent = 'Sem internet para entrar na sala.'; return; }
+  if (LOB.peer) { try { LOB.peer.destroy(); } catch (e) { } } LOB.amigos = []; LOB.conns = []; LOB.souHost = false;
+  const peer = new Peer(); LOB.peer = peer;
+  peer.on('open', id => { const c = peer.connect('fioalv-' + cod, { reliable: true }); LOB.host = c;
+    c.on('open', () => { LOB.sala = cod; c.send({ t: 'eu', nome: LOB.nome, k: HERO.k }); $('cvMsg').textContent = 'Você entrou no esquadrão!'; lobUI(); setTimeout(() => $('conv').classList.remove('on'), 1200); });
+    c.on('data', d => { if (d.t === 'party') { LOB.amigos = d.lista.filter(a => a.id !== id).map(a => ({ ...a, k: heroBy(a.k).k })); lobUI(); } if (d.t === 'cheia') $('cvMsg').textContent = 'Essa sala já está cheia (5 de 5).'; });
+    c.on('close', () => { LOB.sala = null; LOB.amigos = []; LOB.host = null; lobUI(); banner('Esquadrão', 'O líder fechou a sala'); }); });
+  peer.on('error', e => { $('cvMsg').textContent = e.type === 'peer-unavailable' ? 'Sala ' + cod + ' não encontrada. Confira o código.' : 'Não deu para entrar (' + e.type + ').'; });
+}
+
 // ================= HISTÓRIA, MISSÕES, HUD, MENUS =================
 const NPCS = [];
-function npc(key, x, z, yaw = 0, o = {}) { const n = { key, rig: CAST[key](), pos: [x, 0, z], yaw, act: o.act || null, sp: 0, ph: rnd(0, 6), to: null, face: null, run: false, name: o.name, show: true, talk: o.talk }; NPCS.push(n); return n; }
+function npc(key, x, z, yaw = 0, o = {}) { const n = { key, rig: CAST[npcKey(key)](), pos: [x, 0, z], yaw, act: o.act || null, sp: 0, ph: rnd(0, 6), to: null, face: null, run: false, name: o.name, show: true, talk: o.talk }; NPCS.push(n); return n; }
 function npcBy(k) { return NPCS.find(n => n.key === k); }
 function updNpcs(dt) {
   for (const n of NPCS) { if (!n.show) continue;
@@ -1736,6 +1903,7 @@ function tickWaiters() { for (let i = MIS.waiters.length - 1; i >= 0; i--) { con
 const WHO = { Orven: '#e8c98a', Nera: '#f1dfb8', Lira: '#a8d48a', Iaro: '#e3a45a', Ruan: '#8fb4ff', Mireia: '#8fd8cf', Oren: '#a9e6ff', 'Tia Brena': '#e0b090', Destrem: '#e77aa8', 'Pastor Tomé': '#d8c090', 'Rasga-Dobra': '#d07ae0', '': '#d8d0c0' };
 let DLG = null;
 function showLine(l, auto) {
+  l = { ...l, who: swapNome(l.who), t: swapNome(l.t) };
   return new Promise(res => { const box = $('dlg'); box.classList.add('on'); box.querySelector('.who').textContent = l.who || ''; box.querySelector('.who').style.color = WHO[l.who || ''] || '#ddd';
     box.classList.toggle('narr', !l.who); box.classList.toggle('voice', !!l.voice);
     DLG = { txt: l.t, shown: 0, res, auto, t0: performance.now(), done: false }; box.querySelector('.tx').textContent = ''; });
@@ -2090,7 +2258,8 @@ let PREV = 'menu';
 function openPause() { if (S.mode !== 'play') return; S.mode = 'pause'; showScr('pause'); unlockPtr(); }
 function bindMouseBtn() { const b = $('mouseBtn'); if (!b) return; if (TOUCH) { b.style.display = 'none'; return; } b.addEventListener('click', e => { e.stopPropagation(); toggleMouseCam(); }); }
 function closePause() { hideScr(); S.mode = 'play'; $('hud').classList.remove('hide'); grabMouse(); }
-function toMenu() { MIS.token++; MIS.waiters.length = 0; clearCombat(); DLG = null; $('dlg').classList.remove('on'); $('lb').classList.remove('on'); $('skip').classList.remove('on'); S.mode = 'menu'; CAM.script = null; stage(0); P.pos = [0, 0, -9]; refreshMenu(); showScr('menu'); AU.music('calm'); }
+function toMenu() { return toLobbyFull(); }
+function toLobbyFull() { MIS.token++; MIS.waiters.length = 0; clearCombat(); DLG = null; $('dlg').classList.remove('on'); $('lb').classList.remove('on'); $('skip').classList.remove('on'); CAM.script = null; P.pos = [0, 0, -9]; refreshMenu(); toLobby(); }
 function refreshMenu() { const s = readSave(); const b = $('bCont'); b.disabled = !s; $('saveInfo').textContent = s ? `Save solo · ${s.done ? 'Capítulos 1 e 2 concluídos' : 'Capítulo ' + (s.m < 3 ? 1 : 2) + ' · missão ' + (s.m % 3 + 1) + ' de 3'} · nível ${s.level} · ${new Date(s.t).toLocaleDateString('pt-BR')}` : 'Nenhuma jornada salva'; }
 const TREE = [
   { k: 'afiado', n: 'Corte Afiado', c: 1, d: 'Corte de Fio causa +30% de dano e recarrega 1,5 s mais rápido.' },
@@ -2103,10 +2272,10 @@ function renderTree() { $('ptsN').textContent = P.pts; $('treeL').innerHTML = TR
 function bindUI() {
   const on = (id, f) => $(id).addEventListener('click', e => { AU.init(); AU.ui(); f(e); });
   on('bNew', () => { if (readSave()) { showScr('confirm'); } else startNew(); });
-  on('bYes', () => startNew()); on('bNo', () => { refreshMenu(); showScr('menu'); });
+  on('bYes', () => startNew()); on('bNo', () => { refreshMenu(); toLobby(); });
   on('bCont', () => { const s = readSave(); if (!s) return; progLoad(s); MIS.flags = {}; MIS.CP = null; runMission(Math.min(s.m, MISSIONS.length - 1), s.m >= MISSIONS.length, false); });
   on('bOpt', () => { PREV = S.mode === 'pause' ? 'pause' : 'menu'; fillOpts(); showScr('opts'); });
-  on('bQuit', () => showScr('bye')); on('bBye', () => { refreshMenu(); showScr('menu'); });
+  on('bQuit', () => showScr('bye')); on('bBye', () => { refreshMenu(); toLobby(); });
   on('bRes', closePause); on('bTree', () => { renderTree(); showScr('tree'); }); on('bOpt2', () => { PREV = 'pause'; fillOpts(); showScr('opts'); }); on('bMenu', toMenu);
   on('bTreeBack', () => showScr('pause')); on('bOptBack', () => { saveOpts(); showScr(PREV); });
   on('bRetry', () => { runMission(MIS.cur, true); }); on('bOverMenu', toMenu); on('bEndMenu', toMenu); on('bNext', () => { runMission(3, false); });
@@ -2158,6 +2327,7 @@ function frame(now) {
     camUpdate(dt, { lx: 0, ly: 0 });
   } else if (S.mode === 'dialog') { cutPlayer(0); camUpdate(rdt, { lx: 0, ly: 0 }); }
   else if (S.mode === 'pause' && I.pause) { closePause(); camUpdate(0, { lx: 0, ly: 0 }); }
+  else if (S.mode === 'lobby') { S.time += rdt; lobbyFrame(rdt); }
   else if (S.mode === 'menu') { const t = now / 1000 * .06; CAM.script = null; R.setCam([Math.sin(t) * 22, 7 + Math.sin(t * 2) * 1.5, -10 + Math.cos(t) * 22], [0, 3, -12]); S.time += rdt; RIFT.ts = 0; }
   else { camUpdate(0, { lx: 0, ly: 0 }); }
   if (S.mode === 'play' && !window.FIXDT) { frame.acc = (frame.acc || 0) + raw; if (frame.acc > 5) { frame.acc = 0; if (fpsA < (OPT.economia ? 24 : 32) && OPT.quality > .5) { OPT.quality = Math.max(.5, OPT.quality - .25); window.QUALITY = OPT.quality; resize(); saveOpts(); } } }
@@ -2169,16 +2339,16 @@ function frame(now) {
   // desenhar
   const vdt = S.mode === 'play' || S.mode === 'cut' ? dt : rdt * .3;
   drawWorld(S.time);
-  if (S.mode !== 'menu') P.rig.draw(); updNpcs(vdt); drawNpcs();
+  if (S.mode !== 'menu') P.rig.draw(); if (S.mode !== 'lobby') { updNpcs(vdt); drawNpcs(); }
   for (const e of ENEMIES) enemyDraw(e, (S.mode === 'play' || S.mode === 'cut') ? dt : 0);
   drawTrail(); updWaves(S.mode === 'play' ? dt : 0); updUlt(S.mode === 'play' ? dt : 0); drawRift(vdt); updParts(S.mode === 'pause' || S.mode === 'over' ? 0 : vdt);
   if (MIS.barrier) { for (const [z, w] of [[-68.4, 3.2], [-95.6, 4]]) for (let k = 0; k < 5; k++) { const y = .3 + k * .45; drawThread([-w, y, z], [w, y + .1, z], .05, [1, .3, .5], .05, S.time + k, false); } }
   if (!W.gate.off && !MIS.barrier) for (let k = 0; k < 4; k++) { const y = .4 + k * .5; drawThread([-3.6, y, -96], [3.6, y, -96], .1, [.9, .3, .5], .04, S.time + k, false); }
   { const pa = MIS.cur === 4 && NPCS.find(n => n.key === 'pastor' && n.act === 'kneel'); if (pa) for (let k = 0; k < 8; k++) { const an = k / 8 * 6.28 + S.time * .2; drawThread([pa.pos[0] + Math.sin(an) * 1.1, 0, pa.pos[2] + Math.cos(an) * 1.1], [pa.pos[0] + Math.sin(an + .6) * .4, 2.2, pa.pos[2] + Math.cos(an + .6) * .4], .05, [.95, .3, .6], .05, S.time + k, false); } }
   if (MARK && S.mode === 'play') { R.ring(MARK[0], MARK[2], 1.1 + Math.sin(S.time * 3) * .1, .12, [1, .85, .5], .7); R.light([MARK[0], 1.5, MARK[2]], [1, .8, .4], 4); }
-  if (window.NORENDER) { R.items.length = 0; R.lights.length = 0; fxN = 0; } else R.render(S.mode === 'menu' ? [0, 0, -12] : P.pos, S.time);
+  if (window.NORENDER) { R.items.length = 0; R.lights.length = 0; fxN = 0; } else R.render(S.mode === 'menu' ? [0, 0, -12] : S.mode === 'lobby' ? LP : P.pos, S.time);
   updNums(S.mode === 'play' || S.mode === 'cut' ? rdt : 0);
-  if (S.mode !== 'menu' && S.mode !== 'load') hud(rdt);
+  if (S.mode !== 'menu' && S.mode !== 'load' && S.mode !== 'lobby') hud(rdt);
 }
 function KP_skip(I) { return I.pause; }
 function cutPlayer(dt) {
@@ -2200,15 +2370,15 @@ async function loadAssets() {
   try {
     const lib = await loadModel(ASSETS.anims);
     for (const k in ASSETS) { if (k === 'anims') continue; try { const m = await loadModel(ASSETS[k]); bindAnims(m, lib); MODELS[k] = m; $('load').textContent = 'Costurando Orlavento… ' + Object.keys(MODELS).length; } catch (e) { console.error('modelo ' + k, e); } }
-    window.NERA_MODEL = MODELS.nera; P.rig = CAST.nera(); P.rig.pos = [...P.pos]; P.rig.update();
+    window.NERA_MODEL = MODELS.nera; lobLoad(); P.rig = CAST[HERO.k](); P.rig.pos = [...P.pos]; P.rig.update();
   } catch (e) { console.error('Falha ao carregar os personagens do Mixamo:', e); }
 }
 async function boot() {
   await loadAssets();
   buildWorld(); W.gate = { b: [-3.6, 3.6, -95.6, -96.6], off: false }; W.obst.push(W.gate);
   bindUI(); bindTouch(); bindMouseBtn(); stage(0); P.pos = [0, 0, -9]; P.rig.update(); refreshMenu();
-  $('load').style.display = 'none'; S.mode = 'menu'; showScr('menu'); requestAnimationFrame(frame);
-  window.DBG = { get fps() { return fpsA; }, SKANIM, P, MIS, ENEMIES, runMission, S, spawn, W, CAM, NPCS, hurtEnemy };
+  $('load').style.display = 'none'; lobLoad(); buildLobby(); toLobby(); requestAnimationFrame(frame);
+  window.DBG = { get fps() { return fpsA; }, HEROIS, LOB, escolherHeroi, get HERO() { return HERO; }, SKANIM, P, MIS, ENEMIES, runMission, S, spawn, W, CAM, NPCS, hurtEnemy };
 }
 setTimeout(() => { try { boot(); } catch (e) { $('load').textContent = 'Erro ao carregar: ' + e.message; throw e; } }, 30);
 
