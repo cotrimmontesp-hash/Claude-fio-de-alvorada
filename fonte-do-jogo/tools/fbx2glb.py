@@ -152,6 +152,13 @@ def tex_bytes(sc, mat_id, maxs):
             vo = sc.obj.get(v)
             if vo and vo['n'] == 'Video':
                 c = child(vo, 'Content')
+                if not (c and c['p'] and isinstance(c['p'][0], (bytes, bytearray)) and len(c['p'][0]) > 100):  # imagem guardada uma vez só: procura outro vídeo com o mesmo arquivo
+                    fn = child(vo, 'RelativeFilename') or child(vo, 'Filename'); fn = fn['p'][0] if fn and fn['p'] else None
+                    for oid2, o2 in sc.obj.items():
+                        if o2.get('n') != 'Video' or o2 is vo: continue
+                        f2 = child(o2, 'RelativeFilename') or child(o2, 'Filename'); f2 = f2['p'][0] if f2 and f2['p'] else None
+                        c2 = child(o2, 'Content')
+                        if fn and f2 == fn and c2 and c2['p'] and isinstance(c2['p'][0], (bytes, bytearray)) and len(c2['p'][0]) > 100: c = c2; break
                 if c and c['p'] and isinstance(c['p'][0], (bytes, bytearray)) and len(c['p'][0]) > 100:
                     try:
                         im = Image.open(io.BytesIO(c['p'][0])); im.load(); im.thumbnail((maxs, maxs)); o2 = io.BytesIO()
