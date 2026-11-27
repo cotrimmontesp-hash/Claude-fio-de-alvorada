@@ -81,7 +81,7 @@ async function loadModel(b64) {
 function bindAnims(model, lib) {
   const nm = lib.nodes.map(n => n.name.replace(/^mixamorig\d*:/i, '')), hl = lib.byName.Hips, ht = model.byName.Hips;
   model.hipsRatio = (ht != null && hl != null) ? (model.nodes[ht].t[1] || 1) / (lib.nodes[hl].t[1] || 1) : 1;
-  for (const k in lib.anims) { const a = lib.anims[k]; model.anims[k] = { dur: a.dur, ch: a.ch.map(c => ({ ...c, node: model.byName[nm[c.node]] })).filter(c => c.node != null) }; }
+  const hr = model.hipsRatio; for (const k in lib.anims) { const a = lib.anims[k]; model.anims[k] = { dur: a.dur, hr, ch: a.ch.map(c => ({ ...c, node: model.byName[nm[c.node]] })).filter(c => c.node != null) }; }
 }
 // amostra um canal no tempo t
 function sampleCh(c, t, out) {
@@ -116,7 +116,7 @@ class SkinChar {
     const tmp = [0, 0, 0, 0];
     for (const c of a.ch) { sampleCh(c, t, tmp); const i = c.node;
       if (c.path === 'rotation') { if (w >= 1) this.Rq[i] = [tmp[0], tmp[1], tmp[2], tmp[3]]; else this.Rq[i] = Array.from(Q.slerp(this.Rq[i], tmp, w, [0, 0, 0, 0])); }
-      else if (c.path === 'translation') { let v = [tmp[0], tmp[1], tmp[2]]; if (i === this.hips) { v[0] = this.bindHips[0]; v[1] *= this.m.hipsRatio || 1; v[2] = this.bindHips[2]; } this.T[i] = w >= 1 ? v : V.lerp(this.T[i], v, w); }
+      else if (c.path === 'translation') { let v = [tmp[0], tmp[1], tmp[2]]; if (i === this.hips) { v[0] = this.bindHips[0]; v[1] *= a.hr || this.m.hipsRatio || 1; v[2] = this.bindHips[2]; } this.T[i] = w >= 1 ? v : V.lerp(this.T[i], v, w); }
       else if (c.path === 'scale') this.Sc[i] = w >= 1 ? [tmp[0], tmp[1], tmp[2]] : V.lerp(this.Sc[i], [tmp[0], tmp[1], tmp[2]], w); }
   }
   update(dt) {
@@ -192,8 +192,11 @@ function animAny(r, a, dt) {
   if (act === 'cross') return void s.play('idle2', { fade: .3 });
   if (act === 'raise' || act === 'point') return void s.play('casting', { fade: .3 });
   // passo da animação acompanha a velocidade real (sem pé patinando); troca andar/correr com folga
-  const v = (a.sp || 0) * 4.4, correndo = s.name === 'run';
-  if (v > (correndo ? 2.1 : 2.7)) s.play('run', { fade: .28, speed: clamp(v / 4.3, .78, 1.7) });
-  else if (v > (s.name === 'walk' ? .22 : .4)) s.play('walk', { fade: .28, speed: clamp(v / 1.7, .65, 1.55) });
-  else s.play(a.ready ? 'idle' : 'idle2', { fade: .4 });
+  const v = (a.sp || 0) * 4.4, A = s.m.anims, RUN = A.run2 ? 'run2' : 'run', WALK = A.walk2 ? 'walk2' : 'walk', correndo = s.name === RUN || s.name === 'strafelr' || s.name === 'straferr';
+  // de lado (alvo travado): passos laterais do pacote de locomoção do Mixamo
+  if (a.side != null && A.strafel && v > .4 && Math.abs(a.side) > Math.abs(a.fwd || 0) * .9) {
+    const dir = a.side > 0 ? 'r' : 'l', nm = v > 3.2 ? 'strafe' + dir + 'r' : 'strafe' + dir; return void s.play(nm, { fade: .25, speed: clamp(v / (v > 3.2 ? 4.2 : 1.6), .7, 1.6) }); }
+  if (v > (correndo ? 2.1 : 2.7)) s.play(RUN, { fade: .28, speed: clamp(v / (A.run2 ? 3.9 : 4.3), .78, 1.75) });
+  else if (v > (s.name === WALK ? .22 : .4)) s.play(WALK, { fade: .28, speed: clamp(v / (A.walk2 ? 1.45 : 1.7), .65, 1.7) });
+  else s.play(a.ready ? 'idle' : (A.idle3 ? 'idle3' : 'idle2'), { fade: .4 });
 }

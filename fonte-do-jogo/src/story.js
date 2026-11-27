@@ -501,7 +501,8 @@ async function loadAssets() {
   if (typeof ASSETS === 'undefined' || !ASSETS.anims) return;
   try {
     const lib = await loadModel(ASSETS.anims);
-    for (const k in ASSETS) { if (k === 'anims') continue; try { const m = await loadModel(ASSETS[k]); bindAnims(m, lib); MODELS[k] = m; $('load').textContent = 'Costurando Orlavento… ' + Object.keys(MODELS).length; } catch (e) { console.error('modelo ' + k, e); } }
+    const loco = ASSETS.loco ? await loadModel(ASSETS.loco).catch(() => null) : null;
+    for (const k in ASSETS) { if (k === 'anims' || k === 'loco') continue; try { const m = await loadModel(ASSETS[k]); bindAnims(m, lib); if (loco) bindAnims(m, loco); MODELS[k] = m; $('load').textContent = 'Costurando Orlavento… ' + Object.keys(MODELS).length; } catch (e) { console.error('modelo ' + k, e); } }
     window.NERA_MODEL = MODELS.nera; lobLoad(); P.rig = CAST[HERO.k](); P.rig.pos = [...P.pos]; P.rig.update();
   } catch (e) { console.error('Falha ao carregar os personagens do Mixamo:', e); }
 }

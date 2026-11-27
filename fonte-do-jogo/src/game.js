@@ -240,7 +240,9 @@ function playerUpdate(dt, I) {
   // animação
   const actMap = { atk: P.cur && P.cur.pose, charge: 'charge', dodge: 'dodge', hit: 'hit', cast: 'cast', qcast: 's1', ult: 'ult', dead: 'dead' };
   const at = P.st === 'atk' ? P.t / P.cur.dur : P.st === 'qcast' ? P.t / .4 : P.st === 'ult' ? P.t / 1.05 : P.t;
-  animAny(r, { ph: P.ph, sp: P.sp, act: actMap[P.st], t: at, ready: P.combatT > 0 }, dt);
+  const VV = P.vel || [0, 0], lk = P.lock && !P.lock.dead && P.st === 'move';
+  const fwd = VV[0] * Math.sin(P.yaw) + VV[1] * Math.cos(P.yaw), side = -VV[0] * Math.cos(P.yaw) + VV[1] * Math.sin(P.yaw);
+  animAny(r, { ph: P.ph, sp: P.sp, act: actMap[P.st], t: at, ready: P.combatT > 0, side: lk ? side : null, fwd }, dt);
   r.pos = [P.pos[0], (r.yOff || 0) + (P.st === 'dead' && !r.isSkin ? .12 : 0), P.pos[2]]; r.yaw = P.yaw + (r.extraYaw || 0); r.roll = P.st === 'move' ? -(P.lean || 0) : 0; r.pitch = P.st === 'dead' && !r.isSkin ? lerp(r.pitch, -Math.PI / 2, 1 - Math.exp(-5 * dt)) : 0;
   r.flash = Math.max(0, (r.flash || 0) - dt * 4); r.emAdd = P.unl.q ? V.sc([1, .78, .4], .6 + (P.lume / 100) * 1.6 + (P.st === 'ult' || P.st === 'charge' ? 3 : 0)) : null;
   r.update();
