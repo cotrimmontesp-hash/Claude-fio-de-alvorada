@@ -64,43 +64,86 @@ def tronco_obj(x, z, h, s, m):
         me = bpy.data.meshes.new('TroncoBase'); bm.to_mesh(me); bm.free(); me.materials.append(m); TCACHE['t'] = me
     o = bpy.data.objects.new('Tronco', TCACHE['t']); col.objects.link(o); o.location = GP(x, z, h); o.scale = (s, s, s); return o
 # ---------- áreas andáveis (iguais às do jogo) ----------
-WALK = [(-20, 20, 16, -42), (-4, 4, -41, -54.6), (-14, 14, -67.9, -96), (-3.5, 3.5, -95, -112)]
+WALK = [(-20, 20, 16, -42), (-4, 4, -49, -54.6), (-14, 14, -67.9, -96), (-3.5, 3.5, -95, -101)]
 BOSS = (0, -128, 17); CH = (-54.5, -68)
-def dist_walk(x, z):
+def sst(a, b, x): t = max(0, min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t)
+def catmull(P, n=8):
+    out = []
+    for i in range(len(P) - 1):
+        p0, p1, p2, p3 = P[max(i - 1, 0)], P[i], P[i + 1], P[min(i + 2, len(P) - 1)]
+        for k in range(n):
+            t = k / n; t2, t3 = t * t, t * t * t
+            out.append(tuple(.5 * ((2 * p1[j]) + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3) for j in range(3)))
+    out.append(P[-1]); return out
+SX, HS, LARG = 170, 45, 6.0
+T_VILA = catmull([(-8, -42, 0), (-22, -46, 0), (-40, -38, 0), (-52, -22, 0), (-62, -36, 0), (-50, -50, 0), (-25, -51, 0), (-4, -51, 0)])
+T_RAVINA = catmull([(0, -100, 0), (-15, -104, 0), (-35, -98, 0), (-55, -108, 0), (-50, -128, 0), (-30, -140, 0), (-14, -134, 0)])
+PONTOS = [(16, -126, 0), (45, -120, 2), (100, -110, 7), (112, -95, 10), (60, -80, 15), (48, -65, 18), (100, -50, 24), (112, -35, 27),
+          (60, -20, 32), (50, -5, 35), (105, 8, 40), (150, 18, 44), (170, 9, 45)]
+CAMINHO = catmull(PONTOS)
+def seg_perto(T, x, z):
+    best = (1e9, 0, 0)
+    for i in range(len(T) - 1):
+        ax, az, ah = T[i]; bx, bz, bh = T[i + 1]; dx, dz = bx - ax, bz - az; L = dx * dx + dz * dz or 1
+        t = max(0, min(1, ((x - ax) * dx + (z - az) * dz) / L)); px, pz = ax + dx * t, az + dz * t; d = math.hypot(x - px, z - pz)
+        if d < best[0]: best = (d, ah + (bh - ah) * t, i + t)
+    return best
+def perto_caminho(x, z): return seg_perto(CAMINHO, x, z)
+def dist_walk(x, z):  # vila, ravina, arena e as trilhas baixas
     d = 1e9
     for x0, x1, z0, z1 in WALK:
         dx = max(x0 - x, 0, x - x1); dz = max(z1 - z, 0, z - z0); d = min(d, math.hypot(dx, dz))
-    return min(d, max(0, math.hypot(x - BOSS[0], z - BOSS[1]) - BOSS[2]))
-def sst(a, b, x): t = max(0, min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t)
+    d = min(d, max(0, math.hypot(x - BOSS[0], z - BOSS[1]) - BOSS[2]))
+    for T in (T_VILA, T_RAVINA): d = min(d, max(0, seg_perto(T, x, z)[0] - LARG / 2))
+    return d
+def alt_monte(x, z):  # encosta aberta: média das alturas da trilha (sem paredes)
+    sw = sh = 0
+    for i in range(0, len(CAMINHO) - 1):
+        ax, az, ah = CAMINHO[i]; bx, bz, bh = CAMINHO[i + 1]; dx, dz = bx - ax, bz - az; L = dx * dx + dz * dz or 1
+        t = max(0, min(1, ((x - ax) * dx + (z - az) * dz) / L)); d = math.hypot(x - ax - dx * t, z - az - dz * t); w = 1 / (d * d + 6)
+        sw += w; sh += w * (ah + (bh - ah) * t)
+    return sh / sw
 def altura(x, z):
-    d = dist_walk(x, z); n = noise.noise(Vector((x * .045, z * .045, 1.3))) * .5 + .5
-    return sst(2, 28, d) * (3 + n * 12) + (noise.noise(Vector((x * .25, z * .25, 4))) * .35 * sst(1, 6, d))
+    dL = dist_walk(x, z); dM, hp, _ = perto_caminho(x, z)
+    if dM <= LARG / 2: return hp - .03
+    if dL <= 0: return 0
+    n = noise.noise(Vector((x * .045, z * .045, 1.3))) * .5 + .5
+    colina = sst(4, 42, dL) * (1.5 + n * 8) + noise.noise(Vector((x * .25, z * .25, 4))) * .3 * sst(1, 6, dL)
+    if x > 152 and dM > LARG / 2 + 1: return -70
+    if dM > 60: return colina
+    monte = alt_monte(x, z) + min(2.2, (dM - LARG / 2) * .22) + noise.noise(Vector((x * .08, z * .08, 2.2))) * 1.2 * sst(3, 10, dM)
+    wL, wM = 1 / (dL * dL + 30), 1 / (dM * dM + 30)
+    return (wL * colina + wM * monte) / (wL + wM)
 ETAPAS = []
 def etapa(f): ETAPAS.append(f); return f
+HGRID = {}
 @etapa
 def terreno():
-    S = 1.2; X0, X1, Z0, Z1 = -70, 30, 36, -170
+    S = 1.4; X0, X1, Z0, Z1 = -70, 158, 40, -172
     nx, nz = int((X1 - X0) / S), int((Z0 - Z1) / S)
-    bm = bmesh.new(); vs = {}
+    bm = bmesh.new(); vs = {}; hs = []
     cl = bm.loops.layers.color.new('Col')
     for j in range(nz + 1):
         for i in range(nx + 1):
             x, z = X0 + i * S, Z0 - j * S; y = altura(x, z)
-            if CH[1] < z < CH[0]: y = -26
-            vs[i, j] = bm.verts.new(GP(x, z, y))
+            if CH[1] < z < CH[0] and x < 40: y = -26
+            vs[i, j] = bm.verts.new(GP(x, z, y)); hs.append(round(y, 2))
+    HGRID.update({'x0': X0, 'z0': Z0, 's': S, 'nx': nx + 1, 'nz': nz + 1, 'h': hs})
+    def cor(x, z):
+        n1 = noise.noise(Vector((x * .12, z * .12, 7))) * .5 + .5; n2 = noise.noise(Vector((x * .7, z * .7, 9))) * .5 + .5
+        grass = (.18 + .1 * n1, .22 + .08 * n1, .06 + .02 * n2); dirt = (.36 + .05 * n2, .27 + .04 * n2, .17)
+        trilha = perto_caminho(x, z)[0] <= LARG / 2 or seg_perto(T_VILA, x, z)[0] <= LARG / 2 or seg_perto(T_RAVINA, x, z)[0] <= LARG / 2
+        rua = (abs(x + math.sin(z * .12) * .6) < 3.1 and -101 < z < 15 and abs(x) < 4) or math.hypot(x, z + 12) < 7.5
+        if trilha or rua: return dirt
+        if (-97 < z < -66 and abs(x) < 15) or math.hypot(x - BOSS[0], z - BOSS[1]) < BOSS[2] + 2: return (.3, .26, .2)
+        if x > 40 and perto_caminho(x, z)[0] < 9: return (.34 + .06 * n2, .31 + .05 * n2, .26)  # beira de pedra da trilha
+        return tuple(a * (.85 + .3 * n2) for a in grass)
     for j in range(nz):
         for i in range(nx):
-            za, zb = Z0 - j * S, Z0 - (j + 1) * S
-            if (CH[1] < za < CH[0]) or (CH[1] < zb < CH[0]): continue
+            za, zb = Z0 - j * S, Z0 - (j + 1) * S; xa = X0 + i * S
+            if ((CH[1] < za < CH[0]) or (CH[1] < zb < CH[0])) and xa < 40: continue
             f = bm.faces.new((vs[i, j], vs[i + 1, j], vs[i + 1, j + 1], vs[i, j + 1])); f.smooth = True
-            x, z = X0 + (i + .5) * S, Z0 - (j + .5) * S
-            n1 = noise.noise(Vector((x * .12, z * .12, 7))) * .5 + .5; n2 = noise.noise(Vector((x * .7, z * .7, 9))) * .5 + .5
-            grass = (.18 + .1 * n1, .22 + .08 * n1, .06 + .02 * n2)
-            dirt = (.33 + .06 * n2, .25 + .04 * n2, .16)
-            rua = (abs(x + math.sin(z * .12) * .6) < 3.1 and -112 < z < 15) or math.hypot(x, z + 12) < 7.5
-            ravina = -97 < z < -66 and abs(x) < 15; arena = math.hypot(x - BOSS[0], z - BOSS[1]) < BOSS[2] + 2
-            c = dirt if rua else (.3, .26, .2) if (ravina or arena) else grass
-            if not rua and dist_walk(x, z) > 6: c = tuple(a * (.8 + .3 * n2) for a in grass)
+            c = cor(X0 + (i + .5) * S, Z0 - (j + .5) * S)
             for l in f.loops: l[cl] = (c[0], c[1], c[2], 1)
     me = bpy.data.meshes.new('Terreno'); bm.to_mesh(me); bm.free()
     link(bpy.data.objects.new('Terreno', me), mat('terra', 0xffffff, .95, vc=True))
@@ -124,13 +167,13 @@ def paredao(nome, pts, topo, fundo, normal, m, rug=.9, seed=0):
 @etapa
 def fenda():
     m = mat('rocha_escura', 0x4a4038, .9)
-    xs = [-70 + k * 1.4 for k in range(101)]
+    xs = [-70 + k * 1.4 for k in range(79)]
     paredao('ParedeN', [(x, CH[0]) for x in xs], lambda x, z: altura(x, z), -30, (0, -1), m, 1.0, 1)
     paredao('ParedeS', [(x, CH[1]) for x in xs], lambda x, z: altura(x, z), -30, (0, 1), m, 1.0, 5)
     f = mat('fundo', 0x07050a, 1)
-    caixa('Fundo', 0, -61.25, -29, 400, 16, 1, f, bev=0)
+    caixa('Fundo', -15, -61.25, -29, 112, 16, 1, f, bev=0)
     nev = mat('nevoa', 0x2a2236, 1); nev.node_tree.nodes['Principled BSDF'].inputs['Emission Color'].default_value = srgb(0x6a4a9a); nev.node_tree.nodes['Principled BSDF'].inputs['Emission Strength'].default_value = .6
-    caixa('Nevoa', 0, -61.25, -18, 400, 14, .05, nev, bev=0)
+    caixa('Nevoa', -15, -61.25, -18, 112, 14, .05, nev, bev=0)
 @etapa
 def casas():
     pedra, reboco, madeira, telha, porta, janela = mat('pedra', 0x837a6c, .9), mat('reboco', 0xd2c4a6, .85), mat('madeira', 0x5a3e28, .7), mat('telha', 0x5e3528, .75), mat('porta', 0x3a2618, .6), mat('janela', 0xffb060, .4)
@@ -174,7 +217,7 @@ def arvores():
     pos = [(-15, 12), (15, 12), (-14, -16), (15, -30), (-16, -38)]
     while len(pos) < 90:
         x, z = random.uniform(-64, 26), random.uniform(-166, 30)
-        if CH[1] - 2 < z < CH[0] + 2 or dist_walk(x, z) < 1.5: continue
+        if (CH[1] - 2 < z < CH[0] + 2 and x < 42) or dist_walk(x, z) < 1.5 or perto_caminho(x, z)[0] < 5: continue
         if dist_walk(x, z) < 6 and abs(x) < 15 and -97 < z < -66: continue
         pos.append((x, z))
     for k, (x, z) in enumerate(pos):
@@ -187,7 +230,7 @@ def pedras():
     m = mat('pedra_campo', 0x6e665a, .9)
     for k in range(70):
         x, z = random.uniform(-60, 26), random.uniform(-164, 30)
-        if CH[1] - 1 < z < CH[0] + 1 or dist_walk(x, z) < 2: continue
+        if (CH[1] - 1 < z < CH[0] + 1 and x < 42) or dist_walk(x, z) < 2 or perto_caminho(x, z)[0] < 5: continue
         s = random.uniform(.5, 2); rocha('Pedra', x, z, altura(x, z), (s * 1.2, s, s * .7), m, k)
 @etapa
 def ponte():
@@ -213,7 +256,7 @@ def arena():
     m = mat('menir', 0x625c58, .85)
     for k in range(14):
         a = k / 14 * math.tau
-        if abs(math.atan2(math.sin(a), math.cos(a))) < .35: continue
+        if min(abs(math.atan2(math.sin(a - t), math.cos(a - t))) for t in (-1.95, 1.45)) < .32: continue
         x, z = BOSS[0] + math.sin(a) * (BOSS[2] + 1.2), BOSS[1] + math.cos(a) * (BOSS[2] + 1.2); h = random.uniform(3, 5.5)
         caixa('Menir', x, z, h / 2, 1.2, .8, h, m, a + random.uniform(-.2, .2), bev=.12, rx=random.uniform(-.08, .08))
 @etapa
@@ -225,68 +268,24 @@ def montanhas():
         o = cil('Montanha', x, z, h / 2 - 4, random.uniform(30, 55), h, m, 9, 0); o.rotation_euler.z = random.random() * 6
         cil('Neve', x, z, h * .85 - 4, random.uniform(8, 12), h * .3, n, 9, 0)
 
-# ---------- trilha da montanha: liga a arena do chefe 1 até a Serra das Costuras lá em cima ----------
-SX, HS, LARG = 170, 45, 6.0
-PONTOS = [(16, -126, 0), (45, -120, 2), (100, -110, 7), (112, -95, 10), (60, -80, 15), (48, -65, 18), (100, -50, 24), (112, -35, 27),
-          (60, -20, 32), (50, -5, 35), (105, 8, 40), (150, 18, 44), (170, 9, 45)]
-def catmull(P, n=8):
-    out = []
-    for i in range(len(P) - 1):
-        p0, p1, p2, p3 = P[max(i - 1, 0)], P[i], P[i + 1], P[min(i + 2, len(P) - 1)]
-        for k in range(n):
-            t = k / n; t2, t3 = t * t, t * t * t
-            out.append(tuple(.5 * ((2 * p1[j]) + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3) for j in range(3)))
-    out.append(P[-1]); return out
-CAMINHO = catmull(PONTOS)
-def perto_caminho(x, z):
-    best = (1e9, 0, 0)
-    for i in range(len(CAMINHO) - 1):
-        ax, az, ah = CAMINHO[i]; bx, bz, bh = CAMINHO[i + 1]; dx, dz = bx - ax, bz - az; L = dx * dx + dz * dz or 1
-        t = max(0, min(1, ((x - ax) * dx + (z - az) * dz) / L)); px, pz = ax + dx * t, az + dz * t; d = math.hypot(x - px, z - pz)
-        if d < best[0]: best = (d, ah + (bh - ah) * t, i + t)
-    return best
-def alt_montanha(x, z):
-    d, hp, s = perto_caminho(x, z); n = noise.noise(Vector((x * .09, z * .09, 2.2))) * .5 + .5
-    if d <= LARG / 2: return hp - .05, 'trilha', d
-    if x > 152 and d > LARG / 2 + 1: return -70, 'abismo', d
-    return hp + min(6.5, (d - LARG / 2) * 1.5) + n * 1.5 * min(1, (d - LARG / 2) / 4), 'pedra', d
-@etapa
-def montanha():
-    S = 1.5; X0, X1, Z0, Z1 = 26, 158, 40, -160
-    nx, nz = int((X1 - X0) / S), int((Z0 - Z1) / S)
-    bm = bmesh.new(); vs = {}; cl = bm.loops.layers.color.new('Col'); info = {}
-    for j in range(nz + 1):
-        for i in range(nx + 1):
-            x, z = X0 + i * S, Z0 - j * S; y, tipo, d = alt_montanha(x, z); vs[i, j] = bm.verts.new(GP(x, z, y)); info[i, j] = (tipo, d, y)
-    for j in range(nz):
-        for i in range(nx):
-            f = bm.faces.new((vs[i, j], vs[i + 1, j], vs[i + 1, j + 1], vs[i, j + 1])); f.smooth = True
-            x, z = X0 + (i + .5) * S, Z0 - (j + .5) * S; n2 = noise.noise(Vector((x * .6, z * .6, 5))) * .5 + .5
-            tipo, d, y = info[i, j]
-            if tipo == 'trilha': c = (.36 + .05 * n2, .27 + .04 * n2, .17)
-            elif d - LARG / 2 > 3.5: c = (.24 + .08 * n2, .3 + .07 * n2, .1)   # grama em cima das paredes
-            else: c = (.32 + .08 * n2, .29 + .07 * n2, .26 + .05 * n2)         # rocha
-            for l in f.loops: l[cl] = (c[0], c[1], c[2], 1)
-    me = bpy.data.meshes.new('Encosta'); bm.to_mesh(me); bm.free()
-    link(bpy.data.objects.new('Encosta', me), mat('terra', 0xffffff, .95, vc=True))
 @etapa
 def trilha_detalhes():
     m = mat('pedra_campo', 0x6e665a, .9); madeira = mat('madeira', 0x5a3e28); fogo = mat('janela', 0xffb060)
     tronco, folha = mat('tronco', 0x3e2e22, .9), mat('folha', 0x3d4c22, .85)
-    for k in range(0, len(CAMINHO) - 1, 2):
-        x, z, h = CAMINHO[k]; x2, z2, _ = CAMINHO[k + 1]; a = math.atan2(x2 - x, z2 - z); px, pz = math.cos(a), -math.sin(a)
+    for T, kk in [(T, kk) for T in (CAMINHO, T_VILA, T_RAVINA) for kk in range(0, len(T) - 1, 2)]:
+        x, z, h = T[kk]; x2, z2, _ = T[kk + 1]; a = math.atan2(x2 - x, z2 - z); px, pz = math.cos(a), -math.sin(a)
         for sgn in (-1, 1):
-            if random.random() < .7: rocha('PedraTrilha', x + px * sgn * (LARG / 2 + .6), z + pz * sgn * (LARG / 2 + .6), h + .2, (1.2, 1.1, 1.0), m, k * 3 + sgn)
-        if k % 10 == 0:  # tochas pela subida
+            if random.random() < .7: rocha('PedraTrilha', x + px * sgn * (LARG / 2 + .9), z + pz * sgn * (LARG / 2 + .9), altura(x + px * sgn * (LARG / 2 + .9), z + pz * sgn * (LARG / 2 + .9)) + .1, (.8, .7, .5), m, kk * 3 + sgn)
+        if kk % 10 == 0:  # tochas pelo caminho
             sx = x + px * (LARG / 2 - .4); sz = z + pz * (LARG / 2 - .4)
             caixa('PosteLume', sx, sz, h + 1, .16, .16, 2, madeira); caixa('Lanterna', sx, sz, h + 2.1, .28, .28, .3, fogo, bev=0)
-    for k in range(70):  # árvores em cima das paredes
-        x, z = random.uniform(30, 150), random.uniform(-155, 36); y, tipo, d = alt_montanha(x, z)
-        if tipo != 'pedra' or d < LARG / 2 + 6: continue
+    for k in range(110):  # árvores pela encosta
+        x, z = random.uniform(30, 150), random.uniform(-160, 36); y = altura(x, z)
+        if y < -5 or perto_caminho(x, z)[0] < LARG / 2 + 3 or dist_walk(x, z) < 3: continue
         s = random.uniform(.8, 1.3); tronco_obj(x, z, y + 1.6 * s, s, tronco)
         for q in range(3): rocha('Copa', x + random.uniform(-.8, .8) * s, z + random.uniform(-.8, .8) * s, y + (3.3 + q * .55) * s, (1.4 * s, 1.4 * s, 1.15 * s), folha, k * 3 + q)
     pico = mat('montanha', 0x5a5a68, .95); neve = mat('neve', 0xd8d4d0, .6)
-    for x, z, r, hh in [(95, -140, 40, 95), (40, -150, 30, 70), (140, -150, 35, 85), (85, 45, 38, 100), (30, 30, 26, 60)]:  # picos em volta
+    for x, z, r, hh in [(40, -190, 30, 70), (120, -195, 35, 85), (70, 80, 38, 100), (-10, 75, 26, 60)]:  # picos em volta
         cil('Pico', x, z, hh / 2 - 4, r, hh, pico, 9, 0); cil('Neve', x, z, hh * .85 - 4, r * .22, hh * .3, neve, 9, 0)
 @etapa
 def exportar():
@@ -318,7 +317,7 @@ def exportar():
         R = [[mw[0][0], mw[0][2], -mw[0][1], mw[0][3]], [mw[2][0], mw[2][2], -mw[2][1], mw[2][3]], [-mw[1][0], -mw[1][2], mw[1][1], -mw[1][3]]]
         objs.append([me.name, [round(x, 4) for row in R for x in row], cor, emis])
     p = os.path.join(OUT, 'orlavento.json')
-    with open(p, 'w') as f: json.dump({'malhas': meshes, 'objetos': objs, 'caminho': {'pts': [[round(a, 2), round(b, 2), round(c, 2)] for a, b, c in CAMINHO], 'larg': LARG, 'sx': SX, 'hs': HS}}, f, separators=(',', ':'))
+    with open(p, 'w') as f: json.dump({'malhas': meshes, 'objetos': objs, 'caminho': {'pts': [[round(a, 2), round(b, 2), round(c, 2)] for a, b, c in CAMINHO], 'larg': LARG, 'sx': SX, 'hs': HS}, 'alturas': HGRID}, f, separators=(',', ':'))
     open(os.path.join(OUT, 'orlavento_log.txt'), 'a').write('EXPORTADO %d objetos, %d malhas, %d bytes\n' % (len(objs), len(meshes), os.path.getsize(p)))
 # ---------- câmera da vista para acompanhar ----------
 import mathutils

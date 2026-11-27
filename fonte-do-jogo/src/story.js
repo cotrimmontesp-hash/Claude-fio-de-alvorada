@@ -108,27 +108,33 @@ async function seamTask(b, flag, tok) {
 }
 // ponto da trilha a "s" metros do começo
 function trilhaEm(s) { const T = TRILHA; for (let i = 0; i < T.length - 1; i++) if (T[i + 1].s >= s) { const k = (s - T[i].s) / ((T[i + 1].s - T[i].s) || 1); return [lerp(T[i][0], T[i + 1][0], k), lerp(T[i][2], T[i + 1][2], k), lerp(T[i][1], T[i + 1][1], k)]; } const L = T[T.length - 1]; return [L[0], L[2], L[1]]; }
-async function subida(tok) {
-  const TOT = TRILHA[TRILHA.length - 1].s, pontos = [30, 75, 120, 165, 210, 255, 300, 340].filter(v => v < TOT - 10);
-  const grupos = [[['tecelao', 0], ['tecelao', 1], ['larva', 0]], [['fieira', 0], ['tecelao', 1], ['saltador', 1]], [['tecelao', 0], ['tecelao', 0], ['fieira', 1], ['larva', 1]],
-    [['bruta', 0], ['saltador', 1], ['saltador', 1]], [['tecelao', 1], ['fieira', 0], ['fieira', 1], ['saltador', 0]], [['bruta', 0], ['tecelao', 1], ['tecelao', 1], ['larva', 0]],
-    [['saltador', 1], ['saltador', 1], ['fieira', 0], ['bruta', 0]], [['bruta', 1], ['tecelao', 0], ['fieira', 1], ['saltador', 1], ['tecelao', 0]]];
-  let k = 0;
-  objective('Suba a trilha da montanha'); hint('Os Desfiadores atacam na subida — alguns <b>pulam do alto</b> das paredes. Não pare: siga o losango dourado.', 7000);
+function trilhaEmT(T, s) { for (let i = 0; i < T.length - 1; i++) if (T[i + 1].s >= s) { const k = (s - T[i].s) / ((T[i + 1].s - T[i].s) || 1); return [lerp(T[i][0], T[i + 1][0], k), lerp(T[i][2], T[i + 1][2], k), lerp(T[i][1], T[i + 1][1], k)]; } const L = T[T.length - 1]; return [L[0], L[2], L[1]]; }
+// caminhada longa com emboscadas (uns na frente, outros pulando do alto)
+async function jornada(T, tok, o) {
+  const TOT = T.total, pontos = o.pontos.filter(v => v < TOT - 8); let k = 0;
+  objective(o.texto); if (o.dica) hint(o.dica, 7000);
   while (tok === MIS.token) {
-    const me = pertoTrilha(P.pos[0], P.pos[2]); const s = me.d < 20 ? me.s : 0;
-    const alvo = trilhaEm(Math.min(TOT, s + 22)); MARK = alvo;
-    const resta = Math.max(0, Math.round(TOT - s)); $('obj').textContent = 'Suba a trilha da montanha — faltam ' + resta + ' m';
-    if (k < pontos.length && s > pontos[k]) { // emboscada: uns na frente, outros pulando do alto
-      const g = grupos[k % grupos.length]; let j = 0;
-      for (const [t, doAlto] of g) { const p = trilhaEm(Math.min(TOT - 2, s + 10 + j * 3.5)), off = (j % 2 ? 1 : -1) * 1.2;
+    const me = pertoT(T, P.pos[0], P.pos[2]), s = me.d < 25 ? me.s : 0;
+    MARK = trilhaEmT(T, Math.min(TOT, s + 20)); $('obj').textContent = o.texto + ' — faltam ' + Math.max(0, Math.round(TOT - s)) + ' m';
+    if (k < pontos.length && s > pontos[k]) {
+      const g = o.grupos[k % o.grupos.length]; let j = 0;
+      for (const [t, doAlto] of g) { const p = trilhaEmT(T, Math.min(TOT - 2, s + 10 + j * 3.5)), off = (j % 2 ? 1 : -1) * 1.2;
         const e = spawn(t, p[0] + off, p[2] + off * .5, { aggro: 60, instant: !!doAlto }); if (doAlto) { e.y = 9; e.vy = 0; } j++; }
       icon('Emboscada!', 'gold'); AU.roar(); k++;
     }
-    if (naSerra(P.pos[0], P.pos[2]) && P.pos[0] > SX - 15) break;
+    if (o.fim ? (o.fim() || s >= TOT - 6) : s >= TOT - 6) break;
     await wait(.25);
   }
-  MARK = null; for (const e of ENEMIES) { e.dead = true; e.deadT = 9; } // os que ficaram para trás somem
+  MARK = null;
+}
+async function subida(tok) {
+  await jornada(TRILHA, tok, { texto: 'Suba a trilha da montanha', pontos: [30, 75, 120, 165, 210, 255, 300, 340, 390],
+    dica: 'Os Desfiadores atacam na subida — alguns <b>pulam do alto</b>. Siga o losango dourado.',
+    grupos: [[['tecelao', 0], ['tecelao', 1], ['larva', 0]], [['fieira', 0], ['tecelao', 1], ['saltador', 1]], [['tecelao', 0], ['tecelao', 0], ['fieira', 1], ['larva', 1]],
+      [['bruta', 0], ['saltador', 1], ['saltador', 1]], [['tecelao', 1], ['fieira', 0], ['fieira', 1], ['saltador', 0]], [['bruta', 0], ['tecelao', 1], ['tecelao', 1], ['larva', 0]],
+      [['saltador', 1], ['saltador', 1], ['fieira', 0], ['bruta', 0]], [['bruta', 1], ['tecelao', 0], ['fieira', 1], ['saltador', 1], ['tecelao', 0]]],
+    fim: () => naSerra(P.pos[0], P.pos[2]) && P.pos[0] > SX - 15 });
+  for (const e of ENEMIES) { e.dead = true; e.deadT = 9; }
 }
 const fight = async (list, tok) => { for (const [t, x, z, o] of list) spawn(t, SX + x, z, o || {}); await until(() => alive() === 0); };
 
@@ -285,6 +291,10 @@ async function M1(retry) {
 async function M2(retry, chained) {
   const tok = MIS.token; stage(1); if (!chained) { P.pos = [0, 0, -36]; P.yaw = Math.PI; camRelease(); } AU.music('calm');
   if (!MIS.flags.bridge) {
+    if (!retry) { await jornada(TRILHAS.vila, tok, { texto: 'Siga a trilha das colinas até a ponte', pontos: [25, 60, 95, 125],
+      dica: 'O caminho até a ponte dá a volta pelas colinas. Cuidado: os Desfiadores fecharam a estrada.',
+      grupos: [[['tecelao', 0], ['tecelao', 1]], [['fieira', 0], ['tecelao', 1], ['larva', 0]], [['tecelao', 1], ['tecelao', 0], ['larva', 1], ['larva', 0]], [['fieira', 1], ['tecelao', 0], ['tecelao', 1]]] });
+      if (tok !== MIS.token) return; await until(() => alive() === 0); if (tok !== MIS.token) return; }
     objective('Encontre Lira na ponte da ravina'); MARK = npcBy('lira').pos;
     await until(() => V.d2(P.pos, npcBy('lira').pos) < 4); MARK = null; if (tok !== MIS.token) return;
     const li = npcBy('lira'); li.face = Math.atan2(P.pos[0] - li.pos[0], P.pos[2] - li.pos[2]);
@@ -330,12 +340,15 @@ async function M2(retry, chained) {
 
 // ---------- MISSÃO 3: O Fera de Fios Rotos ----------
 async function M3(retry, chained) {
-  const tok = MIS.token; stage(2); if (!chained) { P.pos = [0, 0, retry ? -108 : -98]; P.yaw = Math.PI; camRelease(); }
+  const tok = MIS.token; stage(2); if (!chained) { P.pos = [0, 0, -98]; P.yaw = Math.PI; camRelease(); }
   AU.music('calm');
   if (!P.unl.r) { P.unl.r = true; banner('Rasgo Dourado desbloqueado', TOUCH ? 'Botão R com a barra de lume cheia' : '<b>R</b> com a barra de lume cheia: golpe final em área'); }
   RIFT.p = [0, 10, -134]; RIFT.col = [1, .35, .6]; RIFT.ts = .5;
-  objective('Siga o rasgo no céu até a clareira'); MARK = [0, 0, -112];
-  await until(() => P.pos[2] < -112); MARK = null; if (tok !== MIS.token) return;
+  await jornada(TRILHAS.ravina, tok, { texto: 'Siga a trilha até a clareira do rasgo', pontos: [20, 50, 80, 105],
+    dica: 'O rasgo no céu fica depois da floresta. A trilha é longa e cheia de Desfiadores.',
+    grupos: [[['tecelao', 0], ['fieira', 1], ['larva', 0]], [['tecelao', 1], ['tecelao', 0], ['fieira', 0]], [['fieira', 1], ['fieira', 0], ['larva', 1], ['larva', 0]], [['tecelao', 1], ['tecelao', 1], ['fieira', 0], ['tecelao', 0]]],
+    fim: () => Math.hypot(P.pos[0] - BOSS_C[0], P.pos[2] - BOSS_C[1]) < BOSS_R - 1 }); if (tok !== MIS.token) return;
+  await until(() => alive() === 0 || true); for (const e of ENEMIES) { e.dead = true; e.deadT = 9; }
   let boss;
   await cut([
     { on: () => { RIFT.ts = 1.3; AU.roar(); P.cutAct = null; }, cam: [[2, 1.6, -112], [1, 2.2, -115], [0, 8, -132], [0, 9, -134]], dur: 2.4 },
@@ -403,7 +416,7 @@ function hud(dt) {
   // trava de alvo
   const lm = $('lockm'); if (P.lock && !P.lock.dead) { const h = P.lock.boss ? 2.2 : P.lock.type === 'larva' ? .5 : 1.3; const s = R.project(V.add(P.lock.pos, [0, h, 0])); if (s) { lm.style.display = 'block'; lm.style.transform = `translate(${s[0]}px,${s[1]}px)`; } else lm.style.display = 'none'; } else lm.style.display = 'none';
   // marcador de objetivo
-  const mk = $('mark'); if (MARK && S.mode === 'play') { const s = R.project([MARK[0], 2.6, MARK[2]]); if (s) { mk.style.display = 'block'; mk.style.transform = `translate(${clamp(s[0], 30, VW() - 30)}px,${clamp(s[1], 60, VH() - 60)}px)`; mk.querySelector('span').textContent = Math.round(V.d2(MARK, P.pos)) + ' m'; } else mk.style.display = 'none'; } else mk.style.display = 'none';
+  const mk = $('mark'); if (MARK && S.mode === 'play') { const s = R.project([MARK[0], (MARK[1] || 0) + 2.6, MARK[2]]); if (s) { mk.style.display = 'block'; mk.style.transform = `translate(${clamp(s[0], 30, VW() - 30)}px,${clamp(s[1], 60, VH() - 60)}px)`; mk.querySelector('span').textContent = Math.round(V.d2(MARK, P.pos)) + ' m'; } else mk.style.display = 'none'; } else mk.style.display = 'none';
   // prompt de interação
   let pr = ''; if (S.mode === 'play') { const br = npcBy('brena'); if (MIS.cur === 0 && MARK === (br && br.pos) && V.d2(P.pos, br.pos) < 2.6) pr = 'Falar com Tia Brena'; if (MARK === W.seam && V.d2(P.pos, W.seam) < 2.4) pr = 'Recosturar a ponte'; }
   $('prompt').innerHTML = pr ? `<b>${TOUCH ? 'F' : 'F'}</b> ${pr}` : ''; $('prompt').style.opacity = pr ? 1 : 0;
@@ -495,7 +508,7 @@ function frame(now) {
   if (S.mode === 'play' && !window.FIXDT) { frame.acc = (frame.acc || 0) + raw; if (frame.acc > 5) { frame.acc = 0; if (fpsA < (OPT.economia ? 24 : 32) && OPT.quality > .5) { OPT.quality = Math.max(.5, OPT.quality - .25); window.QUALITY = OPT.quality; resize(); saveOpts(); } } }
   { const mb = $('mouseBtn'); if (mb && !TOUCH) { const v = S.mode === 'play' ? '' : 'none'; if (mb.style.display !== v) mb.style.display = v; } }
   if (TOUCH) { const v = S.mode === 'play' ? '' : 'hidden'; if ($('touch').style.visibility !== v) $('touch').style.visibility = v; }
-  if (S.mode === 'play') { const nearBroken = (!W.bridgeOk && P.pos[0] < 12 && P.pos[2] < -46 && P.pos[2] > -72) || (P.pos[0] > 200 && W.serra.bridges.some(b => !b.ok && V.d2(P.pos, [SX, 0, b.rect[2]]) < 4) && P.pos[0] > SX - 20);
+  if (S.mode === 'play') { const nearBroken = (!W.bridgeOk && Math.abs(P.pos[0]) < 6 && P.pos[2] < -48 && P.pos[2] > -72 && !/trilha/.test($('obj').textContent)) || (P.pos[0] > 200 && W.serra.bridges.some(b => !b.ok && V.d2(P.pos, [SX, 0, b.rect[2]]) < 4) && P.pos[0] > SX - 20);
     if (nearBroken && !(frame.bt > 0)) { frame.bt = 8; hint('A ponte está <b>quebrada</b>. Para atravessar, siga o objetivo lá em cima: <b>' + $('obj').textContent + '</b>. O losango dourado mostra o caminho.', 6000); } frame.bt = (frame.bt || 0) - rdt; }
   dlgTick(I); tickWaiters(); if (typeof netTick === 'function') netTick(rdt);
   // desenhar
@@ -542,6 +555,6 @@ async function boot() {
   buildWorld(); W.gate = { b: [-3.6, 3.6, -95.6, -96.6], off: false }; W.obst.push(W.gate);
   bindUI(); bindTouch(); bindMouseBtn(); stage(0); P.pos = [0, 0, -9]; P.rig.update(); refreshMenu();
   $('load').style.display = 'none'; lobLoad(); buildLobby(); toLobby(); requestAnimationFrame(frame);
-  window.DBG = { get fps() { return fpsA; }, trilhaEm: s => trilhaEm(s), get NET() { return typeof NET !== 'undefined' ? NET : null; }, HEROIS, LOB, escolherHeroi, get HERO() { return HERO; }, SKANIM, P, MIS, ENEMIES, runMission, S, spawn, W, CAM, NPCS, hurtEnemy };
+  window.DBG = { get fps() { return fpsA; }, TRILHAS, trilhaEmT: (T, s) => trilhaEmT(T, s), trilhaEm: s => trilhaEm(s), get NET() { return typeof NET !== 'undefined' ? NET : null; }, HEROIS, LOB, escolherHeroi, get HERO() { return HERO; }, SKANIM, P, MIS, ENEMIES, runMission, S, spawn, W, CAM, NPCS, hurtEnemy };
 }
 setTimeout(() => { try { boot(); } catch (e) { $('load').textContent = 'Erro ao carregar: ' + e.message; throw e; } }, 30);

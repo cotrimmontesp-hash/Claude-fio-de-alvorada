@@ -139,7 +139,10 @@ function camUpdate(dt, I) {
     const at = V.add(P.pos, [0, 1.45 + (P.rig.yOff || 0) * .4, 0]), cp = Math.cos(CAM.pitch), sp = Math.sin(CAM.pitch);
     let eye = V.add(V.add(at, V.sc(f, -CAM.dist * cp)), V.add([0, CAM.dist * sp + (CAM.trilha || 0) * 3.2, 0], V.sc(rgt, .65)));
     if (bossE) { const bd = Math.hypot(eye[0] - bossE.pos[0], eye[2] - bossE.pos[2]), lim = 1.6 * (bossE.baseScale || 1) + .8; if (bd < lim) eye[1] += (lim - bd) * 1.4; } // sobe a câmera se o chefe estiver colado nela
-    const gh = groundH(eye[0], eye[2]) + .35; if (eye[1] < gh) eye[1] = gh;
+    // a câmera não entra no chão nem em barrancos entre ela e o personagem
+    for (let k = 1; k <= 5; k++) { const q = k / 5, px = lerp(at[0], eye[0], q), pz = lerp(at[2], eye[2], q), py = lerp(at[1], eye[1], q), gh = groundH(px, pz) + .7;
+      if (py < gh) eye[1] += (gh - py) / q; }
+    { const gh = groundH(eye[0], eye[2]) + .9; if (eye[1] < gh) eye[1] = gh; }
     const k = 1 - Math.exp(-18 * dt); CAM.eye = V.lerp(CAM.eye, eye, k); CAM.at = V.lerp(CAM.at, V.add(at, V.sc(rgt, .65)), k);
   }
   let e = CAM.eye; if (S.shake > 0) { const m = S.shake * .25; e = V.add(e, [rnd(-m, m), rnd(-m, m), rnd(-m, m)]); S.shake = Math.max(0, S.shake - dt * 3); }

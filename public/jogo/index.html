@@ -946,7 +946,7 @@ function vnoise(x, z) { const ix = Math.floor(x), iz = Math.floor(z), fx = x - i
   return lerp(lerp(hash(ix, iz), hash(ix + 1, iz), u), lerp(hash(ix, iz + 1), hash(ix + 1, iz + 1), u), v); }
 function inRect(x, z, r, m = 0) { return x >= r[0] - m && x <= r[1] + m && z <= r[2] + m && z >= r[3] - m; }
 // áreas andáveis [x0,x1,zTopo,zBase]
-W.walk = [[-20, 20, 16, -42], [-4, 4, -41, -54.6], [-14, 14, -67.9, -96], [-3.5, 3.5, -95, -112]];
+W.walk = [[-20, 20, 16, -42], [-4, 4, -49, -54.6], [-14, 14, -67.9, -96], [-3.5, 3.5, -95, -101]];
 W.bridge = [-1.45, 1.45, -54.4, -68.1];
 W.bridgeOk = false; W.confine = null;
 // ---------- Serra das Costuras (capítulo 2), longe da vila ----------
@@ -954,18 +954,29 @@ const SX = 170, HS = 45; // a Serra fica no topo da montanha
 // ---------- trilha da montanha (mesmos pontos do Blender) ----------
 const TRILHA_P = [[16, -126, 0], [45, -120, 2], [100, -110, 7], [112, -95, 10], [60, -80, 15], [48, -65, 18], [100, -50, 24], [112, -35, 27], [60, -20, 32], [50, -5, 35], [105, 8, 40], [150, 18, 44], [170, 9, 45]];
 const TRILHA_L = 6;
-const TRILHA = (() => { const P = TRILHA_P, out = [];
+function trilhaDensa(P) { const out = [];
   for (let i = 0; i < P.length - 1; i++) { const p0 = P[Math.max(i - 1, 0)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(i + 2, P.length - 1)];
     for (let k = 0; k < 8; k++) { const t = k / 8, t2 = t * t, t3 = t2 * t; out.push([0, 1, 2].map(j => .5 * ((2 * p1[j]) + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3))); } }
-  out.push(P[P.length - 1]); let acc = 0; out.forEach((p, i) => { if (i) acc += Math.hypot(p[0] - out[i - 1][0], p[1] - out[i - 1][1]); p.s = acc; }); return out; })();
-function pertoTrilha(x, z) { // distância até a trilha, altura nela e quanto já andou
-  if (x < 10 || z > 30 || z < -134) return { d: 1e9, h: 0, s: 0 };
+  out.push(P[P.length - 1]); let acc = 0; out.forEach((p, i) => { if (i) acc += Math.hypot(p[0] - out[i - 1][0], p[1] - out[i - 1][1]); p.s = acc; });
+  let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const p of out) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); z0 = Math.min(z0, p[1]); z1 = Math.max(z1, p[1]); }
+  out.box = [x0 - 6, x1 + 6, z0 - 6, z1 + 6]; out.total = acc; return out; }
+const TRILHA = trilhaDensa(TRILHA_P);
+const TRILHAS = { monte: TRILHA,
+  vila: trilhaDensa([[-8, -42, 0], [-22, -46, 0], [-40, -38, 0], [-52, -22, 0], [-62, -36, 0], [-50, -50, 0], [-25, -51, 0], [-4, -51, 0]]),
+  ravina: trilhaDensa([[0, -100, 0], [-15, -104, 0], [-35, -98, 0], [-55, -108, 0], [-50, -128, 0], [-30, -140, 0], [-14, -134, 0]]) };
+function pertoT(T, x, z) { const b = T.box; if (x < b[0] || x > b[1] || z < b[2] || z > b[3]) return { d: 1e9, h: 0, s: 0 };
   let bd = 1e9, bh = 0, bs = 0;
-  for (let i = 0; i < TRILHA.length - 1; i++) { const a = TRILHA[i], b = TRILHA[i + 1], dx = b[0] - a[0], dz = b[1] - a[1], L = dx * dx + dz * dz || 1;
+  for (let i = 0; i < T.length - 1; i++) { const a = T[i], c = T[i + 1], dx = c[0] - a[0], dz = c[1] - a[1], L = dx * dx + dz * dz || 1;
     const t = clamp(((x - a[0]) * dx + (z - a[1]) * dz) / L, 0, 1), px = a[0] + dx * t, pz = a[1] + dz * t, d = Math.hypot(x - px, z - pz);
-    if (d < bd) { bd = d; bh = a[2] + (b[2] - a[2]) * t; bs = a.s + (b.s - a.s) * t; } }
-  return { d: bd, h: bh, s: bs };
-}
+    if (d < bd) { bd = d; bh = a[2] + (c[2] - a[2]) * t; bs = a.s + (c.s - a.s) * t; } }
+  return { d: bd, h: bh, s: bs }; }
+function pertoTrilha(x, z) { return pertoT(TRILHA, x, z); }
+function naTrilhaBaixa(x, z) { return pertoT(TRILHAS.vila, x, z).d <= TRILHA_L / 2 || pertoT(TRILHAS.ravina, x, z).d <= TRILHA_L / 2; }
+// mapa de alturas exportado do Blender (para a câmera não entrar no chão)
+function alturaMapa(x, z) { const A = typeof MAPS !== 'undefined' && MAPS.orlavento && MAPS.orlavento.alturas; if (!A) return null;
+  const fx = (x - A.x0) / A.s, fz = (A.z0 - z) / A.s; if (fx < 0 || fz < 0 || fx > A.nx - 1.001 || fz > A.nz - 1.001) return null;
+  const i = Math.floor(fx), j = Math.floor(fz), u = fx - i, v = fz - j, H = A.h, n = A.nx;
+  return lerp(lerp(H[j * n + i], H[j * n + i + 1], u), lerp(H[(j + 1) * n + i], H[(j + 1) * n + i + 1], u), v); }
 function naSerra(x, z) { if (x < SX - 40) return false; for (const i of W.serra.islands) { if (i.c ? Math.hypot(x - i.c[0], z - i.c[1]) <= i.r : inRect(x, z, i.rect)) return true; }
   for (const b of W.serra.bridges) if (b.ok && inRect(x, z, b.rect)) return true; return false; }
 // altura do chão onde as pessoas pisam
@@ -979,7 +990,7 @@ function walkable(x, z) {
   for (const h of HOLES) if (h.open && Math.hypot(x - h.p[0], z - h.p[1]) < h.r) return false;
   if (W.confine) { const c = W.confine; if (c.c) return Math.hypot(x - c.c[0], z - c.c[1]) <= c.r; return inRect(x, z, c); }
   if (naSerra(x, z)) return true;
-  if (pertoTrilha(x, z).d <= TRILHA_L / 2) return true;
+  if (pertoTrilha(x, z).d <= TRILHA_L / 2 || naTrilhaBaixa(x, z)) return true;
   for (const r of W.walk) if (inRect(x, z, r)) return true;
   if (W.bridgeOk && inRect(x, z, W.bridge)) return true;
   if (Math.hypot(x - BOSS_C[0], z - BOSS_C[1]) <= BOSS_R) return true;
@@ -990,7 +1001,7 @@ function distWalk(x, z) { // distância aproximada até a área andável (para r
   let d = 1e9; for (const r of W.walk) { const dx = Math.max(r[0] - x, 0, x - r[1]), dz = Math.max(r[3] - z, 0, z - r[2]); d = Math.min(d, Math.hypot(dx, dz)); }
   d = Math.min(d, Math.max(0, Math.hypot(x - BOSS_C[0], z - BOSS_C[1]) - BOSS_R)); return d;
 }
-function groundH(x, z) { if (x > 26) { const t = pertoTrilha(x, z); if (t.d < 1e8) { if (t.d <= TRILHA_L / 2) return t.h; if (x > 152 && t.d > TRILHA_L / 2 + 1) return naSerra(x, z) ? HS : -70; return t.h + Math.min(6.5, (t.d - TRILHA_L / 2) * 1.5); } if (naSerra(x, z)) return HS; } const d = distWalk(x, z); return sstep(2, 26, d) * (4 + vnoise(x * .06, z * .06) * 10) + (d > 1 ? vnoise(x * .3, z * .3) * .5 * sstep(1, 6, d) : 0); }
+function groundH(x, z) { { const am = alturaMapa(x, z); if (am != null && !(x > SX - 20 && naSerra(x, z))) return am; } if (x > 26) { const t = pertoTrilha(x, z); if (t.d < 1e8) { if (t.d <= TRILHA_L / 2) return t.h; if (x > 152 && t.d > TRILHA_L / 2 + 1) return naSerra(x, z) ? HS : -70; return t.h + Math.min(6.5, (t.d - TRILHA_L / 2) * 1.5); } if (naSerra(x, z)) return HS; } const d = distWalk(x, z); return sstep(2, 26, d) * (4 + vnoise(x * .06, z * .06) * 10) + (d > 1 ? vnoise(x * .3, z * .3) * .5 * sstep(1, 6, d) : 0); }
 function pushOut(e, rad) { // empurra para fora de obstáculos (círculos e caixas)
   for (const o of W.obst) {
     if (o.off) continue;
@@ -1199,7 +1210,7 @@ function buildSerra(g, box) {
   }
   // agulhas de pedra com fios expostos
   const spires = [];
-  for (let k = 0; k < 26; k++) { const z = rnd(-135, 15), x = SX + (k % 2 ? 1 : -1) * rnd(16, 40), h = rnd(10, 30);
+  for (let k = 0; k < 26; k++) { const z = rnd(-135, 15), x = SX + rnd(18, 45), h = rnd(10, 30);
     g.add(G.cone, M.trs(x, h / 2 - 22, z, rnd(0, 6), 0, 0, rnd(4, 8), h + 22, rnd(4, 8)), rk()); spires.push([x, h - 2, z]); }
   for (let k = 0; k + 1 < spires.length; k += 2) W.threads.push({ a: spires[k], b: spires[k + 1], sag: 2, col: [1, .82, .5], w: .06 });
   for (const i of W.serra.islands) { const c = i.c || [(i.rect[0] + i.rect[1]) / 2, (i.rect[2] + i.rect[3]) / 2], s = spires[Math.floor(rnd(0, spires.length))]; W.threads.push({ a: [c[0], .2, c[1]], b: s, sag: 1, col: [1, .8, .45], w: .045 }); }
@@ -1363,7 +1374,10 @@ function camUpdate(dt, I) {
     const at = V.add(P.pos, [0, 1.45 + (P.rig.yOff || 0) * .4, 0]), cp = Math.cos(CAM.pitch), sp = Math.sin(CAM.pitch);
     let eye = V.add(V.add(at, V.sc(f, -CAM.dist * cp)), V.add([0, CAM.dist * sp + (CAM.trilha || 0) * 3.2, 0], V.sc(rgt, .65)));
     if (bossE) { const bd = Math.hypot(eye[0] - bossE.pos[0], eye[2] - bossE.pos[2]), lim = 1.6 * (bossE.baseScale || 1) + .8; if (bd < lim) eye[1] += (lim - bd) * 1.4; } // sobe a câmera se o chefe estiver colado nela
-    const gh = groundH(eye[0], eye[2]) + .35; if (eye[1] < gh) eye[1] = gh;
+    // a câmera não entra no chão nem em barrancos entre ela e o personagem
+    for (let k = 1; k <= 5; k++) { const q = k / 5, px = lerp(at[0], eye[0], q), pz = lerp(at[2], eye[2], q), py = lerp(at[1], eye[1], q), gh = groundH(px, pz) + .7;
+      if (py < gh) eye[1] += (gh - py) / q; }
+    { const gh = groundH(eye[0], eye[2]) + .9; if (eye[1] < gh) eye[1] = gh; }
     const k = 1 - Math.exp(-18 * dt); CAM.eye = V.lerp(CAM.eye, eye, k); CAM.at = V.lerp(CAM.at, V.add(at, V.sc(rgt, .65)), k);
   }
   let e = CAM.eye; if (S.shake > 0) { const m = S.shake * .25; e = V.add(e, [rnd(-m, m), rnd(-m, m), rnd(-m, m)]); S.shake = Math.max(0, S.shake - dt * 3); }
@@ -2040,27 +2054,33 @@ async function seamTask(b, flag, tok) {
 }
 // ponto da trilha a "s" metros do começo
 function trilhaEm(s) { const T = TRILHA; for (let i = 0; i < T.length - 1; i++) if (T[i + 1].s >= s) { const k = (s - T[i].s) / ((T[i + 1].s - T[i].s) || 1); return [lerp(T[i][0], T[i + 1][0], k), lerp(T[i][2], T[i + 1][2], k), lerp(T[i][1], T[i + 1][1], k)]; } const L = T[T.length - 1]; return [L[0], L[2], L[1]]; }
-async function subida(tok) {
-  const TOT = TRILHA[TRILHA.length - 1].s, pontos = [30, 75, 120, 165, 210, 255, 300, 340].filter(v => v < TOT - 10);
-  const grupos = [[['tecelao', 0], ['tecelao', 1], ['larva', 0]], [['fieira', 0], ['tecelao', 1], ['saltador', 1]], [['tecelao', 0], ['tecelao', 0], ['fieira', 1], ['larva', 1]],
-    [['bruta', 0], ['saltador', 1], ['saltador', 1]], [['tecelao', 1], ['fieira', 0], ['fieira', 1], ['saltador', 0]], [['bruta', 0], ['tecelao', 1], ['tecelao', 1], ['larva', 0]],
-    [['saltador', 1], ['saltador', 1], ['fieira', 0], ['bruta', 0]], [['bruta', 1], ['tecelao', 0], ['fieira', 1], ['saltador', 1], ['tecelao', 0]]];
-  let k = 0;
-  objective('Suba a trilha da montanha'); hint('Os Desfiadores atacam na subida — alguns <b>pulam do alto</b> das paredes. Não pare: siga o losango dourado.', 7000);
+function trilhaEmT(T, s) { for (let i = 0; i < T.length - 1; i++) if (T[i + 1].s >= s) { const k = (s - T[i].s) / ((T[i + 1].s - T[i].s) || 1); return [lerp(T[i][0], T[i + 1][0], k), lerp(T[i][2], T[i + 1][2], k), lerp(T[i][1], T[i + 1][1], k)]; } const L = T[T.length - 1]; return [L[0], L[2], L[1]]; }
+// caminhada longa com emboscadas (uns na frente, outros pulando do alto)
+async function jornada(T, tok, o) {
+  const TOT = T.total, pontos = o.pontos.filter(v => v < TOT - 8); let k = 0;
+  objective(o.texto); if (o.dica) hint(o.dica, 7000);
   while (tok === MIS.token) {
-    const me = pertoTrilha(P.pos[0], P.pos[2]); const s = me.d < 20 ? me.s : 0;
-    const alvo = trilhaEm(Math.min(TOT, s + 22)); MARK = alvo;
-    const resta = Math.max(0, Math.round(TOT - s)); $('obj').textContent = 'Suba a trilha da montanha — faltam ' + resta + ' m';
-    if (k < pontos.length && s > pontos[k]) { // emboscada: uns na frente, outros pulando do alto
-      const g = grupos[k % grupos.length]; let j = 0;
-      for (const [t, doAlto] of g) { const p = trilhaEm(Math.min(TOT - 2, s + 10 + j * 3.5)), off = (j % 2 ? 1 : -1) * 1.2;
+    const me = pertoT(T, P.pos[0], P.pos[2]), s = me.d < 25 ? me.s : 0;
+    MARK = trilhaEmT(T, Math.min(TOT, s + 20)); $('obj').textContent = o.texto + ' — faltam ' + Math.max(0, Math.round(TOT - s)) + ' m';
+    if (k < pontos.length && s > pontos[k]) {
+      const g = o.grupos[k % o.grupos.length]; let j = 0;
+      for (const [t, doAlto] of g) { const p = trilhaEmT(T, Math.min(TOT - 2, s + 10 + j * 3.5)), off = (j % 2 ? 1 : -1) * 1.2;
         const e = spawn(t, p[0] + off, p[2] + off * .5, { aggro: 60, instant: !!doAlto }); if (doAlto) { e.y = 9; e.vy = 0; } j++; }
       icon('Emboscada!', 'gold'); AU.roar(); k++;
     }
-    if (naSerra(P.pos[0], P.pos[2]) && P.pos[0] > SX - 15) break;
+    if (o.fim ? (o.fim() || s >= TOT - 6) : s >= TOT - 6) break;
     await wait(.25);
   }
-  MARK = null; for (const e of ENEMIES) { e.dead = true; e.deadT = 9; } // os que ficaram para trás somem
+  MARK = null;
+}
+async function subida(tok) {
+  await jornada(TRILHA, tok, { texto: 'Suba a trilha da montanha', pontos: [30, 75, 120, 165, 210, 255, 300, 340, 390],
+    dica: 'Os Desfiadores atacam na subida — alguns <b>pulam do alto</b>. Siga o losango dourado.',
+    grupos: [[['tecelao', 0], ['tecelao', 1], ['larva', 0]], [['fieira', 0], ['tecelao', 1], ['saltador', 1]], [['tecelao', 0], ['tecelao', 0], ['fieira', 1], ['larva', 1]],
+      [['bruta', 0], ['saltador', 1], ['saltador', 1]], [['tecelao', 1], ['fieira', 0], ['fieira', 1], ['saltador', 0]], [['bruta', 0], ['tecelao', 1], ['tecelao', 1], ['larva', 0]],
+      [['saltador', 1], ['saltador', 1], ['fieira', 0], ['bruta', 0]], [['bruta', 1], ['tecelao', 0], ['fieira', 1], ['saltador', 1], ['tecelao', 0]]],
+    fim: () => naSerra(P.pos[0], P.pos[2]) && P.pos[0] > SX - 15 });
+  for (const e of ENEMIES) { e.dead = true; e.deadT = 9; }
 }
 const fight = async (list, tok) => { for (const [t, x, z, o] of list) spawn(t, SX + x, z, o || {}); await until(() => alive() === 0); };
 
@@ -2217,6 +2237,10 @@ async function M1(retry) {
 async function M2(retry, chained) {
   const tok = MIS.token; stage(1); if (!chained) { P.pos = [0, 0, -36]; P.yaw = Math.PI; camRelease(); } AU.music('calm');
   if (!MIS.flags.bridge) {
+    if (!retry) { await jornada(TRILHAS.vila, tok, { texto: 'Siga a trilha das colinas até a ponte', pontos: [25, 60, 95, 125],
+      dica: 'O caminho até a ponte dá a volta pelas colinas. Cuidado: os Desfiadores fecharam a estrada.',
+      grupos: [[['tecelao', 0], ['tecelao', 1]], [['fieira', 0], ['tecelao', 1], ['larva', 0]], [['tecelao', 1], ['tecelao', 0], ['larva', 1], ['larva', 0]], [['fieira', 1], ['tecelao', 0], ['tecelao', 1]]] });
+      if (tok !== MIS.token) return; await until(() => alive() === 0); if (tok !== MIS.token) return; }
     objective('Encontre Lira na ponte da ravina'); MARK = npcBy('lira').pos;
     await until(() => V.d2(P.pos, npcBy('lira').pos) < 4); MARK = null; if (tok !== MIS.token) return;
     const li = npcBy('lira'); li.face = Math.atan2(P.pos[0] - li.pos[0], P.pos[2] - li.pos[2]);
@@ -2262,12 +2286,15 @@ async function M2(retry, chained) {
 
 // ---------- MISSÃO 3: O Fera de Fios Rotos ----------
 async function M3(retry, chained) {
-  const tok = MIS.token; stage(2); if (!chained) { P.pos = [0, 0, retry ? -108 : -98]; P.yaw = Math.PI; camRelease(); }
+  const tok = MIS.token; stage(2); if (!chained) { P.pos = [0, 0, -98]; P.yaw = Math.PI; camRelease(); }
   AU.music('calm');
   if (!P.unl.r) { P.unl.r = true; banner('Rasgo Dourado desbloqueado', TOUCH ? 'Botão R com a barra de lume cheia' : '<b>R</b> com a barra de lume cheia: golpe final em área'); }
   RIFT.p = [0, 10, -134]; RIFT.col = [1, .35, .6]; RIFT.ts = .5;
-  objective('Siga o rasgo no céu até a clareira'); MARK = [0, 0, -112];
-  await until(() => P.pos[2] < -112); MARK = null; if (tok !== MIS.token) return;
+  await jornada(TRILHAS.ravina, tok, { texto: 'Siga a trilha até a clareira do rasgo', pontos: [20, 50, 80, 105],
+    dica: 'O rasgo no céu fica depois da floresta. A trilha é longa e cheia de Desfiadores.',
+    grupos: [[['tecelao', 0], ['fieira', 1], ['larva', 0]], [['tecelao', 1], ['tecelao', 0], ['fieira', 0]], [['fieira', 1], ['fieira', 0], ['larva', 1], ['larva', 0]], [['tecelao', 1], ['tecelao', 1], ['fieira', 0], ['tecelao', 0]]],
+    fim: () => Math.hypot(P.pos[0] - BOSS_C[0], P.pos[2] - BOSS_C[1]) < BOSS_R - 1 }); if (tok !== MIS.token) return;
+  await until(() => alive() === 0 || true); for (const e of ENEMIES) { e.dead = true; e.deadT = 9; }
   let boss;
   await cut([
     { on: () => { RIFT.ts = 1.3; AU.roar(); P.cutAct = null; }, cam: [[2, 1.6, -112], [1, 2.2, -115], [0, 8, -132], [0, 9, -134]], dur: 2.4 },
@@ -2335,7 +2362,7 @@ function hud(dt) {
   // trava de alvo
   const lm = $('lockm'); if (P.lock && !P.lock.dead) { const h = P.lock.boss ? 2.2 : P.lock.type === 'larva' ? .5 : 1.3; const s = R.project(V.add(P.lock.pos, [0, h, 0])); if (s) { lm.style.display = 'block'; lm.style.transform = `translate(${s[0]}px,${s[1]}px)`; } else lm.style.display = 'none'; } else lm.style.display = 'none';
   // marcador de objetivo
-  const mk = $('mark'); if (MARK && S.mode === 'play') { const s = R.project([MARK[0], 2.6, MARK[2]]); if (s) { mk.style.display = 'block'; mk.style.transform = `translate(${clamp(s[0], 30, VW() - 30)}px,${clamp(s[1], 60, VH() - 60)}px)`; mk.querySelector('span').textContent = Math.round(V.d2(MARK, P.pos)) + ' m'; } else mk.style.display = 'none'; } else mk.style.display = 'none';
+  const mk = $('mark'); if (MARK && S.mode === 'play') { const s = R.project([MARK[0], (MARK[1] || 0) + 2.6, MARK[2]]); if (s) { mk.style.display = 'block'; mk.style.transform = `translate(${clamp(s[0], 30, VW() - 30)}px,${clamp(s[1], 60, VH() - 60)}px)`; mk.querySelector('span').textContent = Math.round(V.d2(MARK, P.pos)) + ' m'; } else mk.style.display = 'none'; } else mk.style.display = 'none';
   // prompt de interação
   let pr = ''; if (S.mode === 'play') { const br = npcBy('brena'); if (MIS.cur === 0 && MARK === (br && br.pos) && V.d2(P.pos, br.pos) < 2.6) pr = 'Falar com Tia Brena'; if (MARK === W.seam && V.d2(P.pos, W.seam) < 2.4) pr = 'Recosturar a ponte'; }
   $('prompt').innerHTML = pr ? `<b>${TOUCH ? 'F' : 'F'}</b> ${pr}` : ''; $('prompt').style.opacity = pr ? 1 : 0;
@@ -2427,7 +2454,7 @@ function frame(now) {
   if (S.mode === 'play' && !window.FIXDT) { frame.acc = (frame.acc || 0) + raw; if (frame.acc > 5) { frame.acc = 0; if (fpsA < (OPT.economia ? 24 : 32) && OPT.quality > .5) { OPT.quality = Math.max(.5, OPT.quality - .25); window.QUALITY = OPT.quality; resize(); saveOpts(); } } }
   { const mb = $('mouseBtn'); if (mb && !TOUCH) { const v = S.mode === 'play' ? '' : 'none'; if (mb.style.display !== v) mb.style.display = v; } }
   if (TOUCH) { const v = S.mode === 'play' ? '' : 'hidden'; if ($('touch').style.visibility !== v) $('touch').style.visibility = v; }
-  if (S.mode === 'play') { const nearBroken = (!W.bridgeOk && P.pos[0] < 12 && P.pos[2] < -46 && P.pos[2] > -72) || (P.pos[0] > 200 && W.serra.bridges.some(b => !b.ok && V.d2(P.pos, [SX, 0, b.rect[2]]) < 4) && P.pos[0] > SX - 20);
+  if (S.mode === 'play') { const nearBroken = (!W.bridgeOk && Math.abs(P.pos[0]) < 6 && P.pos[2] < -48 && P.pos[2] > -72 && !/trilha/.test($('obj').textContent)) || (P.pos[0] > 200 && W.serra.bridges.some(b => !b.ok && V.d2(P.pos, [SX, 0, b.rect[2]]) < 4) && P.pos[0] > SX - 20);
     if (nearBroken && !(frame.bt > 0)) { frame.bt = 8; hint('A ponte está <b>quebrada</b>. Para atravessar, siga o objetivo lá em cima: <b>' + $('obj').textContent + '</b>. O losango dourado mostra o caminho.', 6000); } frame.bt = (frame.bt || 0) - rdt; }
   dlgTick(I); tickWaiters(); if (typeof netTick === 'function') netTick(rdt);
   // desenhar
@@ -2474,7 +2501,7 @@ async function boot() {
   buildWorld(); W.gate = { b: [-3.6, 3.6, -95.6, -96.6], off: false }; W.obst.push(W.gate);
   bindUI(); bindTouch(); bindMouseBtn(); stage(0); P.pos = [0, 0, -9]; P.rig.update(); refreshMenu();
   $('load').style.display = 'none'; lobLoad(); buildLobby(); toLobby(); requestAnimationFrame(frame);
-  window.DBG = { get fps() { return fpsA; }, trilhaEm: s => trilhaEm(s), get NET() { return typeof NET !== 'undefined' ? NET : null; }, HEROIS, LOB, escolherHeroi, get HERO() { return HERO; }, SKANIM, P, MIS, ENEMIES, runMission, S, spawn, W, CAM, NPCS, hurtEnemy };
+  window.DBG = { get fps() { return fpsA; }, TRILHAS, trilhaEmT: (T, s) => trilhaEmT(T, s), trilhaEm: s => trilhaEm(s), get NET() { return typeof NET !== 'undefined' ? NET : null; }, HEROIS, LOB, escolherHeroi, get HERO() { return HERO; }, SKANIM, P, MIS, ENEMIES, runMission, S, spawn, W, CAM, NPCS, hurtEnemy };
 }
 setTimeout(() => { try { boot(); } catch (e) { $('load').textContent = 'Erro ao carregar: ' + e.message; throw e; } }, 30);
 

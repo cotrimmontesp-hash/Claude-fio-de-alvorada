@@ -7,7 +7,7 @@ function vnoise(x, z) { const ix = Math.floor(x), iz = Math.floor(z), fx = x - i
   return lerp(lerp(hash(ix, iz), hash(ix + 1, iz), u), lerp(hash(ix, iz + 1), hash(ix + 1, iz + 1), u), v); }
 function inRect(x, z, r, m = 0) { return x >= r[0] - m && x <= r[1] + m && z <= r[2] + m && z >= r[3] - m; }
 // áreas andáveis [x0,x1,zTopo,zBase]
-W.walk = [[-20, 20, 16, -42], [-4, 4, -41, -54.6], [-14, 14, -67.9, -96], [-3.5, 3.5, -95, -112]];
+W.walk = [[-20, 20, 16, -42], [-4, 4, -49, -54.6], [-14, 14, -67.9, -96], [-3.5, 3.5, -95, -101]];
 W.bridge = [-1.45, 1.45, -54.4, -68.1];
 W.bridgeOk = false; W.confine = null;
 // ---------- Serra das Costuras (capítulo 2), longe da vila ----------
@@ -15,18 +15,29 @@ const SX = 170, HS = 45; // a Serra fica no topo da montanha
 // ---------- trilha da montanha (mesmos pontos do Blender) ----------
 const TRILHA_P = [[16, -126, 0], [45, -120, 2], [100, -110, 7], [112, -95, 10], [60, -80, 15], [48, -65, 18], [100, -50, 24], [112, -35, 27], [60, -20, 32], [50, -5, 35], [105, 8, 40], [150, 18, 44], [170, 9, 45]];
 const TRILHA_L = 6;
-const TRILHA = (() => { const P = TRILHA_P, out = [];
+function trilhaDensa(P) { const out = [];
   for (let i = 0; i < P.length - 1; i++) { const p0 = P[Math.max(i - 1, 0)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(i + 2, P.length - 1)];
     for (let k = 0; k < 8; k++) { const t = k / 8, t2 = t * t, t3 = t2 * t; out.push([0, 1, 2].map(j => .5 * ((2 * p1[j]) + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3))); } }
-  out.push(P[P.length - 1]); let acc = 0; out.forEach((p, i) => { if (i) acc += Math.hypot(p[0] - out[i - 1][0], p[1] - out[i - 1][1]); p.s = acc; }); return out; })();
-function pertoTrilha(x, z) { // distância até a trilha, altura nela e quanto já andou
-  if (x < 10 || z > 30 || z < -134) return { d: 1e9, h: 0, s: 0 };
+  out.push(P[P.length - 1]); let acc = 0; out.forEach((p, i) => { if (i) acc += Math.hypot(p[0] - out[i - 1][0], p[1] - out[i - 1][1]); p.s = acc; });
+  let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const p of out) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); z0 = Math.min(z0, p[1]); z1 = Math.max(z1, p[1]); }
+  out.box = [x0 - 6, x1 + 6, z0 - 6, z1 + 6]; out.total = acc; return out; }
+const TRILHA = trilhaDensa(TRILHA_P);
+const TRILHAS = { monte: TRILHA,
+  vila: trilhaDensa([[-8, -42, 0], [-22, -46, 0], [-40, -38, 0], [-52, -22, 0], [-62, -36, 0], [-50, -50, 0], [-25, -51, 0], [-4, -51, 0]]),
+  ravina: trilhaDensa([[0, -100, 0], [-15, -104, 0], [-35, -98, 0], [-55, -108, 0], [-50, -128, 0], [-30, -140, 0], [-14, -134, 0]]) };
+function pertoT(T, x, z) { const b = T.box; if (x < b[0] || x > b[1] || z < b[2] || z > b[3]) return { d: 1e9, h: 0, s: 0 };
   let bd = 1e9, bh = 0, bs = 0;
-  for (let i = 0; i < TRILHA.length - 1; i++) { const a = TRILHA[i], b = TRILHA[i + 1], dx = b[0] - a[0], dz = b[1] - a[1], L = dx * dx + dz * dz || 1;
+  for (let i = 0; i < T.length - 1; i++) { const a = T[i], c = T[i + 1], dx = c[0] - a[0], dz = c[1] - a[1], L = dx * dx + dz * dz || 1;
     const t = clamp(((x - a[0]) * dx + (z - a[1]) * dz) / L, 0, 1), px = a[0] + dx * t, pz = a[1] + dz * t, d = Math.hypot(x - px, z - pz);
-    if (d < bd) { bd = d; bh = a[2] + (b[2] - a[2]) * t; bs = a.s + (b.s - a.s) * t; } }
-  return { d: bd, h: bh, s: bs };
-}
+    if (d < bd) { bd = d; bh = a[2] + (c[2] - a[2]) * t; bs = a.s + (c.s - a.s) * t; } }
+  return { d: bd, h: bh, s: bs }; }
+function pertoTrilha(x, z) { return pertoT(TRILHA, x, z); }
+function naTrilhaBaixa(x, z) { return pertoT(TRILHAS.vila, x, z).d <= TRILHA_L / 2 || pertoT(TRILHAS.ravina, x, z).d <= TRILHA_L / 2; }
+// mapa de alturas exportado do Blender (para a câmera não entrar no chão)
+function alturaMapa(x, z) { const A = typeof MAPS !== 'undefined' && MAPS.orlavento && MAPS.orlavento.alturas; if (!A) return null;
+  const fx = (x - A.x0) / A.s, fz = (A.z0 - z) / A.s; if (fx < 0 || fz < 0 || fx > A.nx - 1.001 || fz > A.nz - 1.001) return null;
+  const i = Math.floor(fx), j = Math.floor(fz), u = fx - i, v = fz - j, H = A.h, n = A.nx;
+  return lerp(lerp(H[j * n + i], H[j * n + i + 1], u), lerp(H[(j + 1) * n + i], H[(j + 1) * n + i + 1], u), v); }
 function naSerra(x, z) { if (x < SX - 40) return false; for (const i of W.serra.islands) { if (i.c ? Math.hypot(x - i.c[0], z - i.c[1]) <= i.r : inRect(x, z, i.rect)) return true; }
   for (const b of W.serra.bridges) if (b.ok && inRect(x, z, b.rect)) return true; return false; }
 // altura do chão onde as pessoas pisam
@@ -40,7 +51,7 @@ function walkable(x, z) {
   for (const h of HOLES) if (h.open && Math.hypot(x - h.p[0], z - h.p[1]) < h.r) return false;
   if (W.confine) { const c = W.confine; if (c.c) return Math.hypot(x - c.c[0], z - c.c[1]) <= c.r; return inRect(x, z, c); }
   if (naSerra(x, z)) return true;
-  if (pertoTrilha(x, z).d <= TRILHA_L / 2) return true;
+  if (pertoTrilha(x, z).d <= TRILHA_L / 2 || naTrilhaBaixa(x, z)) return true;
   for (const r of W.walk) if (inRect(x, z, r)) return true;
   if (W.bridgeOk && inRect(x, z, W.bridge)) return true;
   if (Math.hypot(x - BOSS_C[0], z - BOSS_C[1]) <= BOSS_R) return true;
@@ -51,7 +62,7 @@ function distWalk(x, z) { // distância aproximada até a área andável (para r
   let d = 1e9; for (const r of W.walk) { const dx = Math.max(r[0] - x, 0, x - r[1]), dz = Math.max(r[3] - z, 0, z - r[2]); d = Math.min(d, Math.hypot(dx, dz)); }
   d = Math.min(d, Math.max(0, Math.hypot(x - BOSS_C[0], z - BOSS_C[1]) - BOSS_R)); return d;
 }
-function groundH(x, z) { if (x > 26) { const t = pertoTrilha(x, z); if (t.d < 1e8) { if (t.d <= TRILHA_L / 2) return t.h; if (x > 152 && t.d > TRILHA_L / 2 + 1) return naSerra(x, z) ? HS : -70; return t.h + Math.min(6.5, (t.d - TRILHA_L / 2) * 1.5); } if (naSerra(x, z)) return HS; } const d = distWalk(x, z); return sstep(2, 26, d) * (4 + vnoise(x * .06, z * .06) * 10) + (d > 1 ? vnoise(x * .3, z * .3) * .5 * sstep(1, 6, d) : 0); }
+function groundH(x, z) { { const am = alturaMapa(x, z); if (am != null && !(x > SX - 20 && naSerra(x, z))) return am; } if (x > 26) { const t = pertoTrilha(x, z); if (t.d < 1e8) { if (t.d <= TRILHA_L / 2) return t.h; if (x > 152 && t.d > TRILHA_L / 2 + 1) return naSerra(x, z) ? HS : -70; return t.h + Math.min(6.5, (t.d - TRILHA_L / 2) * 1.5); } if (naSerra(x, z)) return HS; } const d = distWalk(x, z); return sstep(2, 26, d) * (4 + vnoise(x * .06, z * .06) * 10) + (d > 1 ? vnoise(x * .3, z * .3) * .5 * sstep(1, 6, d) : 0); }
 function pushOut(e, rad) { // empurra para fora de obstáculos (círculos e caixas)
   for (const o of W.obst) {
     if (o.off) continue;
@@ -260,7 +271,7 @@ function buildSerra(g, box) {
   }
   // agulhas de pedra com fios expostos
   const spires = [];
-  for (let k = 0; k < 26; k++) { const z = rnd(-135, 15), x = SX + (k % 2 ? 1 : -1) * rnd(16, 40), h = rnd(10, 30);
+  for (let k = 0; k < 26; k++) { const z = rnd(-135, 15), x = SX + rnd(18, 45), h = rnd(10, 30);
     g.add(G.cone, M.trs(x, h / 2 - 22, z, rnd(0, 6), 0, 0, rnd(4, 8), h + 22, rnd(4, 8)), rk()); spires.push([x, h - 2, z]); }
   for (let k = 0; k + 1 < spires.length; k += 2) W.threads.push({ a: spires[k], b: spires[k + 1], sag: 2, col: [1, .82, .5], w: .06 });
   for (const i of W.serra.islands) { const c = i.c || [(i.rect[0] + i.rect[1]) / 2, (i.rect[2] + i.rect[3]) / 2], s = spires[Math.floor(rnd(0, spires.length))]; W.threads.push({ a: [c[0], .2, c[1]], b: s, sag: 1, col: [1, .8, .45], w: .045 }); }
