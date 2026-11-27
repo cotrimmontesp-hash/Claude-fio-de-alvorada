@@ -9,7 +9,7 @@ function updNpcs(dt) {
       else { n.to = null; n.sp = 0; if (n.face != null) n.yaw = n.face; } }
     else { n.sp *= .85; if (n.face != null) n.yaw += angDiff(n.yaw, n.face) * (1 - Math.exp(-6 * dt)); }
     animAny(n.rig, { ph: n.ph, sp: n.sp, act: n.act, t: 0, ready: n.ready }, dt);
-    n.rig.pos = [n.pos[0], n.rig.yOff || 0, n.pos[2]]; n.rig.yaw = n.yaw; n.rig.pitch = n.act === 'dead' && !n.rig.isSkin ? lerp(n.rig.pitch, -Math.PI / 2, 1 - Math.exp(-3 * dt)) : 0; if (n.act === 'dead' && !n.rig.isSkin) n.rig.pos[1] = .12;
+    n.pos[1] = groundY(n.pos[0], n.pos[2]); n.rig.pos = [n.pos[0], n.pos[1] + (n.rig.yOff || 0), n.pos[2]]; n.rig.yaw = n.yaw; n.rig.pitch = n.act === 'dead' && !n.rig.isSkin ? lerp(n.rig.pitch, -Math.PI / 2, 1 - Math.exp(-3 * dt)) : 0; if (n.act === 'dead' && !n.rig.isSkin) n.rig.pos[1] = .12;
     if (n.glow) n.rig.emAdd = n.glow; n.rig.update(); }
 }
 function drawNpcs() { for (const n of NPCS) if (n.show && V.d2(n.pos, R.cam) < 70) n.rig.draw(); }
@@ -49,7 +49,7 @@ async function dialog(lines) { const prev = S.mode; S.mode = 'dialog'; $('hud').
 async function cut(shots) {
   S.mode = 'cut'; MIS.skip = false; $('lb').classList.add('on'); $('hud').classList.add('hide'); $('skip').classList.add('on'); unlockPtr();
   for (const sh of shots) { if (sh.on) sh.on(); if (MIS.skip) continue;
-    if (sh.cam) camShot(sh.cam[0], sh.cam[1], sh.cam[2], sh.cam[3] || sh.cam[2], (sh.dur || 4) * 1.15);
+    if (sh.cam) { const up = p => p && p[0] > SX - 60 ? [p[0], p[1] + HS, p[2]] : p, c = sh.cam.map(up); camShot(c[0], c[1], c[2], c[3] || c[2], (sh.dur || 4) * 1.15); }
     if (sh.card) card(sh.card, sh.sub);
     const t0 = performance.now(); if (sh.line) await showLine(sh.line, true);
     const rest = (sh.dur || 0) * 1000 - (performance.now() - t0); if (rest > 0) await rwait(rest / 1000); }
@@ -77,7 +77,7 @@ async function completeMission(i, title) {
 }
 
 // ---------- montagem de cena por missão ----------
-const ENV0 = { ...R.env }, ENV_SERRA = { ...R.env, sun: V.norm([.35, .55, .6]), sunC: [2.2, 2.0, 1.8], skyA: lin(0x4f6c8e), skyB: lin(0xd0a890), fog: lin(0x7d8796), fogD: .0085, riftN: V.norm([.6, .3, .7]), night: .2 };
+const ENV0 = { ...R.env }, ENV_TRILHA = { ...R.env, sun: V.norm([.3, .88, .38]), sunC: [2.7, 2.2, 1.8], night: .12, fogD: .007 }, ENV_SERRA = { ...R.env, sun: V.norm([.35, .55, .6]), sunC: [2.2, 2.0, 1.8], skyA: lin(0x4f6c8e), skyB: lin(0xd0a890), fog: lin(0x7d8796), fogD: .0085, riftN: V.norm([.6, .3, .7]), night: .2 };
 function stage(i) {
   clearCombat(); NPCS.length = 0; RIFT.ts = 0; RIFT.s = 0; RIFT.bind = null; MARK = null; MIS.bossDead = false;
   P.hp = maxHp(); P.vig = 100; P.lume = 30; P.st = 'move'; P.cd = { q: 0, e: 0, r: 0 }; P.heal = null; P.rig.pitch = 0; P.trail.length = 0;
@@ -106,12 +106,41 @@ async function seamTask(b, flag, tok) {
   for (let k = 0; k < 60; k++) part([SX + rnd(-1.4, 1.4), rnd(-.5, .3), rnd(b.rect[3], b.rect[2])], [0, 1.5, 0], rnd(.6, 1.2), .08, [1, .85, .5]);
   b.ok = true; MIS.flags[flag] = true; await wait(.8);
 }
+// ponto da trilha a "s" metros do começo
+function trilhaEm(s) { const T = TRILHA; for (let i = 0; i < T.length - 1; i++) if (T[i + 1].s >= s) { const k = (s - T[i].s) / ((T[i + 1].s - T[i].s) || 1); return [lerp(T[i][0], T[i + 1][0], k), lerp(T[i][2], T[i + 1][2], k), lerp(T[i][1], T[i + 1][1], k)]; } const L = T[T.length - 1]; return [L[0], L[2], L[1]]; }
+async function subida(tok) {
+  const TOT = TRILHA[TRILHA.length - 1].s, pontos = [30, 75, 120, 165, 210, 255, 300, 340].filter(v => v < TOT - 10);
+  const grupos = [[['tecelao', 0], ['tecelao', 1], ['larva', 0]], [['fieira', 0], ['tecelao', 1], ['saltador', 1]], [['tecelao', 0], ['tecelao', 0], ['fieira', 1], ['larva', 1]],
+    [['bruta', 0], ['saltador', 1], ['saltador', 1]], [['tecelao', 1], ['fieira', 0], ['fieira', 1], ['saltador', 0]], [['bruta', 0], ['tecelao', 1], ['tecelao', 1], ['larva', 0]],
+    [['saltador', 1], ['saltador', 1], ['fieira', 0], ['bruta', 0]], [['bruta', 1], ['tecelao', 0], ['fieira', 1], ['saltador', 1], ['tecelao', 0]]];
+  let k = 0;
+  objective('Suba a trilha da montanha'); hint('Os Desfiadores atacam na subida — alguns <b>pulam do alto</b> das paredes. Não pare: siga o losango dourado.', 7000);
+  while (tok === MIS.token) {
+    const me = pertoTrilha(P.pos[0], P.pos[2]); const s = me.d < 20 ? me.s : 0;
+    const alvo = trilhaEm(Math.min(TOT, s + 22)); MARK = alvo;
+    const resta = Math.max(0, Math.round(TOT - s)); $('obj').textContent = 'Suba a trilha da montanha — faltam ' + resta + ' m';
+    if (k < pontos.length && s > pontos[k]) { // emboscada: uns na frente, outros pulando do alto
+      const g = grupos[k % grupos.length]; let j = 0;
+      for (const [t, doAlto] of g) { const p = trilhaEm(Math.min(TOT - 2, s + 10 + j * 3.5)), off = (j % 2 ? 1 : -1) * 1.2;
+        const e = spawn(t, p[0] + off, p[2] + off * .5, { aggro: 60, instant: !!doAlto }); if (doAlto) { e.y = 9; e.vy = 0; } j++; }
+      icon('Emboscada!', 'gold'); AU.roar(); k++;
+    }
+    if (naSerra(P.pos[0], P.pos[2]) && P.pos[0] > SX - 15) break;
+    await wait(.25);
+  }
+  MARK = null; for (const e of ENEMIES) { e.dead = true; e.deadT = 9; } // os que ficaram para trás somem
+}
 const fight = async (list, tok) => { for (const [t, x, z, o] of list) spawn(t, SX + x, z, o || {}); await until(() => alive() === 0); };
 
 // ---------- CAPÍTULO 2 · MISSÃO 4: Travessia da Serra ----------
 async function M4(retry) {
   const tok = MIS.token; stage(3); P.pos = [SX, 0, 5]; P.yaw = Math.PI; camRelease();
   if (!retry) {
+    // a subida: sai da arena do chefe 1 e sobe a trilha em curvas até o topo da montanha
+    P.pos = [10, 0, -125]; P.yaw = Math.PI / 2; camRelease(); CAM.yaw = Math.PI / 2;
+    banner('A subida', 'A Serra das Costuras fica no topo da montanha'); AU.music('combat');
+    await subida(tok); if (tok !== MIS.token) return;
+    P.pos = [SX, 0, 5]; P.yaw = Math.PI; camRelease();
     AU.music('calm');
     await cut([
       { on: () => { P.cutAct = null; }, cam: [[SX + 24, 14, 18], [SX + 14, 9, 6], [SX, 0, -40], [SX, 2, -70]], dur: 5, card: 'Capítulo 2', sub: 'Serra das Costuras' },
@@ -243,9 +272,9 @@ async function M1(retry) {
   // luta
   P.pos = retry ? [0, 0, -16] : P.pos;
   for (const [x, z] of [[-2, -33], [2.5, -35], [0, -38]]) spawn('tecelao', x, z, { aggro: 40 });
-  AU.music('combat'); objective('Defenda a rua do mercado: Tecelões Caídos (0/3)');
+  AU.music('combat'); objective('Defenda a rua do mercado: Tecelões Caídos');
   hint(TOUCH ? 'Botão <b>Travar</b> mantém a câmera no inimigo' : '<b>Tab</b> ou botão do meio: travar alvo · roda do mouse troca', 6000);
-  await until(() => { $('obj').textContent = `Defenda a rua do mercado: Tecelões Caídos (${3 - alive()}/3)`; return alive() === 0; });
+  const tot0 = alive(); await until(() => { $('obj').textContent = `Defenda a rua do mercado: Tecelões Caídos (${tot0 - alive()}/${tot0})`; return alive() === 0; });
   if (tok !== MIS.token) return;
   AU.music('calm'); await completeMission(0, 'Fios no chão');
   if (tok !== MIS.token) return;
@@ -461,6 +490,8 @@ function frame(now) {
   else if (S.mode === 'lobby') { S.time += rdt; lobbyFrame(rdt); }
   else if (S.mode === 'menu') { const t = now / 1000 * .06; CAM.script = null; R.setCam([Math.sin(t) * 22, 7 + Math.sin(t * 2) * 1.5, -10 + Math.cos(t) * 22], [0, 3, -12]); S.time += rdt; RIFT.ts = 0; }
   else { camUpdate(0, { lx: 0, ly: 0 }); }
+  { const tr = P.pos[0] > 14 && P.pos[0] < SX - 25 && pertoTrilha(P.pos[0], P.pos[2]).d < 8, alto = P.pos[0] > SX - 25 ? 2 : tr ? 1 : 0;
+    if (S.mode !== 'lobby' && S.mode !== 'menu' && frame.alto !== alto) { frame.alto = alto; Object.assign(R.env, alto === 2 ? ENV_SERRA : alto === 1 ? ENV_TRILHA : ENV0); } }
   if (S.mode === 'play' && !window.FIXDT) { frame.acc = (frame.acc || 0) + raw; if (frame.acc > 5) { frame.acc = 0; if (fpsA < (OPT.economia ? 24 : 32) && OPT.quality > .5) { OPT.quality = Math.max(.5, OPT.quality - .25); window.QUALITY = OPT.quality; resize(); saveOpts(); } } }
   { const mb = $('mouseBtn'); if (mb && !TOUCH) { const v = S.mode === 'play' ? '' : 'none'; if (mb.style.display !== v) mb.style.display = v; } }
   if (TOUCH) { const v = S.mode === 'play' ? '' : 'hidden'; if ($('touch').style.visibility !== v) $('touch').style.visibility = v; }
@@ -486,7 +517,7 @@ function KP_skip(I) { return I.pause; }
 function cutPlayer(dt) {
   if (P.cutTo) { const d = V.sub(P.cutTo, P.pos), l = Math.hypot(d[0], d[2]); if (l > .15) { const s = Math.min(4 * dt, l); P.pos[0] += d[0] / l * s; P.pos[2] += d[2] / l * s; P.yaw = Math.atan2(d[0], d[2]); P.sp = 1; P.ph += dt * 7; } else { P.cutTo = null; P.sp = 0; } } else P.sp *= .85;
   animAny(P.rig, { ph: P.ph, sp: P.sp, act: P.cutAct || null, t: 0, ready: false }, Math.max(dt, .016));
-  P.rig.pos = [P.pos[0], P.rig.yOff || 0, P.pos[2]]; P.rig.yaw = P.yaw; P.rig.pitch = 0; P.rig.update();
+  P.pos[1] = groundY(P.pos[0], P.pos[2]); P.rig.pos = [P.pos[0], P.pos[1] + (P.rig.yOff || 0), P.pos[2]]; P.rig.yaw = P.yaw; P.rig.pitch = 0; P.rig.update();
 }
 async function loadMaps() {
   if (typeof MAPZ === 'undefined') return;
@@ -511,6 +542,6 @@ async function boot() {
   buildWorld(); W.gate = { b: [-3.6, 3.6, -95.6, -96.6], off: false }; W.obst.push(W.gate);
   bindUI(); bindTouch(); bindMouseBtn(); stage(0); P.pos = [0, 0, -9]; P.rig.update(); refreshMenu();
   $('load').style.display = 'none'; lobLoad(); buildLobby(); toLobby(); requestAnimationFrame(frame);
-  window.DBG = { get fps() { return fpsA; }, get NET() { return typeof NET !== 'undefined' ? NET : null; }, HEROIS, LOB, escolherHeroi, get HERO() { return HERO; }, SKANIM, P, MIS, ENEMIES, runMission, S, spawn, W, CAM, NPCS, hurtEnemy };
+  window.DBG = { get fps() { return fpsA; }, trilhaEm: s => trilhaEm(s), get NET() { return typeof NET !== 'undefined' ? NET : null; }, HEROIS, LOB, escolherHeroi, get HERO() { return HERO; }, SKANIM, P, MIS, ENEMIES, runMission, S, spawn, W, CAM, NPCS, hurtEnemy };
 }
 setTimeout(() => { try { boot(); } catch (e) { $('load').textContent = 'Erro ao carregar: ' + e.message; throw e; } }, 30);

@@ -174,6 +174,18 @@ input[type=checkbox]{width:22px;height:22px;accent-color:#d9a650}
 .nettag{position:fixed;z-index:6;transform:translate(-50%,-100%);font:600 12px var(--uf);color:#fff;text-shadow:0 1px 3px #000;pointer-events:none;text-align:center;white-space:nowrap}
 .nettag i{display:block;height:3px;margin:2px auto 0;width:60px;background:#5fd07a;box-shadow:0 0 0 1px rgba(0,0,0,.6)}
 #lbJogar:disabled{filter:grayscale(.6) brightness(.8);cursor:default;font-size:clamp(14px,3vh,22px)}
+
+#moedas{position:absolute;left:22px;bottom:100px;font:700 16px var(--uf);color:#ffd76a;text-shadow:0 1px 4px #000;display:flex;align-items:center;gap:6px}
+#moedas i{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3b0,#e2a12a 60%,#8a5a10);box-shadow:0 0 6px #e2a12a}
+#loja{position:fixed;inset:0;z-index:31;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.65)}
+#loja.on{display:flex}
+#loja .panel{width:min(640px,94%);max-height:94%;overflow:auto;background:rgba(16,12,9,.97);border:1px solid rgba(243,217,160,.35);border-radius:6px;padding:2.4vh 22px}
+#loja h2{margin:0 0 4px;font-size:clamp(20px,4.4vh,30px)}
+#ljTopo{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;color:#ffd76a;font:700 18px var(--uf)}
+#ljItens{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.lji{display:flex;flex-direction:column;align-items:flex-start;text-align:left;padding:10px 12px;min-height:0;background:rgba(30,24,18,.8);border:1px solid rgba(255,255,255,.12);cursor:pointer}
+.lji b{font:700 15px var(--uf);color:var(--txt)}.lji span{font-size:12px;color:var(--dim)}.lji em{font-style:normal;margin-top:6px;font:700 13px var(--uf);color:#ffd76a}
+.lji.tem{border-color:#5fd07a}.lji.tem em{color:#5fd07a}.lji.trav{opacity:.5}
 </style>
 </head>
 <body>
@@ -208,6 +220,8 @@ input[type=checkbox]{width:22px;height:22px;accent-color:#d9a650}
   <div id="lbAcao"><button id="lbJogar">JOGAR</button><div id="lbSub"></div><div id="lbMini"><button id="lbNova">Nova jornada</button><button id="lbOpt">Opções</button><button id="lbSair">Sair</button></div></div>
   <div id="lbDica">Arraste para girar o personagem</div>
 </div>
+<div id="loja"><div class="panel"><h2>Ferreiro de Orlavento</h2><div id="ljTopo"><span>Suas moedas: <b id="ljMoedas">0</b></span><button id="ljFechar">Fechar</button></div>
+  <p class="info" style="margin:0 0 10px">Derrote inimigos para ganhar moedas. Armaduras dão mais vida, lâminas dão mais dano.</p><div id="ljItens"></div></div></div>
 <div id="conv"><div class="panel"><h2>Chamar amigos</h2><p class="info">Código da sua sala:</p><div id="cvCode">…</div>
   <div class="row2"><button id="cvCopiar">Copiar link</button><button id="cvZap">Mandar no WhatsApp</button></div>
   <p class="info" style="margin-top:14px">Recebeu um código? Entre na sala do amigo:</p>
@@ -479,13 +493,13 @@ const R = {
     this.quad(V.sub(a, sd), V.sub(b, sd), V.add(b, sd), V.add(a, sd), col, al, add, 0, [[0, -1], [0, -1], [0, 1], [0, 1]]);
   },
   flat(cx, cz, ang, len, w, col, al = 1, y = .04) { // retângulo no chão (aviso)
-    const f = [Math.sin(ang) * len * .5, 0, Math.cos(ang) * len * .5], s = [Math.cos(ang) * w * .5, 0, -Math.sin(ang) * w * .5], c = [cx, y, cz];
+    const f = [Math.sin(ang) * len * .5, 0, Math.cos(ang) * len * .5], s = [Math.cos(ang) * w * .5, 0, -Math.sin(ang) * w * .5], c = [cx, y + (typeof groundY === 'function' ? groundY(cx, cz) : 0), cz];
     this.quad(V.sub(V.sub(c, f), s), V.sub(V.add(c, f), s), V.add(V.add(c, f), s), V.add(V.sub(c, f), s), col, al, 1, 1);
   },
-  ring(cx, cz, r, w, col, al = 1, seg = 40) { for (let k = 0; k < seg; k++) { const a0 = k / seg * Math.PI * 2, a1 = (k + 1) / seg * Math.PI * 2; const p = (a, rr) => [cx + Math.sin(a) * rr, .05, cz + Math.cos(a) * rr];
+  ring(cx, cz, r, w, col, al = 1, seg = 40) { const gy = (typeof groundY === 'function' ? groundY(cx, cz) : 0) + .05; for (let k = 0; k < seg; k++) { const a0 = k / seg * Math.PI * 2, a1 = (k + 1) / seg * Math.PI * 2; const p = (a, rr) => [cx + Math.sin(a) * rr, gy, cz + Math.cos(a) * rr];
     this.quad(p(a0, r - w), p(a1, r - w), p(a1, r), p(a0, r), col, al, 1, 0, [[0, -1], [0, -1], [0, 1], [0, 1]]); } },
-  disc(cx, cz, r, col, al = 1, seg = 32) { for (let k = 0; k < seg; k++) { const a0 = k / seg * Math.PI * 2, a1 = (k + 1) / seg * Math.PI * 2; const p = (a) => [cx + Math.sin(a) * r, .045, cz + Math.cos(a) * r];
-    this.quad([cx, .045, cz], p(a0), p(a1), [cx, .045, cz], col, al, 1, 1, [[0, 0], [.7, 0], [.7, 0], [0, 0]]); } },
+  disc(cx, cz, r, col, al = 1, seg = 32) { const gy = (typeof groundY === 'function' ? groundY(cx, cz) : 0) + .045; for (let k = 0; k < seg; k++) { const a0 = k / seg * Math.PI * 2, a1 = (k + 1) / seg * Math.PI * 2; const p = (a) => [cx + Math.sin(a) * r, gy, cz + Math.cos(a) * r];
+    this.quad([cx, gy, cz], p(a0), p(a1), [cx, gy, cz], col, al, 1, 1, [[0, 0], [.7, 0], [.7, 0], [0, 0]]); } },
   setCam(eye, tgt, fov = .95) {
     const a = cv.width / cv.height; this.cam = eye; this.view = M.look(eye, tgt, [0, 1, 0]); this.proj = M.persp(fov, a, .1, 600); this.vp = M.mul(this.proj, this.view);
     this.camR = [this.view[0], this.view[4], this.view[8]]; this.camU = [this.view[1], this.view[5], this.view[9]];
@@ -936,7 +950,26 @@ W.walk = [[-20, 20, 16, -42], [-4, 4, -41, -54.6], [-14, 14, -67.9, -96], [-3.5,
 W.bridge = [-1.45, 1.45, -54.4, -68.1];
 W.bridgeOk = false; W.confine = null;
 // ---------- Serra das Costuras (capítulo 2), longe da vila ----------
-const SX = 400;
+const SX = 170, HS = 45; // a Serra fica no topo da montanha
+// ---------- trilha da montanha (mesmos pontos do Blender) ----------
+const TRILHA_P = [[16, -126, 0], [45, -120, 2], [100, -110, 7], [112, -95, 10], [60, -80, 15], [48, -65, 18], [100, -50, 24], [112, -35, 27], [60, -20, 32], [50, -5, 35], [105, 8, 40], [150, 18, 44], [170, 9, 45]];
+const TRILHA_L = 6;
+const TRILHA = (() => { const P = TRILHA_P, out = [];
+  for (let i = 0; i < P.length - 1; i++) { const p0 = P[Math.max(i - 1, 0)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(i + 2, P.length - 1)];
+    for (let k = 0; k < 8; k++) { const t = k / 8, t2 = t * t, t3 = t2 * t; out.push([0, 1, 2].map(j => .5 * ((2 * p1[j]) + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3))); } }
+  out.push(P[P.length - 1]); let acc = 0; out.forEach((p, i) => { if (i) acc += Math.hypot(p[0] - out[i - 1][0], p[1] - out[i - 1][1]); p.s = acc; }); return out; })();
+function pertoTrilha(x, z) { // distância até a trilha, altura nela e quanto já andou
+  if (x < 10 || z > 30 || z < -134) return { d: 1e9, h: 0, s: 0 };
+  let bd = 1e9, bh = 0, bs = 0;
+  for (let i = 0; i < TRILHA.length - 1; i++) { const a = TRILHA[i], b = TRILHA[i + 1], dx = b[0] - a[0], dz = b[1] - a[1], L = dx * dx + dz * dz || 1;
+    const t = clamp(((x - a[0]) * dx + (z - a[1]) * dz) / L, 0, 1), px = a[0] + dx * t, pz = a[1] + dz * t, d = Math.hypot(x - px, z - pz);
+    if (d < bd) { bd = d; bh = a[2] + (b[2] - a[2]) * t; bs = a.s + (b.s - a.s) * t; } }
+  return { d: bd, h: bh, s: bs };
+}
+function naSerra(x, z) { if (x < SX - 40) return false; for (const i of W.serra.islands) { if (i.c ? Math.hypot(x - i.c[0], z - i.c[1]) <= i.r : inRect(x, z, i.rect)) return true; }
+  for (const b of W.serra.bridges) if (b.ok && inRect(x, z, b.rect)) return true; return false; }
+// altura do chão onde as pessoas pisam
+function groundY(x, z) { if (x > SX - 40 && naSerra(x, z)) return HS; const t = pertoTrilha(x, z); if (t.d <= TRILHA_L / 2 + .6) return t.h; return 0; }
 W.serra = {
   islands: [{ c: [SX, 0], r: 11 }, { rect: [SX - 7.5, SX + 7.5, -23.5, -50] }, { c: [SX, -70], r: 12.5 }, { c: [SX + 2, -112], r: 15.5 }],
   bridges: [{ rect: [SX - 1.45, SX + 1.45, -10.2, -24], ok: true }, { rect: [SX - 1.45, SX + 1.45, -49.5, -58], ok: false, seam: [SX - 3.4, 0, -47.6] }, { rect: [SX - 1.45, SX + 1.45, -82, -97], ok: false, seam: [SX + 3.2, 0, -80.8] }],
@@ -945,8 +978,8 @@ const HOLES = [];
 function walkable(x, z) {
   for (const h of HOLES) if (h.open && Math.hypot(x - h.p[0], z - h.p[1]) < h.r) return false;
   if (W.confine) { const c = W.confine; if (c.c) return Math.hypot(x - c.c[0], z - c.c[1]) <= c.r; return inRect(x, z, c); }
-  if (x > 200) { for (const i of W.serra.islands) { if (i.c ? Math.hypot(x - i.c[0], z - i.c[1]) <= i.r : inRect(x, z, i.rect)) return true; }
-    for (const b of W.serra.bridges) if (b.ok && inRect(x, z, b.rect)) return true; return false; }
+  if (naSerra(x, z)) return true;
+  if (pertoTrilha(x, z).d <= TRILHA_L / 2) return true;
   for (const r of W.walk) if (inRect(x, z, r)) return true;
   if (W.bridgeOk && inRect(x, z, W.bridge)) return true;
   if (Math.hypot(x - BOSS_C[0], z - BOSS_C[1]) <= BOSS_R) return true;
@@ -957,7 +990,7 @@ function distWalk(x, z) { // distância aproximada até a área andável (para r
   let d = 1e9; for (const r of W.walk) { const dx = Math.max(r[0] - x, 0, x - r[1]), dz = Math.max(r[3] - z, 0, z - r[2]); d = Math.min(d, Math.hypot(dx, dz)); }
   d = Math.min(d, Math.max(0, Math.hypot(x - BOSS_C[0], z - BOSS_C[1]) - BOSS_R)); return d;
 }
-function groundH(x, z) { if (x > 200) return -60; const d = distWalk(x, z); return sstep(2, 26, d) * (4 + vnoise(x * .06, z * .06) * 10) + (d > 1 ? vnoise(x * .3, z * .3) * .5 * sstep(1, 6, d) : 0); }
+function groundH(x, z) { if (x > 26) { const t = pertoTrilha(x, z); if (t.d < 1e8) { if (t.d <= TRILHA_L / 2) return t.h; if (x > 152 && t.d > TRILHA_L / 2 + 1) return naSerra(x, z) ? HS : -70; return t.h + Math.min(6.5, (t.d - TRILHA_L / 2) * 1.5); } if (naSerra(x, z)) return HS; } const d = distWalk(x, z); return sstep(2, 26, d) * (4 + vnoise(x * .06, z * .06) * 10) + (d > 1 ? vnoise(x * .3, z * .3) * .5 * sstep(1, 6, d) : 0); }
 function pushOut(e, rad) { // empurra para fora de obstáculos (círculos e caixas)
   for (const o of W.obst) {
     if (o.off) continue;
@@ -995,10 +1028,10 @@ function blenderMap(J, skip) {
   for (const [name, R, cor, em] of J.objetos) {
     const base = name.split('.')[0]; if (skip(base)) continue;
     const g = geo(name), m = [R[0], R[4], R[8], 0, R[1], R[5], R[9], 0, R[2], R[6], R[10], 0, R[3], R[7], R[11], 1];
-    if (base === 'Terreno' && g.c) { // chão com cor por vértice
+    if (g.c) { // chão com cor por vértice (terreno da vila e encosta da montanha)
       const c = []; for (let k = 0; k < g.c.length; k += 3) c.push(g.c[k], g.c[k + 1], g.c[k + 2], 0);
       const p = []; for (let k = 0; k < g.p.length; k += 3) { const x = g.p[k], y = g.p[k + 1], z = g.p[k + 2]; p.push(m[0] * x + m[4] * y + m[8] * z + m[12], m[1] * x + m[5] * y + m[9] * z + m[13], m[2] * x + m[6] * y + m[10] * z + m[14]); }
-      ground = mkMesh({ p, n: g.n, c, i: g.i }); continue; }
+      (ground = ground || []).push(mkMesh({ p, n: g.n, c, i: g.i })); continue; }
     out.add(g, m, cor, em ? 3 : base === 'Nevoa' ? .8 : 0);
   }
   return { mesh: out, ground };
@@ -1115,8 +1148,13 @@ function buildWorld() {
   g = gReal; // daqui pra frente vai para o mapa de verdade
   // tochas da ravina e da trilha
   for (const [x, z] of [[-12, -70], [12, -70], [-12, -93], [12, -93], [-3.3, -103], [3.3, -103]]) { box(x, 1, z, .15, 2, .15, C(0x3e2c1c)); box(x, 2.1, z, .25, .25, .25, C(0xffa040), 4); W.lights.push({ p: [x, 2.3, z], c: V.sc(C(0xff8a40), 3), r: 8 }); oc(x, z, .25); W.torches.push([x, 2.25, z]); }
-  buildSerra(g, box);
-  if (MAPA) { const bm = blenderMap(MAPA, b => b === 'Boneco' || b === 'Palha'); if (bm.ground) W.ground = bm.ground; W.blender = mkMesh(bm.mesh); }
+  { const gs = new GB(), boxS = (x, y, z, ww, h, d, col, ry = 0, em = 0, rx = 0, rz = 0) => gs.add(G.box, M.trs(x, y, z, ry, rx, rz, ww, h, d), col, em);
+    const n0 = { th: W.threads.length, li: W.lights.length, to: W.torches.length };
+    buildSerra(gs, boxS); W.serraMesh = mkMesh(gs);
+    for (const th of W.threads.slice(n0.th)) { th.a = [th.a[0], th.a[1] + HS, th.a[2]]; th.b = [th.b[0], th.b[1] + HS, th.b[2]]; }
+    for (const l of W.lights.slice(n0.li)) l.p = [l.p[0], l.p[1] + HS, l.p[2]];
+    for (let k = n0.to; k < W.torches.length; k++) W.torches[k] = [W.torches[k][0], W.torches[k][1] + HS, W.torches[k][2]]; }
+  if (MAPA) { const bm = blenderMap(MAPA, b => b === 'Boneco' || b === 'Palha'); if (bm.ground) { W.ground = bm.ground[0]; W.grounds = bm.ground.slice(1); } W.blender = mkMesh(bm.mesh); }
   W.mesh = mkMesh(g); W.vc = g.p.length / 3;
   // bonecos de treino
   W.dummies = [[-6.2, 0, 2.2], [-6.2, 0, -0.2]].map(p => ({ pos: p, hp: 1, shake: 0, hits: 0 }));
@@ -1124,8 +1162,8 @@ function buildWorld() {
 }
 W.lights = []; W.torches = [];
 function drawWorld(time) {
-  if (R.cam[0] > 200) drawSerra(time);
-  R.draw(W.ground, M.I(), [1, 1, 1], { spec: .05, grain: .5, rim: 0 });
+  if (W.serraMesh) R.draw(W.serraMesh, M.T(0, HS, 0), [1, 1, 1], { spec: .15, grain: .35, rim: .03 }); if (R.cam[0] > 20) drawSerra(time);
+  R.draw(W.ground, M.I(), [1, 1, 1], { spec: .05, grain: .5, rim: 0 }); if (W.grounds) for (const gm of W.grounds) R.draw(gm, M.I(), [1, 1, 1], { spec: .05, grain: .5, rim: 0 });
   R.draw(W.mesh, M.I(), [1, 1, 1], { spec: .15, grain: .35, rim: .03 });
   if (W.blender) R.draw(W.blender, M.I(), [1, 1, 1], { spec: .12, grain: .35, rim: .03 });
   if (W.bridgeOk) R.draw(W.dyn.bridgeMid, M.I(), [1, 1, 1], { spec: .1, grain: .3 });
@@ -1168,21 +1206,20 @@ function buildSerra(g, box) {
   // ponte 1 (já costurada) e postes
   const bridgeM = (b) => { const m = new GB(); for (let z = b.rect[2] - .25; z > b.rect[3]; z -= .5) m.add(G.box, M.trs(SX + rnd(-.05, .05), -.06, z, rnd(-.04, .04), 0, 0, 3 + rnd(0, .3), .12, .44), V.lerp(C(0x8a6a42), C(0x6e5236), rnd())); return mkMesh(m); };
   W.serra.bridges.forEach((b, k) => { b.mesh = bridgeM(b); for (const sx of [-1.6, 1.6]) for (const z of [b.rect[2] - .3, b.rect[3] + .3]) box(SX + sx, .5, z, .18, 1.4, .18, C(0x4a3420));
-    b.rails = [[[SX - 1.6, 1.15, b.rect[2] - .3], [SX - 1.6, 1.15, b.rect[3] + .3]], [[SX + 1.6, 1.15, b.rect[2] - .3], [SX + 1.6, 1.15, b.rect[3] + .3]]];
+    b.rails = [[[SX - 1.6, HS + 1.15, b.rect[2] - .3], [SX - 1.6, HS + 1.15, b.rect[3] + .3]], [[SX + 1.6, HS + 1.15, b.rect[2] - .3], [SX + 1.6, HS + 1.15, b.rect[3] + .3]]];
     if (b.seam) { box(b.seam[0], 1.1, b.seam[2], .32, 2.2, .32, C(0x5a4a3a)); box(b.seam[0], 2.25, b.seam[2], .5, .15, .5, C(0xb08a3e)); W.obst.push({ x: b.seam[0], z: b.seam[2], r: .4 }); } });
   // gaiola do pastor e tochas
   for (const [x, z] of [[SX - 9, -64], [SX + 9, -76], [SX - 6, -3], [SX + 6, -3], [SX - 11, -106], [SX + 14, -116]]) { box(x, 1, z, .15, 2, .15, C(0x3e2c1c)); box(x, 2.1, z, .25, .25, .25, C(0xffa040), 4); W.lights.push({ p: [x, 2.3, z], c: V.sc(C(0xff8a40), 3), r: 8 }); W.obst.push({ x, z, r: .25 }); W.torches.push([x, 2.25, z]); }
   // pedras em pé na arena da chefe
   for (let k = 0; k < 12; k++) { const a = k / 12 * 6.28; if (Math.abs(angDiff(a, 0)) < .4) continue; const x = SX + 2 + Math.sin(a) * 16.5, z = -112 + Math.cos(a) * 16.5, h = rnd(3, 6); box(x, h / 2 - .5, z, 1.2, h, .9, rk(), a); }
-  box(SX, -42, -60, 200, 1, 260, C(0x1c1e26));
 }
 function drawSerra(time) {
   for (const b of W.serra.bridges) {
-    if (b.ok) { R.draw(b.mesh, M.I(), [1, 1, 1], { spec: .1, grain: .3 }); for (const r of b.rails) drawThread(r[0], r[1], .25, [1, .85, .5], .035, time, false); }
+    if (b.ok) { R.draw(b.mesh, M.T(0, HS, 0), [1, 1, 1], { spec: .1, grain: .3 }); for (const r of b.rails) drawThread(r[0], r[1], .25, [1, .85, .5], .035, time, false); }
     else { for (const r of b.rails) { const m = V.lerp(r[0], r[1], .3); drawThread(r[0], [m[0], m[1] - .8, m[2]], .1, [1, .7, .4], .03, time, true); } }
-    if (b.seam && !b.ok) { const s = b.seam; for (let k = 0; k < 3; k++) drawThread([s[0], 2.3, s[2]], [s[0] + Math.sin(time * 2 + k) * .9, 1.2 + k * .3, s[2] - 1 + Math.cos(time + k)], .1, [1, .85, .5], .04, time + k, true); R.light([s[0], 2, s[2]], [1.4, 1.1, .6], 4); }
+    if (b.seam && !b.ok) { const s = b.seam; for (let k = 0; k < 3; k++) drawThread([s[0], HS + 2.3, s[2]], [s[0] + Math.sin(time * 2 + k) * .9, HS + 1.2 + k * .3, s[2] - 1 + Math.cos(time + k)], .1, [1, .85, .5], .04, time + k, true); R.light([s[0], HS + 2, s[2]], [1.4, 1.1, .6], 4); }
   }
-  for (let k = 0; k < 3; k++) R.pt([SX + rnd(-30, 30), rnd(-14, -4), rnd(-130, 10)], rnd(3, 6), [.75, .78, .85], .05, 0);
+  for (let k = 0; k < 3; k++) R.pt([SX + rnd(-30, 30), HS + rnd(-14, -4), rnd(-130, 10)], rnd(3, 6), [.75, .78, .85], .05, 0);
 }
 
 // ================= JOGO: entrada, áudio, Nera, inimigos =================
@@ -1319,11 +1356,12 @@ function camUpdate(dt, I) {
     const bossE = ENEMIES.find(e => e.boss && !e.dead && e.spawnT <= 0), boss = !!bossE;
     // luta de chefe sem alvo travado: a câmera vira devagar para o chefe não sumir atrás dela
     if (bossE && !tg && Math.abs(I.lx) < .002) { const dy = Math.atan2(bossE.pos[0] - P.pos[0], bossE.pos[2] - P.pos[2]), df = angDiff(CAM.yaw, dy); if (Math.abs(df) > .7) CAM.yaw += df * (1 - Math.exp(-2.2 * dt)); }
-    let dist = (boss ? 6.4 : 4.4) - CAM.zoom * 1.6;
+    const naTrilha = P.pos[0] > 14 && P.pos[0] < SX - 15 && pertoTrilha(P.pos[0], P.pos[2]).d < 6; CAM.trilha = lerp(CAM.trilha || 0, naTrilha ? 1 : 0, 1 - Math.exp(-2 * dt));
+    let dist = (boss ? 6.4 : 4.4) + CAM.trilha * 2.6 - CAM.zoom * 1.6;
     CAM.dist += (dist - CAM.dist) * (1 - Math.exp(-4 * dt)); CAM.zoom = Math.max(0, CAM.zoom - dt * 1.5);
     const f = [Math.sin(CAM.yaw), 0, Math.cos(CAM.yaw)], rgt = [-Math.cos(CAM.yaw), 0, Math.sin(CAM.yaw)];
     const at = V.add(P.pos, [0, 1.45 + (P.rig.yOff || 0) * .4, 0]), cp = Math.cos(CAM.pitch), sp = Math.sin(CAM.pitch);
-    let eye = V.add(V.add(at, V.sc(f, -CAM.dist * cp)), V.add([0, CAM.dist * sp, 0], V.sc(rgt, .65)));
+    let eye = V.add(V.add(at, V.sc(f, -CAM.dist * cp)), V.add([0, CAM.dist * sp + (CAM.trilha || 0) * 3.2, 0], V.sc(rgt, .65)));
     if (bossE) { const bd = Math.hypot(eye[0] - bossE.pos[0], eye[2] - bossE.pos[2]), lim = 1.6 * (bossE.baseScale || 1) + .8; if (bd < lim) eye[1] += (lim - bd) * 1.4; } // sobe a câmera se o chefe estiver colado nela
     const gh = groundH(eye[0], eye[2]) + .35; if (eye[1] < gh) eye[1] = gh;
     const k = 1 - Math.exp(-18 * dt); CAM.eye = V.lerp(CAM.eye, eye, k); CAM.at = V.lerp(CAM.at, V.add(at, V.sc(rgt, .65)), k);
@@ -1341,8 +1379,8 @@ const P = {
   unl: { q: false, e: false, r: false }, trail: [], heal: null, vigT: 0, hits: 0, hitT: 0, dodgeDir: [0, 0, 1], cur: null, combatT: 0, pull: null, stats: { moved: 0, dodges: 0, dummy: 0, dummyHeavy: 0 }
 };
 const XPT = [0, 60, 150, 270, 420, 600, 820, 1080];
-const maxHp = () => Math.round((100 + (P.level - 1) * 14) * (typeof HERO !== 'undefined' ? HERO.hp : 1));
-const atk = () => (10 + (P.level - 1) * 2.4) * (1 + P.wlvl * .15) * (typeof HERO !== 'undefined' ? HERO.dmg : 1);
+let maxHp = () => Math.round((100 + (P.level - 1) * 14) * (typeof HERO !== 'undefined' ? HERO.hp : 1));
+let atk = () => (10 + (P.level - 1) * 2.4) * (1 + P.wlvl * .15) * (typeof HERO !== 'undefined' ? HERO.dmg : 1);
 const ATK = [
   { dur: .4, hit: .15, range: 2.5, arc: 1.9, mult: 1, post: 7, step: 1.1, pose: 's1', kind: 'w' },
   { dur: .4, hit: .15, range: 2.5, arc: 1.9, mult: 1.05, post: 7, step: 1.1, pose: 's2', kind: 'w' },
@@ -1382,7 +1420,7 @@ function playerUpdate(dt, I) {
     const red = P.nodes.contra ? .5 : .3; for (const k in P.cd) P.cd[k] *= (1 - red); P.lume = Math.min(100, P.lume + 20);
   }
   if (P.st === 'move') {
-    const run = I.run && ml > .1 && P.vig > 1; let spd = (run ? 7.4 : 4.4) * ml * (P.slow > 0 ? .55 : 1) * (typeof HERO !== 'undefined' ? HERO.spd : 1);
+    const run = I.run && ml > .1 && P.vig > 1; let spd = (run ? 7.4 : 4.4) * ml * (P.slow > 0 ? .55 : 1) * (typeof HERO !== 'undefined' ? HERO.spd : 1) * (typeof BOTAS !== 'undefined' ? BOTAS : 1);
     if (run) { P.vig -= 14 * dt; P.vigT = .5; }
     // velocidade com aceleração: arranca e freia aos poucos (mais natural)
     const V0 = P.vel || (P.vel = [0, 0]), tv = ml > .05 ? [mv[0] / ml * spd, mv[1] / ml * spd] : [0, 0];
@@ -1430,7 +1468,7 @@ function playerUpdate(dt, I) {
   const VV = P.vel || [0, 0], lk = P.lock && !P.lock.dead && P.st === 'move';
   const fwd = VV[0] * Math.sin(P.yaw) + VV[1] * Math.cos(P.yaw), side = -VV[0] * Math.cos(P.yaw) + VV[1] * Math.sin(P.yaw);
   animAny(r, { ph: P.ph, sp: P.sp, act: actMap[P.st], t: at, ready: P.combatT > 0, side: lk ? side : null, fwd }, dt);
-  r.pos = [P.pos[0], (r.yOff || 0) + (P.st === 'dead' && !r.isSkin ? .12 : 0), P.pos[2]]; r.yaw = P.yaw + (r.extraYaw || 0); r.roll = P.st === 'move' ? -(P.lean || 0) : 0; r.pitch = P.st === 'dead' && !r.isSkin ? lerp(r.pitch, -Math.PI / 2, 1 - Math.exp(-5 * dt)) : 0;
+  P.pos[1] += (groundY(P.pos[0], P.pos[2]) - P.pos[1]) * (1 - Math.exp(-20 * dt)); r.pos = [P.pos[0], P.pos[1] + (r.yOff || 0) + (P.st === 'dead' && !r.isSkin ? .12 : 0), P.pos[2]]; r.yaw = P.yaw + (r.extraYaw || 0); r.roll = P.st === 'move' ? -(P.lean || 0) : 0; r.pitch = P.st === 'dead' && !r.isSkin ? lerp(r.pitch, -Math.PI / 2, 1 - Math.exp(-5 * dt)) : 0;
   r.flash = Math.max(0, (r.flash || 0) - dt * 4); r.emAdd = P.unl.q ? V.sc([1, .78, .4], .6 + (P.lume / 100) * 1.6 + (P.st === 'ult' || P.st === 'charge' ? 3 : 0)) : null;
   r.update();
   // rastro da lâmina
@@ -1522,7 +1560,7 @@ function spawn(type, x, z, o = {}) {
   if (o.elite) { e.hp = e.maxhp = e.maxhp * 2; e.post = e.maxpost = e.maxpost * 1.6; e.baseScale *= 1.18; e.elite = true; e.dmgMul = (e.dmgMul || 1) * 1.2; }
   if (e.rig) e.rig.yaw = e.yaw;
   if (e.boss) { e.fury = false; e.nextSummon = 14; e.rad = 1.3; }
-  ENEMIES.push(e); puff([x, .2, z], [.5, .3, .55], 10, .6, .35); for (let k = 0; k < 14; k++) part([x, rnd(0, 2), z], [rnd(-1, 1), rnd(1, 3), rnd(-1, 1)], .8, .06, [.95, .3, .6]);
+  e.pos[1] = groundY(x, z); const gy0 = e.pos[1]; ENEMIES.push(e); puff([x, gy0 + .2, z], [.5, .3, .55], 10, .6, .35); for (let k = 0; k < 14; k++) part([x, gy0 + rnd(0, 2), z], [rnd(-1, 1), rnd(1, 3), rnd(-1, 1)], .8, .06, [.95, .3, .6]);
   return e;
 }
 function hurtEnemy(e, base, kind, post, o = {}) {
@@ -1553,6 +1591,7 @@ function meleeTokens() { return ENEMIES.filter(e => !e.dead && (e.st === 'wind' 
 function enemyHitCheck(e, range, arc, dmg) { const dx = P.pos[0] - e.pos[0], dz = P.pos[2] - e.pos[2], d = Math.hypot(dx, dz); if (d > range + .35) return false; if (Math.abs(angDiff(e.yaw, Math.atan2(dx, dz))) > arc / 2) return false; return hurtPlayer(dmg, e) || true; }
 function faceP(e, dt, rate = 6) { const ty = Math.atan2(P.pos[0] - e.pos[0], P.pos[2] - e.pos[2]); e.yaw += angDiff(e.yaw, ty) * (1 - Math.exp(-rate * dt)); }
 function enemyUpdate(e, dt) {
+  e.pos[1] = groundY(e.pos[0], e.pos[2]);
   e.flash = Math.max(0, e.flash - dt * 5);
   if (e.dead) { e.deadT += dt; return; }
   if (e.spawnT > 0) { e.spawnT -= dt; return; }
@@ -1657,7 +1696,7 @@ function enemyDraw(e, dt) {
   if (e.type === 'larva') {
     const segs = 6, wig = e.ph * 3; let p = [...e.pos]; const f = [Math.sin(e.yaw), Math.cos(e.yaw)];
     for (let k = 0; k < segs; k++) { const s = (.42 - k * .045) * sc * (e.dead ? fade : 1), off = Math.sin(wig - k * .9) * .12, lift = e.st === 'wind' && k < 2 ? .3 - k * .1 : 0;
-      const q = [e.pos[0] - f[0] * k * .25 + f[1] * off, s * .45 + lift + (e.dead ? -e.deadT * .2 : 0), e.pos[2] - f[1] * k * .25 - f[0] * off];
+      const q = [e.pos[0] - f[0] * k * .25 + f[1] * off, (e.pos[1] || 0) + s * .45 + lift + (e.dead ? -e.deadT * .2 : 0), e.pos[2] - f[1] * k * .25 - f[0] * off];
       R.draw(MESH.sph, M.trs(q[0], q[1], q[2], e.yaw, 0, 0, s, s * .8, s * 1.1), V.lerp(lin(0x8a8a96), lin(0xc8a8c8), k / segs), { flash: e.flash * .6, spec: .8, em: k === 0 ? [.4, .1, .25] : [0, 0, 0] }); }
     return;
   }
@@ -1669,7 +1708,7 @@ function enemyDraw(e, dt) {
       filhote: { biteW: 'bwind', bite: 'batk', chargeW: 'fwind', pullW: 'fcast', pull: 'fcast' } }[e.type] || {};
     const actM = { hurt: 'hit', stun: 'kneel', ...AM };
     animAny(r, { ph: e.ph, sp: e.sp, act: e.dead ? 'dead' : actM[e.st], t: e.at != null ? e.at : e.st === 'atk' ? .45 + e.t * 1.2 : e.t, ready: true }, dt);
-    r.pos = [e.pos[0], (r.yOff || 0) + e.y + (e.dead ? (r.isSkin ? (e.deadT > 1.5 ? -(e.deadT - 1.5) * .5 : 0) : .1 - e.deadT * .3) : 0), e.pos[2]]; r.yaw = e.yaw; r.pitch = e.dead && !r.isSkin ? lerp(r.pitch, -Math.PI / 2, 1 - Math.exp(-6 * dt)) : 0;
+    r.pos = [e.pos[0], (e.pos[1] || 0) + (r.yOff || 0) + e.y + (e.dead ? (r.isSkin ? (e.deadT > 1.5 ? -(e.deadT - 1.5) * .5 : 0) : .1 - e.deadT * .3) : 0), e.pos[2]]; r.yaw = e.yaw; r.pitch = e.dead && !r.isSkin ? lerp(r.pitch, -Math.PI / 2, 1 - Math.exp(-6 * dt)) : 0;
     r.scale = sc * (e.baseScale || 1); r.flash = e.flash * .5; r.emAdd = e.markT > 0 ? [1.4, 1.1, .5] : [.8, .15, .4]; r.update(); r.draw();
     if (e.markT > 0) R.ring(e.pos[0], e.pos[2], .9, .08, [1, .85, .5], .8);
     // fios rompidos
@@ -1677,7 +1716,7 @@ function enemyDraw(e, dt) {
   } else {
     const actM = { biteW: 'wind', bite: 'bite', chargeW: 'wind', howl: 'howl', pullW: 'bite', pull: 'bite', whipW: 'whip', whip: 'whip', stun: 'stun', roar: 'howl' };
     animDog(r, { ph: e.ph, sp: e.sp, act: e.dead ? 'dead' : actM[e.st], t: e.st === 'bite' ? .35 + e.t : e.t }, dt);
-    const baseS = e.boss ? r.scale : .78; r.pos = [e.pos[0], (r.yOff || 0) * baseS + (e.dead ? -e.deadT * .25 : 0), e.pos[2]]; r.yaw = e.yaw; r.roll = e.dead ? lerp(r.roll, 1.5, 1 - Math.exp(-3 * dt)) : 0;
+    const baseS = e.boss ? r.scale : .78; r.pos = [e.pos[0], (e.pos[1] || 0) + (r.yOff || 0) * baseS + (e.dead ? -e.deadT * .25 : 0), e.pos[2]]; r.yaw = e.yaw; r.roll = e.dead ? lerp(r.roll, 1.5, 1 - Math.exp(-3 * dt)) : 0;
     if (!e.boss) r.scale = .78 * sc; r.flash = e.flash * .5; r.emAdd = e.fury ? [1.5, .3, .6] : [.5, .1, .3]; r.update(); r.draw();
     const body = r.wp('body', [0, .3, 0]); const n = e.boss ? 7 : 3;
     for (let k = 0; k < n; k++) { const a = k * .9 + S.time * 1.3, z0 = (k / n - .5) * 1.2; const s = r.by.body.W; const p0 = M.xf(s, [0, .3, z0]); R.beam(p0, V.add(p0, [Math.sin(a) * .9 * baseS, .6 + Math.sin(a * 2) * .4, Math.cos(a) * .9 * baseS]), .04 * baseS, e.fury ? [1, .3, .4] : [.95, .35, .6], .9 * fade); }
@@ -1737,7 +1776,7 @@ function updHoles(dt) {
     else { h.life -= dt; if (boss && boss.fury) { const dx = P.pos[0] - h.p[0], dz = P.pos[2] - h.p[1], l = Math.hypot(dx, dz) || 1; h.p[0] += dx / l * .9 * dt; h.p[1] += dz / l * .9 * dt;
         if (l < h.r) { const a = Math.atan2(dx, dz); const np = [h.p[0] + Math.sin(a) * (h.r + .3), 0, h.p[1] + Math.cos(a) * (h.r + .3)]; if (W.confine && W.confine.c && Math.hypot(np[0] - W.confine.c[0], np[2] - W.confine.c[1]) < W.confine.r) P.pos = np; } }
       const k = Math.min(1, h.life * 2);
-      for (let s = 0; s < 18; s++) { const a0 = s / 18 * 6.28, a1 = (s + 1) / 18 * 6.28, p = (a, rr) => [h.p[0] + Math.sin(a) * rr, .06, h.p[1] + Math.cos(a) * rr]; R.quad([h.p[0], .06, h.p[1]], p(a0, h.r), p(a1, h.r), [h.p[0], .06, h.p[1]], [0, 0, 0], .92 * k, 0, 1, [[0, 0], [.7, 0], [.7, 0], [0, 0]]); }
+      for (let s = 0; s < 18; s++) { const a0 = s / 18 * 6.28, a1 = (s + 1) / 18 * 6.28, gyh = groundY(h.p[0], h.p[1]) + .06, p = (a, rr) => [h.p[0] + Math.sin(a) * rr, gyh, h.p[1] + Math.cos(a) * rr]; R.quad([h.p[0], gyh, h.p[1]], p(a0, h.r), p(a1, h.r), [h.p[0], gyh, h.p[1]], [0, 0, 0], .92 * k, 0, 1, [[0, 0], [.7, 0], [.7, 0], [0, 0]]); }
       R.ring(h.p[0], h.p[1], h.r + .05, .12, [.9, .3, .6], .8 * k);
       if (h.life <= 0) HOLES.splice(i, 1); } }
   if (W.confine && W.confine.c && W.confine.shrink) { const c = W.confine; c.r += (c.to - c.r) * (1 - Math.exp(-.8 * dt)); R.ring(c.c[0], c.c[1], c.r + .2, .35, [1, .2, .1], .6);
@@ -1902,7 +1941,7 @@ function updNpcs(dt) {
       else { n.to = null; n.sp = 0; if (n.face != null) n.yaw = n.face; } }
     else { n.sp *= .85; if (n.face != null) n.yaw += angDiff(n.yaw, n.face) * (1 - Math.exp(-6 * dt)); }
     animAny(n.rig, { ph: n.ph, sp: n.sp, act: n.act, t: 0, ready: n.ready }, dt);
-    n.rig.pos = [n.pos[0], n.rig.yOff || 0, n.pos[2]]; n.rig.yaw = n.yaw; n.rig.pitch = n.act === 'dead' && !n.rig.isSkin ? lerp(n.rig.pitch, -Math.PI / 2, 1 - Math.exp(-3 * dt)) : 0; if (n.act === 'dead' && !n.rig.isSkin) n.rig.pos[1] = .12;
+    n.pos[1] = groundY(n.pos[0], n.pos[2]); n.rig.pos = [n.pos[0], n.pos[1] + (n.rig.yOff || 0), n.pos[2]]; n.rig.yaw = n.yaw; n.rig.pitch = n.act === 'dead' && !n.rig.isSkin ? lerp(n.rig.pitch, -Math.PI / 2, 1 - Math.exp(-3 * dt)) : 0; if (n.act === 'dead' && !n.rig.isSkin) n.rig.pos[1] = .12;
     if (n.glow) n.rig.emAdd = n.glow; n.rig.update(); }
 }
 function drawNpcs() { for (const n of NPCS) if (n.show && V.d2(n.pos, R.cam) < 70) n.rig.draw(); }
@@ -1942,7 +1981,7 @@ async function dialog(lines) { const prev = S.mode; S.mode = 'dialog'; $('hud').
 async function cut(shots) {
   S.mode = 'cut'; MIS.skip = false; $('lb').classList.add('on'); $('hud').classList.add('hide'); $('skip').classList.add('on'); unlockPtr();
   for (const sh of shots) { if (sh.on) sh.on(); if (MIS.skip) continue;
-    if (sh.cam) camShot(sh.cam[0], sh.cam[1], sh.cam[2], sh.cam[3] || sh.cam[2], (sh.dur || 4) * 1.15);
+    if (sh.cam) { const up = p => p && p[0] > SX - 60 ? [p[0], p[1] + HS, p[2]] : p, c = sh.cam.map(up); camShot(c[0], c[1], c[2], c[3] || c[2], (sh.dur || 4) * 1.15); }
     if (sh.card) card(sh.card, sh.sub);
     const t0 = performance.now(); if (sh.line) await showLine(sh.line, true);
     const rest = (sh.dur || 0) * 1000 - (performance.now() - t0); if (rest > 0) await rwait(rest / 1000); }
@@ -1970,7 +2009,7 @@ async function completeMission(i, title) {
 }
 
 // ---------- montagem de cena por missão ----------
-const ENV0 = { ...R.env }, ENV_SERRA = { ...R.env, sun: V.norm([.35, .55, .6]), sunC: [2.2, 2.0, 1.8], skyA: lin(0x4f6c8e), skyB: lin(0xd0a890), fog: lin(0x7d8796), fogD: .0085, riftN: V.norm([.6, .3, .7]), night: .2 };
+const ENV0 = { ...R.env }, ENV_TRILHA = { ...R.env, sun: V.norm([.3, .88, .38]), sunC: [2.7, 2.2, 1.8], night: .12, fogD: .007 }, ENV_SERRA = { ...R.env, sun: V.norm([.35, .55, .6]), sunC: [2.2, 2.0, 1.8], skyA: lin(0x4f6c8e), skyB: lin(0xd0a890), fog: lin(0x7d8796), fogD: .0085, riftN: V.norm([.6, .3, .7]), night: .2 };
 function stage(i) {
   clearCombat(); NPCS.length = 0; RIFT.ts = 0; RIFT.s = 0; RIFT.bind = null; MARK = null; MIS.bossDead = false;
   P.hp = maxHp(); P.vig = 100; P.lume = 30; P.st = 'move'; P.cd = { q: 0, e: 0, r: 0 }; P.heal = null; P.rig.pitch = 0; P.trail.length = 0;
@@ -1999,12 +2038,41 @@ async function seamTask(b, flag, tok) {
   for (let k = 0; k < 60; k++) part([SX + rnd(-1.4, 1.4), rnd(-.5, .3), rnd(b.rect[3], b.rect[2])], [0, 1.5, 0], rnd(.6, 1.2), .08, [1, .85, .5]);
   b.ok = true; MIS.flags[flag] = true; await wait(.8);
 }
+// ponto da trilha a "s" metros do começo
+function trilhaEm(s) { const T = TRILHA; for (let i = 0; i < T.length - 1; i++) if (T[i + 1].s >= s) { const k = (s - T[i].s) / ((T[i + 1].s - T[i].s) || 1); return [lerp(T[i][0], T[i + 1][0], k), lerp(T[i][2], T[i + 1][2], k), lerp(T[i][1], T[i + 1][1], k)]; } const L = T[T.length - 1]; return [L[0], L[2], L[1]]; }
+async function subida(tok) {
+  const TOT = TRILHA[TRILHA.length - 1].s, pontos = [30, 75, 120, 165, 210, 255, 300, 340].filter(v => v < TOT - 10);
+  const grupos = [[['tecelao', 0], ['tecelao', 1], ['larva', 0]], [['fieira', 0], ['tecelao', 1], ['saltador', 1]], [['tecelao', 0], ['tecelao', 0], ['fieira', 1], ['larva', 1]],
+    [['bruta', 0], ['saltador', 1], ['saltador', 1]], [['tecelao', 1], ['fieira', 0], ['fieira', 1], ['saltador', 0]], [['bruta', 0], ['tecelao', 1], ['tecelao', 1], ['larva', 0]],
+    [['saltador', 1], ['saltador', 1], ['fieira', 0], ['bruta', 0]], [['bruta', 1], ['tecelao', 0], ['fieira', 1], ['saltador', 1], ['tecelao', 0]]];
+  let k = 0;
+  objective('Suba a trilha da montanha'); hint('Os Desfiadores atacam na subida — alguns <b>pulam do alto</b> das paredes. Não pare: siga o losango dourado.', 7000);
+  while (tok === MIS.token) {
+    const me = pertoTrilha(P.pos[0], P.pos[2]); const s = me.d < 20 ? me.s : 0;
+    const alvo = trilhaEm(Math.min(TOT, s + 22)); MARK = alvo;
+    const resta = Math.max(0, Math.round(TOT - s)); $('obj').textContent = 'Suba a trilha da montanha — faltam ' + resta + ' m';
+    if (k < pontos.length && s > pontos[k]) { // emboscada: uns na frente, outros pulando do alto
+      const g = grupos[k % grupos.length]; let j = 0;
+      for (const [t, doAlto] of g) { const p = trilhaEm(Math.min(TOT - 2, s + 10 + j * 3.5)), off = (j % 2 ? 1 : -1) * 1.2;
+        const e = spawn(t, p[0] + off, p[2] + off * .5, { aggro: 60, instant: !!doAlto }); if (doAlto) { e.y = 9; e.vy = 0; } j++; }
+      icon('Emboscada!', 'gold'); AU.roar(); k++;
+    }
+    if (naSerra(P.pos[0], P.pos[2]) && P.pos[0] > SX - 15) break;
+    await wait(.25);
+  }
+  MARK = null; for (const e of ENEMIES) { e.dead = true; e.deadT = 9; } // os que ficaram para trás somem
+}
 const fight = async (list, tok) => { for (const [t, x, z, o] of list) spawn(t, SX + x, z, o || {}); await until(() => alive() === 0); };
 
 // ---------- CAPÍTULO 2 · MISSÃO 4: Travessia da Serra ----------
 async function M4(retry) {
   const tok = MIS.token; stage(3); P.pos = [SX, 0, 5]; P.yaw = Math.PI; camRelease();
   if (!retry) {
+    // a subida: sai da arena do chefe 1 e sobe a trilha em curvas até o topo da montanha
+    P.pos = [10, 0, -125]; P.yaw = Math.PI / 2; camRelease(); CAM.yaw = Math.PI / 2;
+    banner('A subida', 'A Serra das Costuras fica no topo da montanha'); AU.music('combat');
+    await subida(tok); if (tok !== MIS.token) return;
+    P.pos = [SX, 0, 5]; P.yaw = Math.PI; camRelease();
     AU.music('calm');
     await cut([
       { on: () => { P.cutAct = null; }, cam: [[SX + 24, 14, 18], [SX + 14, 9, 6], [SX, 0, -40], [SX, 2, -70]], dur: 5, card: 'Capítulo 2', sub: 'Serra das Costuras' },
@@ -2136,9 +2204,9 @@ async function M1(retry) {
   // luta
   P.pos = retry ? [0, 0, -16] : P.pos;
   for (const [x, z] of [[-2, -33], [2.5, -35], [0, -38]]) spawn('tecelao', x, z, { aggro: 40 });
-  AU.music('combat'); objective('Defenda a rua do mercado: Tecelões Caídos (0/3)');
+  AU.music('combat'); objective('Defenda a rua do mercado: Tecelões Caídos');
   hint(TOUCH ? 'Botão <b>Travar</b> mantém a câmera no inimigo' : '<b>Tab</b> ou botão do meio: travar alvo · roda do mouse troca', 6000);
-  await until(() => { $('obj').textContent = `Defenda a rua do mercado: Tecelões Caídos (${3 - alive()}/3)`; return alive() === 0; });
+  const tot0 = alive(); await until(() => { $('obj').textContent = `Defenda a rua do mercado: Tecelões Caídos (${tot0 - alive()}/${tot0})`; return alive() === 0; });
   if (tok !== MIS.token) return;
   AU.music('calm'); await completeMission(0, 'Fios no chão');
   if (tok !== MIS.token) return;
@@ -2354,6 +2422,8 @@ function frame(now) {
   else if (S.mode === 'lobby') { S.time += rdt; lobbyFrame(rdt); }
   else if (S.mode === 'menu') { const t = now / 1000 * .06; CAM.script = null; R.setCam([Math.sin(t) * 22, 7 + Math.sin(t * 2) * 1.5, -10 + Math.cos(t) * 22], [0, 3, -12]); S.time += rdt; RIFT.ts = 0; }
   else { camUpdate(0, { lx: 0, ly: 0 }); }
+  { const tr = P.pos[0] > 14 && P.pos[0] < SX - 25 && pertoTrilha(P.pos[0], P.pos[2]).d < 8, alto = P.pos[0] > SX - 25 ? 2 : tr ? 1 : 0;
+    if (S.mode !== 'lobby' && S.mode !== 'menu' && frame.alto !== alto) { frame.alto = alto; Object.assign(R.env, alto === 2 ? ENV_SERRA : alto === 1 ? ENV_TRILHA : ENV0); } }
   if (S.mode === 'play' && !window.FIXDT) { frame.acc = (frame.acc || 0) + raw; if (frame.acc > 5) { frame.acc = 0; if (fpsA < (OPT.economia ? 24 : 32) && OPT.quality > .5) { OPT.quality = Math.max(.5, OPT.quality - .25); window.QUALITY = OPT.quality; resize(); saveOpts(); } } }
   { const mb = $('mouseBtn'); if (mb && !TOUCH) { const v = S.mode === 'play' ? '' : 'none'; if (mb.style.display !== v) mb.style.display = v; } }
   if (TOUCH) { const v = S.mode === 'play' ? '' : 'hidden'; if ($('touch').style.visibility !== v) $('touch').style.visibility = v; }
@@ -2379,7 +2449,7 @@ function KP_skip(I) { return I.pause; }
 function cutPlayer(dt) {
   if (P.cutTo) { const d = V.sub(P.cutTo, P.pos), l = Math.hypot(d[0], d[2]); if (l > .15) { const s = Math.min(4 * dt, l); P.pos[0] += d[0] / l * s; P.pos[2] += d[2] / l * s; P.yaw = Math.atan2(d[0], d[2]); P.sp = 1; P.ph += dt * 7; } else { P.cutTo = null; P.sp = 0; } } else P.sp *= .85;
   animAny(P.rig, { ph: P.ph, sp: P.sp, act: P.cutAct || null, t: 0, ready: false }, Math.max(dt, .016));
-  P.rig.pos = [P.pos[0], P.rig.yOff || 0, P.pos[2]]; P.rig.yaw = P.yaw; P.rig.pitch = 0; P.rig.update();
+  P.pos[1] = groundY(P.pos[0], P.pos[2]); P.rig.pos = [P.pos[0], P.pos[1] + (P.rig.yOff || 0), P.pos[2]]; P.rig.yaw = P.yaw; P.rig.pitch = 0; P.rig.update();
 }
 async function loadMaps() {
   if (typeof MAPZ === 'undefined') return;
@@ -2404,7 +2474,7 @@ async function boot() {
   buildWorld(); W.gate = { b: [-3.6, 3.6, -95.6, -96.6], off: false }; W.obst.push(W.gate);
   bindUI(); bindTouch(); bindMouseBtn(); stage(0); P.pos = [0, 0, -9]; P.rig.update(); refreshMenu();
   $('load').style.display = 'none'; lobLoad(); buildLobby(); toLobby(); requestAnimationFrame(frame);
-  window.DBG = { get fps() { return fpsA; }, get NET() { return typeof NET !== 'undefined' ? NET : null; }, HEROIS, LOB, escolherHeroi, get HERO() { return HERO; }, SKANIM, P, MIS, ENEMIES, runMission, S, spawn, W, CAM, NPCS, hurtEnemy };
+  window.DBG = { get fps() { return fpsA; }, trilhaEm: s => trilhaEm(s), get NET() { return typeof NET !== 'undefined' ? NET : null; }, HEROIS, LOB, escolherHeroi, get HERO() { return HERO; }, SKANIM, P, MIS, ENEMIES, runMission, S, spawn, W, CAM, NPCS, hurtEnemy };
 }
 setTimeout(() => { try { boot(); } catch (e) { $('load').textContent = 'Erro ao carregar: ' + e.message; throw e; } }, 30);
 
@@ -2457,7 +2527,7 @@ function netSnap(d) {
   for (const s of d.en) { const [id, type, x, z, yaw, st, t, at, hp, maxhp, dead, y, fury, bs, sp, elite] = s; vivos.add(id);
     let e = NET.ghosts[id];
     if (!e) { if (dead) continue; e = spawn(type, x, z, { instant: true }); e.ghost = true; e.id = id; NET.ghosts[id] = e; e.maxhp = maxhp; }
-    e.tpos = [x, 0, z]; e.tyaw = yaw; e.st = st; e.t = t; e.at = at; e.hp = hp; e.maxhp = maxhp; e.y = y; e.fury = !!fury; e.baseScale = bs; e.sp = sp; e.elite = !!elite;
+    e.tpos = [x, groundY(x, z), z]; e.tyaw = yaw; e.st = st; e.t = t; e.at = at; e.hp = hp; e.maxhp = maxhp; e.y = y; e.fury = !!fury; e.baseScale = bs; e.sp = sp; e.elite = !!elite;
     if (dead && !e.dead) { e.dead = true; e.deadT = 0; if (performance.now() - (NET.lastHit[id] || 0) < 6000) gainXP(e.d.xp, V.add(e.pos, [0, 2.6, 0])); if (P.lock === e) P.lock = null; for (let k = 0; k < 20; k++) part(V.add(e.pos, [0, 1, 0]), [rnd(-3, 3), rnd(0, 4), rnd(-3, 3)], rnd(.4, 1), .07, [.95, .35, .6]); } }
   for (const id in NET.ghosts) if (!vivos.has(+id)) { const e = NET.ghosts[id], k = ENEMIES.indexOf(e); if (k >= 0) ENEMIES.splice(k, 1); delete NET.ghosts[id]; }
   $('obj').textContent = d.obj; W.bridgeOk = !!d.br; W.gate.off = !!d.gate; MIS.barrier = !!d.bar; d.B.forEach((v, k) => { if (W.serra.bridges[k]) W.serra.bridges[k].ok = !!v; });
@@ -2517,10 +2587,10 @@ function netDraw(dt) {
   for (const id in NET.others) { const o = NET.others[id]; if (!o.rig || now - o.seen > 5000) continue;
     const k = 1 - Math.exp(-14 * dt); o.pos[0] += (o.tpos[0] - o.pos[0]) * k; o.pos[2] += (o.tpos[2] - o.pos[2]) * k; o.yaw += angDiff(o.yaw, o.tyaw ?? o.yaw) * k; o.cd = Math.max(0, (o.cd || 0) - dt);
     const r = o.rig; animAny(r, { ph: o.ph, sp: o.sp, act: o.morto ? 'dead' : o.act, t: o.at, ready: true }, dt);
-    r.pos = [o.pos[0], r.yOff || 0, o.pos[2]]; r.yaw = (o.yaw ?? 0) + (r.extraYaw || 0); r.pitch = 0; r.update(); r.draw();
+    r.pos = [o.pos[0], groundY(o.pos[0], o.pos[2]) + (r.yOff || 0), o.pos[2]]; r.yaw = (o.yaw ?? 0) + (r.extraYaw || 0); r.pitch = 0; r.update(); r.draw();
     const c = heroBy(o.k).cor; R.ring(o.pos[0], o.pos[2], .55, .05, c, .6);
     if (!o.tag) { o.tag = document.createElement('div'); o.tag.className = 'nettag'; document.body.appendChild(o.tag); }
-    const sp = R.project([o.pos[0], 2.25, o.pos[2]]); if (sp && S.mode !== 'lobby') { o.tag.style.display = ''; o.tag.style.left = sp[0] + 'px'; o.tag.style.top = sp[1] + 'px'; o.tag.innerHTML = esc(o.nome || '') + '<i style="width:' + Math.round(100 * clamp((o.hp || 0) / (o.mhp || 100), 0, 1)) + '%"></i>'; } else o.tag.style.display = 'none'; }
+    const sp = R.project([o.pos[0], groundY(o.pos[0], o.pos[2]) + 2.25, o.pos[2]]); if (sp && S.mode !== 'lobby') { o.tag.style.display = ''; o.tag.style.left = sp[0] + 'px'; o.tag.style.top = sp[1] + 'px'; o.tag.innerHTML = esc(o.nome || '') + '<i style="width:' + Math.round(100 * clamp((o.hp || 0) / (o.mhp || 100), 0, 1)) + '%"></i>'; } else o.tag.style.display = 'none'; }
 }
 // amigo apertando JOGAR espera o líder
 function netLobbyBotao() { const b = $('lbJogar'); if (!b) return; const amigo = LOB.sala && !LOB.souHost; b.disabled = !!amigo; b.textContent = amigo ? 'ESPERANDO O LÍDER' : 'JOGAR'; }
@@ -2587,6 +2657,71 @@ function vozesOpcao() { const op = $('opts'); if (!op || $('oVoz')) return; cons
 setTimeout(vozesOpcao, 500);
 // ao escolher o herói no lobby, ele se apresenta
 const _escolherHeroiV = escolherHeroi; escolherHeroi = function (k) { _escolherHeroiV(k); const h = heroBy(k); falar(h.nome, { nera: 'Eu sou Nera. Vamos recosturar o mundo.', iaro: 'Iaro. A brasa não se apaga.', lira: 'Lira! Tenta me acompanhar.', ruan: 'Ruan. Fico na frente, sempre.', mireia: 'Mireia. A maré sabe o caminho.', oren: 'Oren. Já vi muita tempestade.' }[h.k]); };
+
+// ================= DIFICULDADE, MOEDAS E LOJA DO FERREIRO =================
+// mais inimigos e mais fortes
+const _spawnD = spawn;
+spawn = function (type, x, z, o = {}) {
+  const e = _spawnD(type, x, z, o);
+  if (e.ghost || (typeof NET !== 'undefined' && NET.guest)) return e;
+  if (e.boss) { e.hp = e.maxhp = Math.round(e.maxhp * 1.25); }
+  else { e.hp = e.maxhp = Math.round(e.maxhp * 1.3); e.dmgMul = (e.dmgMul || 1) * 1.2; e.cdMul = (e.cdMul || 1) * .9;
+    // a cada dois inimigos comuns, vem um a mais
+    if (!o.extra && S.mode !== 'lobby') { spawn.n = (spawn.n || 0) + 1; if (spawn.n % 2 === 0) { const a = rnd(0, 6.28); const nx = x + Math.sin(a) * 1.8, nz = z + Math.cos(a) * 1.8; if (walkable(nx, nz)) spawn(type, nx, nz, { ...o, extra: true }); } } }
+  return e;
+};
+// ---------- moedas ----------
+const LOJA_K = 'fio_loja';
+const LOJA = { moedas: 0, itens: {} };
+try { Object.assign(LOJA, JSON.parse(localStorage.getItem(LOJA_K) || '{}')); } catch (e) { }
+function lojaSalva() { try { localStorage.setItem(LOJA_K, JSON.stringify(LOJA)); } catch (e) { } }
+const MOEDAS = { tecelao: 6, fieira: 7, larva: 2, filhote: 8, bruta: 16, saltador: 10, cao: 150, irma: 220 };
+const _killEnemyL = killEnemy;
+killEnemy = function (e) {
+  const r = _killEnemyL(e); const m = Math.round((MOEDAS[e.type] || 5) * (e.elite ? 2 : 1));
+  LOJA.moedas += m; lojaSalva(); num(V.add(e.pos, [0, 3, 0]), '+' + m + ' moedas', 'g'); moedasHUD(); return r;
+};
+function moedasHUD() { let el = $('moedas'); if (!el) { el = document.createElement('div'); el.id = 'moedas'; $('hud').appendChild(el); } el.innerHTML = '<i></i>' + LOJA.moedas; }
+// ---------- itens ----------
+const ITENS = [
+  { id: 'couro', nome: 'Armadura de couro', txt: '+15% de vida', preco: 60, tipo: 'armadura', vida: 1.15 },
+  { id: 'malha', nome: 'Cota de malha', txt: '+30% de vida', preco: 170, tipo: 'armadura', vida: 1.3, req: 'couro' },
+  { id: 'placas', nome: 'Armadura de placas', txt: '+50% de vida', preco: 360, tipo: 'armadura', vida: 1.5, req: 'malha' },
+  { id: 'afiada', nome: 'Lâmina afiada', txt: '+15% de dano', preco: 80, tipo: 'lamina', dano: 1.15 },
+  { id: 'aco', nome: 'Aço do fio', txt: '+30% de dano', preco: 220, tipo: 'lamina', dano: 1.3, req: 'afiada' },
+  { id: 'lume', nome: 'Lâmina de lume', txt: '+50% de dano', preco: 420, tipo: 'lamina', dano: 1.5, req: 'aco' },
+  { id: 'botas', nome: 'Botas leves', txt: '+8% de velocidade', preco: 90, tipo: 'botas', vel: 1.08 },
+  { id: 'pocao', nome: 'Poção de cura', txt: '+1 poção (máx. 6)', preco: 25, tipo: 'pocao', repete: true },
+];
+function melhor(tipo, campo) { let v = 1; for (const it of ITENS) if (it.tipo === tipo && LOJA.itens[it.id]) v = Math.max(v, it[campo]); return v; }
+// aplica nos atributos
+const _maxHpL = maxHp; maxHp = function () { return Math.round(_maxHpL() * melhor('armadura', 'vida')); };
+const _atkL = atk; atk = function () { return _atkL() * melhor('lamina', 'dano'); };
+Object.defineProperty(window, 'BOTAS', { get: () => melhor('botas', 'vel') });
+function comprar(it) {
+  if (LOJA.moedas < it.preco) { icon('Moedas insuficientes'); return; }
+  if (it.req && !LOJA.itens[it.req]) { icon('Compre o item anterior primeiro'); return; }
+  if (!it.repete && LOJA.itens[it.id]) return;
+  if (it.tipo === 'pocao') { if (P.potions >= 6) { icon('Bolsa de poções cheia'); return; } P.potions++; }
+  else LOJA.itens[it.id] = true;
+  LOJA.moedas -= it.preco; lojaSalva(); AU.chime(); if (it.tipo === 'armadura') P.hp = maxHp(); lojaUI(); moedasHUD();
+  if (typeof grito === 'function' && it.tipo !== 'pocao') falar(HERO.nome, { armadura: 'Agora sim, bem protegida.', lamina: 'Que lâmina boa!', botas: 'Bem mais leve!' }[it.tipo]);
+}
+function lojaUI() {
+  $('ljMoedas').textContent = LOJA.moedas; const box = $('ljItens'); box.innerHTML = '';
+  for (const it of ITENS) { const tem = !it.repete && LOJA.itens[it.id], trav = it.req && !LOJA.itens[it.req];
+    const b = document.createElement('button'); b.className = 'lji' + (tem ? ' tem' : '') + (trav ? ' trav' : '');
+    b.innerHTML = '<b>' + it.nome + '</b><span>' + it.txt + '</span><em>' + (tem ? 'Comprado' : trav ? 'Bloqueado' : it.preco + ' moedas') + '</em>';
+    b.onclick = e => { e.stopPropagation(); comprar(it); }; box.appendChild(b); }
+}
+function abrirLoja(volta) { lojaUI(); $('loja').classList.add('on'); $('loja').dataset.volta = volta || ''; }
+function lojaInit() {
+  $('ljFechar').onclick = () => $('loja').classList.remove('on');
+  const bl = document.createElement('button'); bl.id = 'lbLoja'; bl.textContent = 'Ferreiro'; bl.onclick = () => abrirLoja('lobby'); $('lbMini').insertBefore(bl, $('lbMini').firstChild);
+  const bp = document.createElement('button'); bp.id = 'bLoja'; bp.textContent = 'Ferreiro (loja)'; bp.onclick = () => abrirLoja('pause'); const pb = $('bTree'); pb.parentNode.insertBefore(bp, pb.nextSibling);
+  moedasHUD();
+}
+setTimeout(lojaInit, 300);
 
 }
 </script>

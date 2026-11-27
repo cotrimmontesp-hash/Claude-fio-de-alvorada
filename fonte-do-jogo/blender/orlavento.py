@@ -79,7 +79,7 @@ ETAPAS = []
 def etapa(f): ETAPAS.append(f); return f
 @etapa
 def terreno():
-    S = 1.2; X0, X1, Z0, Z1 = -70, 70, 36, -170
+    S = 1.2; X0, X1, Z0, Z1 = -70, 30, 36, -170
     nx, nz = int((X1 - X0) / S), int((Z0 - Z1) / S)
     bm = bmesh.new(); vs = {}
     cl = bm.loops.layers.color.new('Col')
@@ -173,7 +173,7 @@ def arvores():
     tronco, folha, folha2 = mat('tronco', 0x3e2e22, .9), mat('folha', 0x3d4c22, .85), mat('folha2', 0x56592a, .85)
     pos = [(-15, 12), (15, 12), (-14, -16), (15, -30), (-16, -38)]
     while len(pos) < 90:
-        x, z = random.uniform(-64, 64), random.uniform(-166, 30)
+        x, z = random.uniform(-64, 26), random.uniform(-166, 30)
         if CH[1] - 2 < z < CH[0] + 2 or dist_walk(x, z) < 1.5: continue
         if dist_walk(x, z) < 6 and abs(x) < 15 and -97 < z < -66: continue
         pos.append((x, z))
@@ -186,7 +186,7 @@ def arvores():
 def pedras():
     m = mat('pedra_campo', 0x6e665a, .9)
     for k in range(70):
-        x, z = random.uniform(-60, 60), random.uniform(-164, 30)
+        x, z = random.uniform(-60, 26), random.uniform(-164, 30)
         if CH[1] - 1 < z < CH[0] + 1 or dist_walk(x, z) < 2: continue
         s = random.uniform(.5, 2); rocha('Pedra', x, z, altura(x, z), (s * 1.2, s, s * .7), m, k)
 @etapa
@@ -221,8 +221,73 @@ def montanhas():
     m = mat('montanha', 0x5a5a68, .95); n = mat('neve', 0xd8d4d0, .6)
     for k in range(26):
         a = k / 26 * math.tau; r = 150 + random.random() * 60; x, z = math.sin(a) * r, -60 + math.cos(a) * r; h = random.uniform(40, 90)
+        if x > -10 and -200 < z < 90: continue  # o lado da trilha da montanha fica livre
         o = cil('Montanha', x, z, h / 2 - 4, random.uniform(30, 55), h, m, 9, 0); o.rotation_euler.z = random.random() * 6
         cil('Neve', x, z, h * .85 - 4, random.uniform(8, 12), h * .3, n, 9, 0)
+
+# ---------- trilha da montanha: liga a arena do chefe 1 até a Serra das Costuras lá em cima ----------
+SX, HS, LARG = 170, 45, 6.0
+PONTOS = [(16, -126, 0), (45, -120, 2), (100, -110, 7), (112, -95, 10), (60, -80, 15), (48, -65, 18), (100, -50, 24), (112, -35, 27),
+          (60, -20, 32), (50, -5, 35), (105, 8, 40), (150, 18, 44), (170, 9, 45)]
+def catmull(P, n=8):
+    out = []
+    for i in range(len(P) - 1):
+        p0, p1, p2, p3 = P[max(i - 1, 0)], P[i], P[i + 1], P[min(i + 2, len(P) - 1)]
+        for k in range(n):
+            t = k / n; t2, t3 = t * t, t * t * t
+            out.append(tuple(.5 * ((2 * p1[j]) + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3) for j in range(3)))
+    out.append(P[-1]); return out
+CAMINHO = catmull(PONTOS)
+def perto_caminho(x, z):
+    best = (1e9, 0, 0)
+    for i in range(len(CAMINHO) - 1):
+        ax, az, ah = CAMINHO[i]; bx, bz, bh = CAMINHO[i + 1]; dx, dz = bx - ax, bz - az; L = dx * dx + dz * dz or 1
+        t = max(0, min(1, ((x - ax) * dx + (z - az) * dz) / L)); px, pz = ax + dx * t, az + dz * t; d = math.hypot(x - px, z - pz)
+        if d < best[0]: best = (d, ah + (bh - ah) * t, i + t)
+    return best
+def alt_montanha(x, z):
+    d, hp, s = perto_caminho(x, z); n = noise.noise(Vector((x * .09, z * .09, 2.2))) * .5 + .5
+    if d <= LARG / 2: return hp - .05, 'trilha', d
+    if x > 152 and d > LARG / 2 + 1: return -70, 'abismo', d
+    return hp + min(6.5, (d - LARG / 2) * 1.5) + n * 1.5 * min(1, (d - LARG / 2) / 4), 'pedra', d
+@etapa
+def montanha():
+    S = 1.5; X0, X1, Z0, Z1 = 26, 158, 40, -160
+    nx, nz = int((X1 - X0) / S), int((Z0 - Z1) / S)
+    bm = bmesh.new(); vs = {}; cl = bm.loops.layers.color.new('Col'); info = {}
+    for j in range(nz + 1):
+        for i in range(nx + 1):
+            x, z = X0 + i * S, Z0 - j * S; y, tipo, d = alt_montanha(x, z); vs[i, j] = bm.verts.new(GP(x, z, y)); info[i, j] = (tipo, d, y)
+    for j in range(nz):
+        for i in range(nx):
+            f = bm.faces.new((vs[i, j], vs[i + 1, j], vs[i + 1, j + 1], vs[i, j + 1])); f.smooth = True
+            x, z = X0 + (i + .5) * S, Z0 - (j + .5) * S; n2 = noise.noise(Vector((x * .6, z * .6, 5))) * .5 + .5
+            tipo, d, y = info[i, j]
+            if tipo == 'trilha': c = (.36 + .05 * n2, .27 + .04 * n2, .17)
+            elif d - LARG / 2 > 3.5: c = (.24 + .08 * n2, .3 + .07 * n2, .1)   # grama em cima das paredes
+            else: c = (.32 + .08 * n2, .29 + .07 * n2, .26 + .05 * n2)         # rocha
+            for l in f.loops: l[cl] = (c[0], c[1], c[2], 1)
+    me = bpy.data.meshes.new('Encosta'); bm.to_mesh(me); bm.free()
+    link(bpy.data.objects.new('Encosta', me), mat('terra', 0xffffff, .95, vc=True))
+@etapa
+def trilha_detalhes():
+    m = mat('pedra_campo', 0x6e665a, .9); madeira = mat('madeira', 0x5a3e28); fogo = mat('janela', 0xffb060)
+    tronco, folha = mat('tronco', 0x3e2e22, .9), mat('folha', 0x3d4c22, .85)
+    for k in range(0, len(CAMINHO) - 1, 2):
+        x, z, h = CAMINHO[k]; x2, z2, _ = CAMINHO[k + 1]; a = math.atan2(x2 - x, z2 - z); px, pz = math.cos(a), -math.sin(a)
+        for sgn in (-1, 1):
+            if random.random() < .7: rocha('PedraTrilha', x + px * sgn * (LARG / 2 + .6), z + pz * sgn * (LARG / 2 + .6), h + .2, (1.2, 1.1, 1.0), m, k * 3 + sgn)
+        if k % 10 == 0:  # tochas pela subida
+            sx = x + px * (LARG / 2 - .4); sz = z + pz * (LARG / 2 - .4)
+            caixa('PosteLume', sx, sz, h + 1, .16, .16, 2, madeira); caixa('Lanterna', sx, sz, h + 2.1, .28, .28, .3, fogo, bev=0)
+    for k in range(70):  # árvores em cima das paredes
+        x, z = random.uniform(30, 150), random.uniform(-155, 36); y, tipo, d = alt_montanha(x, z)
+        if tipo != 'pedra' or d < LARG / 2 + 6: continue
+        s = random.uniform(.8, 1.3); tronco_obj(x, z, y + 1.6 * s, s, tronco)
+        for q in range(3): rocha('Copa', x + random.uniform(-.8, .8) * s, z + random.uniform(-.8, .8) * s, y + (3.3 + q * .55) * s, (1.4 * s, 1.4 * s, 1.15 * s), folha, k * 3 + q)
+    pico = mat('montanha', 0x5a5a68, .95); neve = mat('neve', 0xd8d4d0, .6)
+    for x, z, r, hh in [(95, -140, 40, 95), (40, -150, 30, 70), (140, -150, 35, 85), (85, 45, 38, 100), (30, 30, 26, 60)]:  # picos em volta
+        cil('Pico', x, z, hh / 2 - 4, r, hh, pico, 9, 0); cil('Neve', x, z, hh * .85 - 4, r * .22, hh * .3, neve, 9, 0)
 @etapa
 def exportar():
     import json
@@ -253,7 +318,7 @@ def exportar():
         R = [[mw[0][0], mw[0][2], -mw[0][1], mw[0][3]], [mw[2][0], mw[2][2], -mw[2][1], mw[2][3]], [-mw[1][0], -mw[1][2], mw[1][1], -mw[1][3]]]
         objs.append([me.name, [round(x, 4) for row in R for x in row], cor, emis])
     p = os.path.join(OUT, 'orlavento.json')
-    with open(p, 'w') as f: json.dump({'malhas': meshes, 'objetos': objs}, f, separators=(',', ':'))
+    with open(p, 'w') as f: json.dump({'malhas': meshes, 'objetos': objs, 'caminho': {'pts': [[round(a, 2), round(b, 2), round(c, 2)] for a, b, c in CAMINHO], 'larg': LARG, 'sx': SX, 'hs': HS}}, f, separators=(',', ':'))
     open(os.path.join(OUT, 'orlavento_log.txt'), 'a').write('EXPORTADO %d objetos, %d malhas, %d bytes\n' % (len(objs), len(meshes), os.path.getsize(p)))
 # ---------- câmera da vista para acompanhar ----------
 import mathutils
@@ -263,7 +328,7 @@ def vista(alvo, dist, alt):
         if a.type == 'VIEW_3D':
             sp = a.spaces[0]; sp.shading.type = 'SOLID'; sp.shading.color_type = 'MATERIAL'; r3 = sp.region_3d
             r3.view_location = alvo; r3.view_distance = dist; r3.view_rotation = mathutils.Euler((math.radians(alt), 0, math.radians(20)), 'XYZ').to_quaternion()
-VISTAS = {0: (GP(0, -50), 150, 55), 2: (GP(0, -10), 45, 60), 3: (GP(0, -12), 35, 62), 4: (GP(0, -30), 90, 58), 6: (GP(0, -60), 30, 62), 7: (GP(0, -85), 50, 58), 8: (GP(0, -128), 45, 55), 9: (GP(0, -60), 260, 70)}
+VISTAS = {12: (GP(95, -55), 230, 50), 0: (GP(0, -50), 150, 55), 2: (GP(0, -10), 45, 60), 3: (GP(0, -12), 35, 62), 4: (GP(0, -30), 90, 58), 6: (GP(0, -60), 30, 62), 7: (GP(0, -85), 50, 58), 8: (GP(0, -128), 45, 55), 9: (GP(0, -60), 260, 70)}
 d = bpy.data.lights.new('Sol', 'SUN'); d.energy = 3.5; d.color = (1, .93, .82); d.angle = .05
 o = bpy.data.objects.new('Sol', d); col.objects.link(o); o.rotation_euler = (math.radians(50), math.radians(10), math.radians(35))
 w = scn.world or bpy.data.worlds.new('Ceu'); scn.world = w; w.use_nodes = True

@@ -174,6 +174,18 @@ input[type=checkbox]{width:22px;height:22px;accent-color:#d9a650}
 .nettag{position:fixed;z-index:6;transform:translate(-50%,-100%);font:600 12px var(--uf);color:#fff;text-shadow:0 1px 3px #000;pointer-events:none;text-align:center;white-space:nowrap}
 .nettag i{display:block;height:3px;margin:2px auto 0;width:60px;background:#5fd07a;box-shadow:0 0 0 1px rgba(0,0,0,.6)}
 #lbJogar:disabled{filter:grayscale(.6) brightness(.8);cursor:default;font-size:clamp(14px,3vh,22px)}
+
+#moedas{position:absolute;left:22px;bottom:100px;font:700 16px var(--uf);color:#ffd76a;text-shadow:0 1px 4px #000;display:flex;align-items:center;gap:6px}
+#moedas i{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3b0,#e2a12a 60%,#8a5a10);box-shadow:0 0 6px #e2a12a}
+#loja{position:fixed;inset:0;z-index:31;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.65)}
+#loja.on{display:flex}
+#loja .panel{width:min(640px,94%);max-height:94%;overflow:auto;background:rgba(16,12,9,.97);border:1px solid rgba(243,217,160,.35);border-radius:6px;padding:2.4vh 22px}
+#loja h2{margin:0 0 4px;font-size:clamp(20px,4.4vh,30px)}
+#ljTopo{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;color:#ffd76a;font:700 18px var(--uf)}
+#ljItens{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.lji{display:flex;flex-direction:column;align-items:flex-start;text-align:left;padding:10px 12px;min-height:0;background:rgba(30,24,18,.8);border:1px solid rgba(255,255,255,.12);cursor:pointer}
+.lji b{font:700 15px var(--uf);color:var(--txt)}.lji span{font-size:12px;color:var(--dim)}.lji em{font-style:normal;margin-top:6px;font:700 13px var(--uf);color:#ffd76a}
+.lji.tem{border-color:#5fd07a}.lji.tem em{color:#5fd07a}.lji.trav{opacity:.5}
 </style>
 </head>
 <body>
@@ -208,6 +220,8 @@ input[type=checkbox]{width:22px;height:22px;accent-color:#d9a650}
   <div id="lbAcao"><button id="lbJogar">JOGAR</button><div id="lbSub"></div><div id="lbMini"><button id="lbNova">Nova jornada</button><button id="lbOpt">Opções</button><button id="lbSair">Sair</button></div></div>
   <div id="lbDica">Arraste para girar o personagem</div>
 </div>
+<div id="loja"><div class="panel"><h2>Ferreiro de Orlavento</h2><div id="ljTopo"><span>Suas moedas: <b id="ljMoedas">0</b></span><button id="ljFechar">Fechar</button></div>
+  <p class="info" style="margin:0 0 10px">Derrote inimigos para ganhar moedas. Armaduras dão mais vida, lâminas dão mais dano.</p><div id="ljItens"></div></div></div>
 <div id="conv"><div class="panel"><h2>Chamar amigos</h2><p class="info">Código da sua sala:</p><div id="cvCode">…</div>
   <div class="row2"><button id="cvCopiar">Copiar link</button><button id="cvZap">Mandar no WhatsApp</button></div>
   <p class="info" style="margin-top:14px">Recebeu um código? Entre na sala do amigo:</p>

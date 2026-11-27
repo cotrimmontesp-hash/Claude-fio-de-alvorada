@@ -11,7 +11,26 @@ W.walk = [[-20, 20, 16, -42], [-4, 4, -41, -54.6], [-14, 14, -67.9, -96], [-3.5,
 W.bridge = [-1.45, 1.45, -54.4, -68.1];
 W.bridgeOk = false; W.confine = null;
 // ---------- Serra das Costuras (capítulo 2), longe da vila ----------
-const SX = 400;
+const SX = 170, HS = 45; // a Serra fica no topo da montanha
+// ---------- trilha da montanha (mesmos pontos do Blender) ----------
+const TRILHA_P = [[16, -126, 0], [45, -120, 2], [100, -110, 7], [112, -95, 10], [60, -80, 15], [48, -65, 18], [100, -50, 24], [112, -35, 27], [60, -20, 32], [50, -5, 35], [105, 8, 40], [150, 18, 44], [170, 9, 45]];
+const TRILHA_L = 6;
+const TRILHA = (() => { const P = TRILHA_P, out = [];
+  for (let i = 0; i < P.length - 1; i++) { const p0 = P[Math.max(i - 1, 0)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(i + 2, P.length - 1)];
+    for (let k = 0; k < 8; k++) { const t = k / 8, t2 = t * t, t3 = t2 * t; out.push([0, 1, 2].map(j => .5 * ((2 * p1[j]) + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3))); } }
+  out.push(P[P.length - 1]); let acc = 0; out.forEach((p, i) => { if (i) acc += Math.hypot(p[0] - out[i - 1][0], p[1] - out[i - 1][1]); p.s = acc; }); return out; })();
+function pertoTrilha(x, z) { // distância até a trilha, altura nela e quanto já andou
+  if (x < 10 || z > 30 || z < -134) return { d: 1e9, h: 0, s: 0 };
+  let bd = 1e9, bh = 0, bs = 0;
+  for (let i = 0; i < TRILHA.length - 1; i++) { const a = TRILHA[i], b = TRILHA[i + 1], dx = b[0] - a[0], dz = b[1] - a[1], L = dx * dx + dz * dz || 1;
+    const t = clamp(((x - a[0]) * dx + (z - a[1]) * dz) / L, 0, 1), px = a[0] + dx * t, pz = a[1] + dz * t, d = Math.hypot(x - px, z - pz);
+    if (d < bd) { bd = d; bh = a[2] + (b[2] - a[2]) * t; bs = a.s + (b.s - a.s) * t; } }
+  return { d: bd, h: bh, s: bs };
+}
+function naSerra(x, z) { if (x < SX - 40) return false; for (const i of W.serra.islands) { if (i.c ? Math.hypot(x - i.c[0], z - i.c[1]) <= i.r : inRect(x, z, i.rect)) return true; }
+  for (const b of W.serra.bridges) if (b.ok && inRect(x, z, b.rect)) return true; return false; }
+// altura do chão onde as pessoas pisam
+function groundY(x, z) { if (x > SX - 40 && naSerra(x, z)) return HS; const t = pertoTrilha(x, z); if (t.d <= TRILHA_L / 2 + .6) return t.h; return 0; }
 W.serra = {
   islands: [{ c: [SX, 0], r: 11 }, { rect: [SX - 7.5, SX + 7.5, -23.5, -50] }, { c: [SX, -70], r: 12.5 }, { c: [SX + 2, -112], r: 15.5 }],
   bridges: [{ rect: [SX - 1.45, SX + 1.45, -10.2, -24], ok: true }, { rect: [SX - 1.45, SX + 1.45, -49.5, -58], ok: false, seam: [SX - 3.4, 0, -47.6] }, { rect: [SX - 1.45, SX + 1.45, -82, -97], ok: false, seam: [SX + 3.2, 0, -80.8] }],
@@ -20,8 +39,8 @@ const HOLES = [];
 function walkable(x, z) {
   for (const h of HOLES) if (h.open && Math.hypot(x - h.p[0], z - h.p[1]) < h.r) return false;
   if (W.confine) { const c = W.confine; if (c.c) return Math.hypot(x - c.c[0], z - c.c[1]) <= c.r; return inRect(x, z, c); }
-  if (x > 200) { for (const i of W.serra.islands) { if (i.c ? Math.hypot(x - i.c[0], z - i.c[1]) <= i.r : inRect(x, z, i.rect)) return true; }
-    for (const b of W.serra.bridges) if (b.ok && inRect(x, z, b.rect)) return true; return false; }
+  if (naSerra(x, z)) return true;
+  if (pertoTrilha(x, z).d <= TRILHA_L / 2) return true;
   for (const r of W.walk) if (inRect(x, z, r)) return true;
   if (W.bridgeOk && inRect(x, z, W.bridge)) return true;
   if (Math.hypot(x - BOSS_C[0], z - BOSS_C[1]) <= BOSS_R) return true;
@@ -32,7 +51,7 @@ function distWalk(x, z) { // distância aproximada até a área andável (para r
   let d = 1e9; for (const r of W.walk) { const dx = Math.max(r[0] - x, 0, x - r[1]), dz = Math.max(r[3] - z, 0, z - r[2]); d = Math.min(d, Math.hypot(dx, dz)); }
   d = Math.min(d, Math.max(0, Math.hypot(x - BOSS_C[0], z - BOSS_C[1]) - BOSS_R)); return d;
 }
-function groundH(x, z) { if (x > 200) return -60; const d = distWalk(x, z); return sstep(2, 26, d) * (4 + vnoise(x * .06, z * .06) * 10) + (d > 1 ? vnoise(x * .3, z * .3) * .5 * sstep(1, 6, d) : 0); }
+function groundH(x, z) { if (x > 26) { const t = pertoTrilha(x, z); if (t.d < 1e8) { if (t.d <= TRILHA_L / 2) return t.h; if (x > 152 && t.d > TRILHA_L / 2 + 1) return naSerra(x, z) ? HS : -70; return t.h + Math.min(6.5, (t.d - TRILHA_L / 2) * 1.5); } if (naSerra(x, z)) return HS; } const d = distWalk(x, z); return sstep(2, 26, d) * (4 + vnoise(x * .06, z * .06) * 10) + (d > 1 ? vnoise(x * .3, z * .3) * .5 * sstep(1, 6, d) : 0); }
 function pushOut(e, rad) { // empurra para fora de obstáculos (círculos e caixas)
   for (const o of W.obst) {
     if (o.off) continue;
@@ -70,10 +89,10 @@ function blenderMap(J, skip) {
   for (const [name, R, cor, em] of J.objetos) {
     const base = name.split('.')[0]; if (skip(base)) continue;
     const g = geo(name), m = [R[0], R[4], R[8], 0, R[1], R[5], R[9], 0, R[2], R[6], R[10], 0, R[3], R[7], R[11], 1];
-    if (base === 'Terreno' && g.c) { // chão com cor por vértice
+    if (g.c) { // chão com cor por vértice (terreno da vila e encosta da montanha)
       const c = []; for (let k = 0; k < g.c.length; k += 3) c.push(g.c[k], g.c[k + 1], g.c[k + 2], 0);
       const p = []; for (let k = 0; k < g.p.length; k += 3) { const x = g.p[k], y = g.p[k + 1], z = g.p[k + 2]; p.push(m[0] * x + m[4] * y + m[8] * z + m[12], m[1] * x + m[5] * y + m[9] * z + m[13], m[2] * x + m[6] * y + m[10] * z + m[14]); }
-      ground = mkMesh({ p, n: g.n, c, i: g.i }); continue; }
+      (ground = ground || []).push(mkMesh({ p, n: g.n, c, i: g.i })); continue; }
     out.add(g, m, cor, em ? 3 : base === 'Nevoa' ? .8 : 0);
   }
   return { mesh: out, ground };
@@ -190,8 +209,13 @@ function buildWorld() {
   g = gReal; // daqui pra frente vai para o mapa de verdade
   // tochas da ravina e da trilha
   for (const [x, z] of [[-12, -70], [12, -70], [-12, -93], [12, -93], [-3.3, -103], [3.3, -103]]) { box(x, 1, z, .15, 2, .15, C(0x3e2c1c)); box(x, 2.1, z, .25, .25, .25, C(0xffa040), 4); W.lights.push({ p: [x, 2.3, z], c: V.sc(C(0xff8a40), 3), r: 8 }); oc(x, z, .25); W.torches.push([x, 2.25, z]); }
-  buildSerra(g, box);
-  if (MAPA) { const bm = blenderMap(MAPA, b => b === 'Boneco' || b === 'Palha'); if (bm.ground) W.ground = bm.ground; W.blender = mkMesh(bm.mesh); }
+  { const gs = new GB(), boxS = (x, y, z, ww, h, d, col, ry = 0, em = 0, rx = 0, rz = 0) => gs.add(G.box, M.trs(x, y, z, ry, rx, rz, ww, h, d), col, em);
+    const n0 = { th: W.threads.length, li: W.lights.length, to: W.torches.length };
+    buildSerra(gs, boxS); W.serraMesh = mkMesh(gs);
+    for (const th of W.threads.slice(n0.th)) { th.a = [th.a[0], th.a[1] + HS, th.a[2]]; th.b = [th.b[0], th.b[1] + HS, th.b[2]]; }
+    for (const l of W.lights.slice(n0.li)) l.p = [l.p[0], l.p[1] + HS, l.p[2]];
+    for (let k = n0.to; k < W.torches.length; k++) W.torches[k] = [W.torches[k][0], W.torches[k][1] + HS, W.torches[k][2]]; }
+  if (MAPA) { const bm = blenderMap(MAPA, b => b === 'Boneco' || b === 'Palha'); if (bm.ground) { W.ground = bm.ground[0]; W.grounds = bm.ground.slice(1); } W.blender = mkMesh(bm.mesh); }
   W.mesh = mkMesh(g); W.vc = g.p.length / 3;
   // bonecos de treino
   W.dummies = [[-6.2, 0, 2.2], [-6.2, 0, -0.2]].map(p => ({ pos: p, hp: 1, shake: 0, hits: 0 }));
@@ -199,8 +223,8 @@ function buildWorld() {
 }
 W.lights = []; W.torches = [];
 function drawWorld(time) {
-  if (R.cam[0] > 200) drawSerra(time);
-  R.draw(W.ground, M.I(), [1, 1, 1], { spec: .05, grain: .5, rim: 0 });
+  if (W.serraMesh) R.draw(W.serraMesh, M.T(0, HS, 0), [1, 1, 1], { spec: .15, grain: .35, rim: .03 }); if (R.cam[0] > 20) drawSerra(time);
+  R.draw(W.ground, M.I(), [1, 1, 1], { spec: .05, grain: .5, rim: 0 }); if (W.grounds) for (const gm of W.grounds) R.draw(gm, M.I(), [1, 1, 1], { spec: .05, grain: .5, rim: 0 });
   R.draw(W.mesh, M.I(), [1, 1, 1], { spec: .15, grain: .35, rim: .03 });
   if (W.blender) R.draw(W.blender, M.I(), [1, 1, 1], { spec: .12, grain: .35, rim: .03 });
   if (W.bridgeOk) R.draw(W.dyn.bridgeMid, M.I(), [1, 1, 1], { spec: .1, grain: .3 });
@@ -243,19 +267,18 @@ function buildSerra(g, box) {
   // ponte 1 (já costurada) e postes
   const bridgeM = (b) => { const m = new GB(); for (let z = b.rect[2] - .25; z > b.rect[3]; z -= .5) m.add(G.box, M.trs(SX + rnd(-.05, .05), -.06, z, rnd(-.04, .04), 0, 0, 3 + rnd(0, .3), .12, .44), V.lerp(C(0x8a6a42), C(0x6e5236), rnd())); return mkMesh(m); };
   W.serra.bridges.forEach((b, k) => { b.mesh = bridgeM(b); for (const sx of [-1.6, 1.6]) for (const z of [b.rect[2] - .3, b.rect[3] + .3]) box(SX + sx, .5, z, .18, 1.4, .18, C(0x4a3420));
-    b.rails = [[[SX - 1.6, 1.15, b.rect[2] - .3], [SX - 1.6, 1.15, b.rect[3] + .3]], [[SX + 1.6, 1.15, b.rect[2] - .3], [SX + 1.6, 1.15, b.rect[3] + .3]]];
+    b.rails = [[[SX - 1.6, HS + 1.15, b.rect[2] - .3], [SX - 1.6, HS + 1.15, b.rect[3] + .3]], [[SX + 1.6, HS + 1.15, b.rect[2] - .3], [SX + 1.6, HS + 1.15, b.rect[3] + .3]]];
     if (b.seam) { box(b.seam[0], 1.1, b.seam[2], .32, 2.2, .32, C(0x5a4a3a)); box(b.seam[0], 2.25, b.seam[2], .5, .15, .5, C(0xb08a3e)); W.obst.push({ x: b.seam[0], z: b.seam[2], r: .4 }); } });
   // gaiola do pastor e tochas
   for (const [x, z] of [[SX - 9, -64], [SX + 9, -76], [SX - 6, -3], [SX + 6, -3], [SX - 11, -106], [SX + 14, -116]]) { box(x, 1, z, .15, 2, .15, C(0x3e2c1c)); box(x, 2.1, z, .25, .25, .25, C(0xffa040), 4); W.lights.push({ p: [x, 2.3, z], c: V.sc(C(0xff8a40), 3), r: 8 }); W.obst.push({ x, z, r: .25 }); W.torches.push([x, 2.25, z]); }
   // pedras em pé na arena da chefe
   for (let k = 0; k < 12; k++) { const a = k / 12 * 6.28; if (Math.abs(angDiff(a, 0)) < .4) continue; const x = SX + 2 + Math.sin(a) * 16.5, z = -112 + Math.cos(a) * 16.5, h = rnd(3, 6); box(x, h / 2 - .5, z, 1.2, h, .9, rk(), a); }
-  box(SX, -42, -60, 200, 1, 260, C(0x1c1e26));
 }
 function drawSerra(time) {
   for (const b of W.serra.bridges) {
-    if (b.ok) { R.draw(b.mesh, M.I(), [1, 1, 1], { spec: .1, grain: .3 }); for (const r of b.rails) drawThread(r[0], r[1], .25, [1, .85, .5], .035, time, false); }
+    if (b.ok) { R.draw(b.mesh, M.T(0, HS, 0), [1, 1, 1], { spec: .1, grain: .3 }); for (const r of b.rails) drawThread(r[0], r[1], .25, [1, .85, .5], .035, time, false); }
     else { for (const r of b.rails) { const m = V.lerp(r[0], r[1], .3); drawThread(r[0], [m[0], m[1] - .8, m[2]], .1, [1, .7, .4], .03, time, true); } }
-    if (b.seam && !b.ok) { const s = b.seam; for (let k = 0; k < 3; k++) drawThread([s[0], 2.3, s[2]], [s[0] + Math.sin(time * 2 + k) * .9, 1.2 + k * .3, s[2] - 1 + Math.cos(time + k)], .1, [1, .85, .5], .04, time + k, true); R.light([s[0], 2, s[2]], [1.4, 1.1, .6], 4); }
+    if (b.seam && !b.ok) { const s = b.seam; for (let k = 0; k < 3; k++) drawThread([s[0], HS + 2.3, s[2]], [s[0] + Math.sin(time * 2 + k) * .9, HS + 1.2 + k * .3, s[2] - 1 + Math.cos(time + k)], .1, [1, .85, .5], .04, time + k, true); R.light([s[0], HS + 2, s[2]], [1.4, 1.1, .6], 4); }
   }
-  for (let k = 0; k < 3; k++) R.pt([SX + rnd(-30, 30), rnd(-14, -4), rnd(-130, 10)], rnd(3, 6), [.75, .78, .85], .05, 0);
+  for (let k = 0; k < 3; k++) R.pt([SX + rnd(-30, 30), HS + rnd(-14, -4), rnd(-130, 10)], rnd(3, 6), [.75, .78, .85], .05, 0);
 }

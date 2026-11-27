@@ -47,7 +47,7 @@ function netSnap(d) {
   for (const s of d.en) { const [id, type, x, z, yaw, st, t, at, hp, maxhp, dead, y, fury, bs, sp, elite] = s; vivos.add(id);
     let e = NET.ghosts[id];
     if (!e) { if (dead) continue; e = spawn(type, x, z, { instant: true }); e.ghost = true; e.id = id; NET.ghosts[id] = e; e.maxhp = maxhp; }
-    e.tpos = [x, 0, z]; e.tyaw = yaw; e.st = st; e.t = t; e.at = at; e.hp = hp; e.maxhp = maxhp; e.y = y; e.fury = !!fury; e.baseScale = bs; e.sp = sp; e.elite = !!elite;
+    e.tpos = [x, groundY(x, z), z]; e.tyaw = yaw; e.st = st; e.t = t; e.at = at; e.hp = hp; e.maxhp = maxhp; e.y = y; e.fury = !!fury; e.baseScale = bs; e.sp = sp; e.elite = !!elite;
     if (dead && !e.dead) { e.dead = true; e.deadT = 0; if (performance.now() - (NET.lastHit[id] || 0) < 6000) gainXP(e.d.xp, V.add(e.pos, [0, 2.6, 0])); if (P.lock === e) P.lock = null; for (let k = 0; k < 20; k++) part(V.add(e.pos, [0, 1, 0]), [rnd(-3, 3), rnd(0, 4), rnd(-3, 3)], rnd(.4, 1), .07, [.95, .35, .6]); } }
   for (const id in NET.ghosts) if (!vivos.has(+id)) { const e = NET.ghosts[id], k = ENEMIES.indexOf(e); if (k >= 0) ENEMIES.splice(k, 1); delete NET.ghosts[id]; }
   $('obj').textContent = d.obj; W.bridgeOk = !!d.br; W.gate.off = !!d.gate; MIS.barrier = !!d.bar; d.B.forEach((v, k) => { if (W.serra.bridges[k]) W.serra.bridges[k].ok = !!v; });
@@ -107,10 +107,10 @@ function netDraw(dt) {
   for (const id in NET.others) { const o = NET.others[id]; if (!o.rig || now - o.seen > 5000) continue;
     const k = 1 - Math.exp(-14 * dt); o.pos[0] += (o.tpos[0] - o.pos[0]) * k; o.pos[2] += (o.tpos[2] - o.pos[2]) * k; o.yaw += angDiff(o.yaw, o.tyaw ?? o.yaw) * k; o.cd = Math.max(0, (o.cd || 0) - dt);
     const r = o.rig; animAny(r, { ph: o.ph, sp: o.sp, act: o.morto ? 'dead' : o.act, t: o.at, ready: true }, dt);
-    r.pos = [o.pos[0], r.yOff || 0, o.pos[2]]; r.yaw = (o.yaw ?? 0) + (r.extraYaw || 0); r.pitch = 0; r.update(); r.draw();
+    r.pos = [o.pos[0], groundY(o.pos[0], o.pos[2]) + (r.yOff || 0), o.pos[2]]; r.yaw = (o.yaw ?? 0) + (r.extraYaw || 0); r.pitch = 0; r.update(); r.draw();
     const c = heroBy(o.k).cor; R.ring(o.pos[0], o.pos[2], .55, .05, c, .6);
     if (!o.tag) { o.tag = document.createElement('div'); o.tag.className = 'nettag'; document.body.appendChild(o.tag); }
-    const sp = R.project([o.pos[0], 2.25, o.pos[2]]); if (sp && S.mode !== 'lobby') { o.tag.style.display = ''; o.tag.style.left = sp[0] + 'px'; o.tag.style.top = sp[1] + 'px'; o.tag.innerHTML = esc(o.nome || '') + '<i style="width:' + Math.round(100 * clamp((o.hp || 0) / (o.mhp || 100), 0, 1)) + '%"></i>'; } else o.tag.style.display = 'none'; }
+    const sp = R.project([o.pos[0], groundY(o.pos[0], o.pos[2]) + 2.25, o.pos[2]]); if (sp && S.mode !== 'lobby') { o.tag.style.display = ''; o.tag.style.left = sp[0] + 'px'; o.tag.style.top = sp[1] + 'px'; o.tag.innerHTML = esc(o.nome || '') + '<i style="width:' + Math.round(100 * clamp((o.hp || 0) / (o.mhp || 100), 0, 1)) + '%"></i>'; } else o.tag.style.display = 'none'; }
 }
 // amigo apertando JOGAR espera o líder
 function netLobbyBotao() { const b = $('lbJogar'); if (!b) return; const amigo = LOB.sala && !LOB.souHost; b.disabled = !!amigo; b.textContent = amigo ? 'ESPERANDO O LÍDER' : 'JOGAR'; }

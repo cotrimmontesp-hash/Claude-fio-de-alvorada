@@ -132,11 +132,12 @@ function camUpdate(dt, I) {
     const bossE = ENEMIES.find(e => e.boss && !e.dead && e.spawnT <= 0), boss = !!bossE;
     // luta de chefe sem alvo travado: a câmera vira devagar para o chefe não sumir atrás dela
     if (bossE && !tg && Math.abs(I.lx) < .002) { const dy = Math.atan2(bossE.pos[0] - P.pos[0], bossE.pos[2] - P.pos[2]), df = angDiff(CAM.yaw, dy); if (Math.abs(df) > .7) CAM.yaw += df * (1 - Math.exp(-2.2 * dt)); }
-    let dist = (boss ? 6.4 : 4.4) - CAM.zoom * 1.6;
+    const naTrilha = P.pos[0] > 14 && P.pos[0] < SX - 15 && pertoTrilha(P.pos[0], P.pos[2]).d < 6; CAM.trilha = lerp(CAM.trilha || 0, naTrilha ? 1 : 0, 1 - Math.exp(-2 * dt));
+    let dist = (boss ? 6.4 : 4.4) + CAM.trilha * 2.6 - CAM.zoom * 1.6;
     CAM.dist += (dist - CAM.dist) * (1 - Math.exp(-4 * dt)); CAM.zoom = Math.max(0, CAM.zoom - dt * 1.5);
     const f = [Math.sin(CAM.yaw), 0, Math.cos(CAM.yaw)], rgt = [-Math.cos(CAM.yaw), 0, Math.sin(CAM.yaw)];
     const at = V.add(P.pos, [0, 1.45 + (P.rig.yOff || 0) * .4, 0]), cp = Math.cos(CAM.pitch), sp = Math.sin(CAM.pitch);
-    let eye = V.add(V.add(at, V.sc(f, -CAM.dist * cp)), V.add([0, CAM.dist * sp, 0], V.sc(rgt, .65)));
+    let eye = V.add(V.add(at, V.sc(f, -CAM.dist * cp)), V.add([0, CAM.dist * sp + (CAM.trilha || 0) * 3.2, 0], V.sc(rgt, .65)));
     if (bossE) { const bd = Math.hypot(eye[0] - bossE.pos[0], eye[2] - bossE.pos[2]), lim = 1.6 * (bossE.baseScale || 1) + .8; if (bd < lim) eye[1] += (lim - bd) * 1.4; } // sobe a câmera se o chefe estiver colado nela
     const gh = groundH(eye[0], eye[2]) + .35; if (eye[1] < gh) eye[1] = gh;
     const k = 1 - Math.exp(-18 * dt); CAM.eye = V.lerp(CAM.eye, eye, k); CAM.at = V.lerp(CAM.at, V.add(at, V.sc(rgt, .65)), k);
@@ -154,8 +155,8 @@ const P = {
   unl: { q: false, e: false, r: false }, trail: [], heal: null, vigT: 0, hits: 0, hitT: 0, dodgeDir: [0, 0, 1], cur: null, combatT: 0, pull: null, stats: { moved: 0, dodges: 0, dummy: 0, dummyHeavy: 0 }
 };
 const XPT = [0, 60, 150, 270, 420, 600, 820, 1080];
-const maxHp = () => Math.round((100 + (P.level - 1) * 14) * (typeof HERO !== 'undefined' ? HERO.hp : 1));
-const atk = () => (10 + (P.level - 1) * 2.4) * (1 + P.wlvl * .15) * (typeof HERO !== 'undefined' ? HERO.dmg : 1);
+let maxHp = () => Math.round((100 + (P.level - 1) * 14) * (typeof HERO !== 'undefined' ? HERO.hp : 1));
+let atk = () => (10 + (P.level - 1) * 2.4) * (1 + P.wlvl * .15) * (typeof HERO !== 'undefined' ? HERO.dmg : 1);
 const ATK = [
   { dur: .4, hit: .15, range: 2.5, arc: 1.9, mult: 1, post: 7, step: 1.1, pose: 's1', kind: 'w' },
   { dur: .4, hit: .15, range: 2.5, arc: 1.9, mult: 1.05, post: 7, step: 1.1, pose: 's2', kind: 'w' },
@@ -195,7 +196,7 @@ function playerUpdate(dt, I) {
     const red = P.nodes.contra ? .5 : .3; for (const k in P.cd) P.cd[k] *= (1 - red); P.lume = Math.min(100, P.lume + 20);
   }
   if (P.st === 'move') {
-    const run = I.run && ml > .1 && P.vig > 1; let spd = (run ? 7.4 : 4.4) * ml * (P.slow > 0 ? .55 : 1) * (typeof HERO !== 'undefined' ? HERO.spd : 1);
+    const run = I.run && ml > .1 && P.vig > 1; let spd = (run ? 7.4 : 4.4) * ml * (P.slow > 0 ? .55 : 1) * (typeof HERO !== 'undefined' ? HERO.spd : 1) * (typeof BOTAS !== 'undefined' ? BOTAS : 1);
     if (run) { P.vig -= 14 * dt; P.vigT = .5; }
     // velocidade com aceleração: arranca e freia aos poucos (mais natural)
     const V0 = P.vel || (P.vel = [0, 0]), tv = ml > .05 ? [mv[0] / ml * spd, mv[1] / ml * spd] : [0, 0];
@@ -243,7 +244,7 @@ function playerUpdate(dt, I) {
   const VV = P.vel || [0, 0], lk = P.lock && !P.lock.dead && P.st === 'move';
   const fwd = VV[0] * Math.sin(P.yaw) + VV[1] * Math.cos(P.yaw), side = -VV[0] * Math.cos(P.yaw) + VV[1] * Math.sin(P.yaw);
   animAny(r, { ph: P.ph, sp: P.sp, act: actMap[P.st], t: at, ready: P.combatT > 0, side: lk ? side : null, fwd }, dt);
-  r.pos = [P.pos[0], (r.yOff || 0) + (P.st === 'dead' && !r.isSkin ? .12 : 0), P.pos[2]]; r.yaw = P.yaw + (r.extraYaw || 0); r.roll = P.st === 'move' ? -(P.lean || 0) : 0; r.pitch = P.st === 'dead' && !r.isSkin ? lerp(r.pitch, -Math.PI / 2, 1 - Math.exp(-5 * dt)) : 0;
+  P.pos[1] += (groundY(P.pos[0], P.pos[2]) - P.pos[1]) * (1 - Math.exp(-20 * dt)); r.pos = [P.pos[0], P.pos[1] + (r.yOff || 0) + (P.st === 'dead' && !r.isSkin ? .12 : 0), P.pos[2]]; r.yaw = P.yaw + (r.extraYaw || 0); r.roll = P.st === 'move' ? -(P.lean || 0) : 0; r.pitch = P.st === 'dead' && !r.isSkin ? lerp(r.pitch, -Math.PI / 2, 1 - Math.exp(-5 * dt)) : 0;
   r.flash = Math.max(0, (r.flash || 0) - dt * 4); r.emAdd = P.unl.q ? V.sc([1, .78, .4], .6 + (P.lume / 100) * 1.6 + (P.st === 'ult' || P.st === 'charge' ? 3 : 0)) : null;
   r.update();
   // rastro da lâmina
@@ -335,7 +336,7 @@ function spawn(type, x, z, o = {}) {
   if (o.elite) { e.hp = e.maxhp = e.maxhp * 2; e.post = e.maxpost = e.maxpost * 1.6; e.baseScale *= 1.18; e.elite = true; e.dmgMul = (e.dmgMul || 1) * 1.2; }
   if (e.rig) e.rig.yaw = e.yaw;
   if (e.boss) { e.fury = false; e.nextSummon = 14; e.rad = 1.3; }
-  ENEMIES.push(e); puff([x, .2, z], [.5, .3, .55], 10, .6, .35); for (let k = 0; k < 14; k++) part([x, rnd(0, 2), z], [rnd(-1, 1), rnd(1, 3), rnd(-1, 1)], .8, .06, [.95, .3, .6]);
+  e.pos[1] = groundY(x, z); const gy0 = e.pos[1]; ENEMIES.push(e); puff([x, gy0 + .2, z], [.5, .3, .55], 10, .6, .35); for (let k = 0; k < 14; k++) part([x, gy0 + rnd(0, 2), z], [rnd(-1, 1), rnd(1, 3), rnd(-1, 1)], .8, .06, [.95, .3, .6]);
   return e;
 }
 function hurtEnemy(e, base, kind, post, o = {}) {
@@ -366,6 +367,7 @@ function meleeTokens() { return ENEMIES.filter(e => !e.dead && (e.st === 'wind' 
 function enemyHitCheck(e, range, arc, dmg) { const dx = P.pos[0] - e.pos[0], dz = P.pos[2] - e.pos[2], d = Math.hypot(dx, dz); if (d > range + .35) return false; if (Math.abs(angDiff(e.yaw, Math.atan2(dx, dz))) > arc / 2) return false; return hurtPlayer(dmg, e) || true; }
 function faceP(e, dt, rate = 6) { const ty = Math.atan2(P.pos[0] - e.pos[0], P.pos[2] - e.pos[2]); e.yaw += angDiff(e.yaw, ty) * (1 - Math.exp(-rate * dt)); }
 function enemyUpdate(e, dt) {
+  e.pos[1] = groundY(e.pos[0], e.pos[2]);
   e.flash = Math.max(0, e.flash - dt * 5);
   if (e.dead) { e.deadT += dt; return; }
   if (e.spawnT > 0) { e.spawnT -= dt; return; }
@@ -470,7 +472,7 @@ function enemyDraw(e, dt) {
   if (e.type === 'larva') {
     const segs = 6, wig = e.ph * 3; let p = [...e.pos]; const f = [Math.sin(e.yaw), Math.cos(e.yaw)];
     for (let k = 0; k < segs; k++) { const s = (.42 - k * .045) * sc * (e.dead ? fade : 1), off = Math.sin(wig - k * .9) * .12, lift = e.st === 'wind' && k < 2 ? .3 - k * .1 : 0;
-      const q = [e.pos[0] - f[0] * k * .25 + f[1] * off, s * .45 + lift + (e.dead ? -e.deadT * .2 : 0), e.pos[2] - f[1] * k * .25 - f[0] * off];
+      const q = [e.pos[0] - f[0] * k * .25 + f[1] * off, (e.pos[1] || 0) + s * .45 + lift + (e.dead ? -e.deadT * .2 : 0), e.pos[2] - f[1] * k * .25 - f[0] * off];
       R.draw(MESH.sph, M.trs(q[0], q[1], q[2], e.yaw, 0, 0, s, s * .8, s * 1.1), V.lerp(lin(0x8a8a96), lin(0xc8a8c8), k / segs), { flash: e.flash * .6, spec: .8, em: k === 0 ? [.4, .1, .25] : [0, 0, 0] }); }
     return;
   }
@@ -482,7 +484,7 @@ function enemyDraw(e, dt) {
       filhote: { biteW: 'bwind', bite: 'batk', chargeW: 'fwind', pullW: 'fcast', pull: 'fcast' } }[e.type] || {};
     const actM = { hurt: 'hit', stun: 'kneel', ...AM };
     animAny(r, { ph: e.ph, sp: e.sp, act: e.dead ? 'dead' : actM[e.st], t: e.at != null ? e.at : e.st === 'atk' ? .45 + e.t * 1.2 : e.t, ready: true }, dt);
-    r.pos = [e.pos[0], (r.yOff || 0) + e.y + (e.dead ? (r.isSkin ? (e.deadT > 1.5 ? -(e.deadT - 1.5) * .5 : 0) : .1 - e.deadT * .3) : 0), e.pos[2]]; r.yaw = e.yaw; r.pitch = e.dead && !r.isSkin ? lerp(r.pitch, -Math.PI / 2, 1 - Math.exp(-6 * dt)) : 0;
+    r.pos = [e.pos[0], (e.pos[1] || 0) + (r.yOff || 0) + e.y + (e.dead ? (r.isSkin ? (e.deadT > 1.5 ? -(e.deadT - 1.5) * .5 : 0) : .1 - e.deadT * .3) : 0), e.pos[2]]; r.yaw = e.yaw; r.pitch = e.dead && !r.isSkin ? lerp(r.pitch, -Math.PI / 2, 1 - Math.exp(-6 * dt)) : 0;
     r.scale = sc * (e.baseScale || 1); r.flash = e.flash * .5; r.emAdd = e.markT > 0 ? [1.4, 1.1, .5] : [.8, .15, .4]; r.update(); r.draw();
     if (e.markT > 0) R.ring(e.pos[0], e.pos[2], .9, .08, [1, .85, .5], .8);
     // fios rompidos
@@ -490,7 +492,7 @@ function enemyDraw(e, dt) {
   } else {
     const actM = { biteW: 'wind', bite: 'bite', chargeW: 'wind', howl: 'howl', pullW: 'bite', pull: 'bite', whipW: 'whip', whip: 'whip', stun: 'stun', roar: 'howl' };
     animDog(r, { ph: e.ph, sp: e.sp, act: e.dead ? 'dead' : actM[e.st], t: e.st === 'bite' ? .35 + e.t : e.t }, dt);
-    const baseS = e.boss ? r.scale : .78; r.pos = [e.pos[0], (r.yOff || 0) * baseS + (e.dead ? -e.deadT * .25 : 0), e.pos[2]]; r.yaw = e.yaw; r.roll = e.dead ? lerp(r.roll, 1.5, 1 - Math.exp(-3 * dt)) : 0;
+    const baseS = e.boss ? r.scale : .78; r.pos = [e.pos[0], (e.pos[1] || 0) + (r.yOff || 0) * baseS + (e.dead ? -e.deadT * .25 : 0), e.pos[2]]; r.yaw = e.yaw; r.roll = e.dead ? lerp(r.roll, 1.5, 1 - Math.exp(-3 * dt)) : 0;
     if (!e.boss) r.scale = .78 * sc; r.flash = e.flash * .5; r.emAdd = e.fury ? [1.5, .3, .6] : [.5, .1, .3]; r.update(); r.draw();
     const body = r.wp('body', [0, .3, 0]); const n = e.boss ? 7 : 3;
     for (let k = 0; k < n; k++) { const a = k * .9 + S.time * 1.3, z0 = (k / n - .5) * 1.2; const s = r.by.body.W; const p0 = M.xf(s, [0, .3, z0]); R.beam(p0, V.add(p0, [Math.sin(a) * .9 * baseS, .6 + Math.sin(a * 2) * .4, Math.cos(a) * .9 * baseS]), .04 * baseS, e.fury ? [1, .3, .4] : [.95, .35, .6], .9 * fade); }
@@ -550,7 +552,7 @@ function updHoles(dt) {
     else { h.life -= dt; if (boss && boss.fury) { const dx = P.pos[0] - h.p[0], dz = P.pos[2] - h.p[1], l = Math.hypot(dx, dz) || 1; h.p[0] += dx / l * .9 * dt; h.p[1] += dz / l * .9 * dt;
         if (l < h.r) { const a = Math.atan2(dx, dz); const np = [h.p[0] + Math.sin(a) * (h.r + .3), 0, h.p[1] + Math.cos(a) * (h.r + .3)]; if (W.confine && W.confine.c && Math.hypot(np[0] - W.confine.c[0], np[2] - W.confine.c[1]) < W.confine.r) P.pos = np; } }
       const k = Math.min(1, h.life * 2);
-      for (let s = 0; s < 18; s++) { const a0 = s / 18 * 6.28, a1 = (s + 1) / 18 * 6.28, p = (a, rr) => [h.p[0] + Math.sin(a) * rr, .06, h.p[1] + Math.cos(a) * rr]; R.quad([h.p[0], .06, h.p[1]], p(a0, h.r), p(a1, h.r), [h.p[0], .06, h.p[1]], [0, 0, 0], .92 * k, 0, 1, [[0, 0], [.7, 0], [.7, 0], [0, 0]]); }
+      for (let s = 0; s < 18; s++) { const a0 = s / 18 * 6.28, a1 = (s + 1) / 18 * 6.28, gyh = groundY(h.p[0], h.p[1]) + .06, p = (a, rr) => [h.p[0] + Math.sin(a) * rr, gyh, h.p[1] + Math.cos(a) * rr]; R.quad([h.p[0], gyh, h.p[1]], p(a0, h.r), p(a1, h.r), [h.p[0], gyh, h.p[1]], [0, 0, 0], .92 * k, 0, 1, [[0, 0], [.7, 0], [.7, 0], [0, 0]]); }
       R.ring(h.p[0], h.p[1], h.r + .05, .12, [.9, .3, .6], .8 * k);
       if (h.life <= 0) HOLES.splice(i, 1); } }
   if (W.confine && W.confine.c && W.confine.shrink) { const c = W.confine; c.r += (c.to - c.r) * (1 - Math.exp(-.8 * dt)); R.ring(c.c[0], c.c[1], c.r + .2, .35, [1, .2, .1], .6);

@@ -227,13 +227,13 @@ const R = {
     this.quad(V.sub(a, sd), V.sub(b, sd), V.add(b, sd), V.add(a, sd), col, al, add, 0, [[0, -1], [0, -1], [0, 1], [0, 1]]);
   },
   flat(cx, cz, ang, len, w, col, al = 1, y = .04) { // retângulo no chão (aviso)
-    const f = [Math.sin(ang) * len * .5, 0, Math.cos(ang) * len * .5], s = [Math.cos(ang) * w * .5, 0, -Math.sin(ang) * w * .5], c = [cx, y, cz];
+    const f = [Math.sin(ang) * len * .5, 0, Math.cos(ang) * len * .5], s = [Math.cos(ang) * w * .5, 0, -Math.sin(ang) * w * .5], c = [cx, y + (typeof groundY === 'function' ? groundY(cx, cz) : 0), cz];
     this.quad(V.sub(V.sub(c, f), s), V.sub(V.add(c, f), s), V.add(V.add(c, f), s), V.add(V.sub(c, f), s), col, al, 1, 1);
   },
-  ring(cx, cz, r, w, col, al = 1, seg = 40) { for (let k = 0; k < seg; k++) { const a0 = k / seg * Math.PI * 2, a1 = (k + 1) / seg * Math.PI * 2; const p = (a, rr) => [cx + Math.sin(a) * rr, .05, cz + Math.cos(a) * rr];
+  ring(cx, cz, r, w, col, al = 1, seg = 40) { const gy = (typeof groundY === 'function' ? groundY(cx, cz) : 0) + .05; for (let k = 0; k < seg; k++) { const a0 = k / seg * Math.PI * 2, a1 = (k + 1) / seg * Math.PI * 2; const p = (a, rr) => [cx + Math.sin(a) * rr, gy, cz + Math.cos(a) * rr];
     this.quad(p(a0, r - w), p(a1, r - w), p(a1, r), p(a0, r), col, al, 1, 0, [[0, -1], [0, -1], [0, 1], [0, 1]]); } },
-  disc(cx, cz, r, col, al = 1, seg = 32) { for (let k = 0; k < seg; k++) { const a0 = k / seg * Math.PI * 2, a1 = (k + 1) / seg * Math.PI * 2; const p = (a) => [cx + Math.sin(a) * r, .045, cz + Math.cos(a) * r];
-    this.quad([cx, .045, cz], p(a0), p(a1), [cx, .045, cz], col, al, 1, 1, [[0, 0], [.7, 0], [.7, 0], [0, 0]]); } },
+  disc(cx, cz, r, col, al = 1, seg = 32) { const gy = (typeof groundY === 'function' ? groundY(cx, cz) : 0) + .045; for (let k = 0; k < seg; k++) { const a0 = k / seg * Math.PI * 2, a1 = (k + 1) / seg * Math.PI * 2; const p = (a) => [cx + Math.sin(a) * r, gy, cz + Math.cos(a) * r];
+    this.quad([cx, gy, cz], p(a0), p(a1), [cx, gy, cz], col, al, 1, 1, [[0, 0], [.7, 0], [.7, 0], [0, 0]]); } },
   setCam(eye, tgt, fov = .95) {
     const a = cv.width / cv.height; this.cam = eye; this.view = M.look(eye, tgt, [0, 1, 0]); this.proj = M.persp(fov, a, .1, 600); this.vp = M.mul(this.proj, this.view);
     this.camR = [this.view[0], this.view[4], this.view[8]]; this.camU = [this.view[1], this.view[5], this.view[9]];
