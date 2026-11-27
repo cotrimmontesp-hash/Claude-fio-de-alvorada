@@ -116,8 +116,13 @@ input[type=checkbox]{width:22px;height:22px;accent-color:#d9a650}
 #touch{display:none;position:fixed;inset:0;z-index:6;pointer-events:none}#touch.on{display:block}
 #joy{position:absolute;width:120px;height:120px;border-radius:50%;border:1px solid rgba(255,255,255,.25);opacity:0;left:40px;bottom:40px}#joy.on{opacity:1}
 #joy i{position:absolute;left:38px;top:38px;width:44px;height:44px;border-radius:50%;background:rgba(243,217,160,.35)}
+.tb svg{width:58%;height:58%;stroke:var(--lume);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .tb{position:absolute;pointer-events:auto;width:58px;height:58px;border-radius:50%;border:1px solid rgba(243,217,160,.5);background:rgba(10,8,6,.45);color:var(--lume);font:700 13px var(--uf);display:flex;align-items:center;justify-content:center}
 #touch .big{width:78px;height:78px;font-size:15px}
+.touchui .sk .k{display:none}
+.touchui #mark::before{width:20px;height:20px;left:-10px;top:-28px;animation:mk 1s infinite}
+@keyframes mk{50%{transform:rotate(45deg) translateY(-5px)}}
+.touchui #mark span{font-size:15px;font-weight:700}
 @media(max-height:500px){#obj{font-size:16px;top:10px}#bossbar{top:40px}#pl{left:12px;bottom:12px}#ab{right:12px;bottom:auto;top:12px;transform:scale(.75);transform-origin:right top}#hint{top:22%;max-width:45%;font-size:13px}.panel h1{font-size:44px}.panel .sub{margin:6px 0 14px}.btns{gap:6px}button{padding:8px 14px}.keys{display:none}#dlg .tx{font-size:16px;min-height:44px}#dlg{padding:10px 18px 12px}}
 .rot #obj{font-size:16px;top:10px}.rot #bossbar{top:40px}.rot #pl{left:12px;bottom:12px}.rot #ab{right:12px;bottom:auto;top:12px;transform:scale(.75);transform-origin:right top}.rot #hint{top:22%;max-width:45%;font-size:13px}.rot .panel h1{font-size:44px}.rot .panel .sub{margin:6px 0 14px}.rot .btns{gap:6px}.rot button{padding:8px 14px}.rot .keys{display:none}.rot #dlg .tx{font-size:16px;min-height:44px}.rot #dlg{padding:10px 18px 12px}
 .rot .keys{display:none}
@@ -169,16 +174,16 @@ input[type=checkbox]{width:22px;height:22px;accent-color:#d9a650}
 <div class="scr" id="end"><div class="panel"><h2 id="endh">Capítulo 1 concluído</h2><div class="thread"></div><p class="info" id="endtxt" style="font-size:16px;line-height:1.6"></p><div class="btns" style="margin-top:24px"><button id="bNext">Seguir para o Capítulo 2</button><button id="bEndMenu">Voltar ao menu</button></div></div></div>
 <div class="scr" id="bye"><div class="panel"><h2>Até a próxima costura</h2><p class="info" style="margin-bottom:20px">Pode fechar esta janela. Seu progresso fica salvo neste navegador.</p><div class="btns"><button id="bBye">Voltar ao menu</button></div></div></div>
 <div id="touch"><div id="joy"><i></i></div>
-  <div class="tb big" data-b="atk" style="right:24px;bottom:30px">Atacar</div>
-  <div class="tb" data-b="hv" style="right:112px;bottom:22px">Pesado</div>
-  <div class="tb" data-b="dg" style="right:30px;bottom:120px">Esquiva</div>
-  <div class="tb" data-b="q" style="right:190px;bottom:26px">Q</div>
-  <div class="tb" data-b="e" style="right:118px;bottom:100px">E</div>
-  <div class="tb" data-b="r" style="right:40px;bottom:198px">R</div>
-  <div class="tb" data-b="po" style="left:24px;top:110px;width:48px;height:48px">Poção</div>
-  <div class="tb" data-b="lk" style="right:120px;bottom:178px;width:48px;height:48px">Travar</div>
-  <div class="tb" data-b="f" style="right:200px;bottom:110px;width:48px;height:48px">F</div>
-  <div class="tb" data-b="ps" style="left:24px;top:24px;width:44px;height:44px">II</div>
+  <div class="tb big" data-b="atk" style="right:24px;bottom:30px"><svg viewBox="0 0 30 30"><path d="M6 26L22 10M19 7l6 6M8 20l4 4"/><path d="M22 10l3-6 3 3-6 3"/></svg></div>
+  <div class="tb" data-b="hv" style="right:112px;bottom:22px"><svg viewBox="0 0 30 30"><path d="M5 27L21 11M18 8l6 6"/><path d="M21 11l5-7 2 2-7 5"/><path d="M4 20l8 8" opacity=".6"/><circle cx="24" cy="24" r="3"/></svg></div>
+  <div class="tb" data-b="dg" style="right:30px;bottom:120px"><svg viewBox="0 0 30 30"><path d="M8 22c4-10 12-14 20-12"/><path d="M24 6l4 4-4 4"/><path d="M4 26h8" opacity=".6"/></svg></div>
+  <div class="tb" data-b="q" style="right:190px;bottom:26px"><svg viewBox="0 0 30 30"><path d="M5 24C10 12 18 7 26 6"/><path d="M8 26c6-8 12-12 18-13" opacity=".5"/></svg></div>
+  <div class="tb" data-b="e" style="right:118px;bottom:100px"><svg viewBox="0 0 30 30"><path d="M15 26c-6 0-9-4-9-8s4-7 9-7 7 3 7 6-3 4-5 4-3-2-3-3"/><path d="M15 4v5"/></svg></div>
+  <div class="tb" data-b="r" style="right:40px;bottom:198px"><svg viewBox="0 0 30 30"><path d="M15 3l-3 7 5 3-4 6 4 3-2 5"/><circle cx="15" cy="15" r="11" opacity=".4"/></svg></div>
+  <div class="tb" data-b="po" style="left:24px;top:110px;width:48px;height:48px"><svg viewBox="0 0 30 30"><path d="M12 4h6M13 4v6l-5 8a5 5 0 0 0 4 8h6a5 5 0 0 0 4-8l-5-8V4"/><path d="M9 19h12"/></svg></div>
+  <div class="tb" data-b="lk" style="right:120px;bottom:178px;width:48px;height:48px"><svg viewBox="0 0 30 30"><circle cx="15" cy="15" r="9"/><circle cx="15" cy="15" r="3"/><path d="M15 2v5M15 23v5M2 15h5M23 15h5"/></svg></div>
+  <div class="tb" data-b="f" style="right:200px;bottom:110px;width:48px;height:48px"><svg viewBox="0 0 30 30"><path d="M10 16V7a2 2 0 0 1 4 0v7M14 13V5a2 2 0 0 1 4 0v8M18 13V7a2 2 0 0 1 4 0v10c0 6-4 9-8 9s-6-2-8-6l-2-5a2 2 0 0 1 3-2l3 4"/></svg></div>
+  <div class="tb" data-b="ps" style="left:24px;top:24px;width:44px;height:44px"><svg viewBox="0 0 30 30"><path d="M11 8v14M19 8v14"/></svg></div>
 </div>
 </div>
 <script>

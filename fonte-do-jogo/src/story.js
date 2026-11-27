@@ -461,6 +461,8 @@ function frame(now) {
   if (S.mode === 'play' && !window.FIXDT) { frame.acc = (frame.acc || 0) + raw; if (frame.acc > 5) { frame.acc = 0; if (fpsA < (OPT.economia ? 24 : 32) && OPT.quality > .5) { OPT.quality = Math.max(.5, OPT.quality - .25); window.QUALITY = OPT.quality; resize(); saveOpts(); } } }
   { const mb = $('mouseBtn'); if (mb && !TOUCH) { const v = S.mode === 'play' ? '' : 'none'; if (mb.style.display !== v) mb.style.display = v; } }
   if (TOUCH) { const v = S.mode === 'play' ? '' : 'hidden'; if ($('touch').style.visibility !== v) $('touch').style.visibility = v; }
+  if (S.mode === 'play') { const nearBroken = (!W.bridgeOk && P.pos[0] < 200 && P.pos[2] < -50) || (P.pos[0] > 200 && W.serra.bridges.some(b => !b.ok && V.d2(P.pos, [SX, 0, b.rect[2]]) < 4));
+    if (nearBroken && !(frame.bt > 0)) { frame.bt = 8; hint('A ponte está <b>quebrada</b>. Para atravessar, siga o objetivo lá em cima: <b>' + $('obj').textContent + '</b>. O losango dourado mostra o caminho.', 6000); } frame.bt = (frame.bt || 0) - rdt; }
   dlgTick(I); tickWaiters();
   // desenhar
   const vdt = S.mode === 'play' || S.mode === 'cut' ? dt : rdt * .3;
