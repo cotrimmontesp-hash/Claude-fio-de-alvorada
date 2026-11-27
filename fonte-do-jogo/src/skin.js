@@ -51,7 +51,7 @@ const Q = {
 };
 // ---------- modelo carregado (compartilhado entre instâncias) ----------
 async function loadModel(b64) {
-  const raw = Uint8Array.from(atob(b64), c => c.charCodeAt(0)).buffer, { json: g, bin } = parseGLB(raw);
+  const raw = /\.glb$/.test(b64) ? await (await fetch(b64)).arrayBuffer() : Uint8Array.from(atob(b64), c => c.charCodeAt(0)).buffer, { json: g, bin } = parseGLB(raw);
   const texs = await Promise.all((g.textures || []).map(async t => { const im = g.images[t.source], bv = g.bufferViews[im.bufferView];
     const bmp = await createImageBitmap(new Blob([new Uint8Array(bin, bv.byteOffset || 0, bv.byteLength)], { type: im.mimeType }));
     const tx = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tx); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bmp);

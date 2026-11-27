@@ -152,5 +152,6 @@ const CAST = {
   nera: () => SK('nera', 1.68) || CAST0.nera(), orven: () => SK('orven', 1.82) || CAST0.orven(), lira: () => SK('lira', 1.66) || CAST0.lira(),
   iaro: () => SK('iaro', 1.92) || CAST0.iaro(), ruan: () => SK('ruan', 1.8) || CAST0.ruan(), mireia: () => SK('mireia', 1.66) || CAST0.mireia(),
   oren: () => SK('oren', 1.83) || CAST0.oren(), brena: () => SK('brena', 1.6, false) || CAST0.brena(), aldeao: (c) => SK('aldeao', 1.74, false) || CAST0.aldeao(c),
-  tecelao: () => SK('tecelao', 1.9) || CAST0.tecelao(), fieira: () => SK('fieira', 1.86, false) || CAST0.fieira(),
+  tecelao: () => SK('tecelao', 1.9) || CAST0.tecelao(),
+  mutante: () => SK('mutante', 2.7, false) || CAST0.tecelao(), warrok: () => SK('warrok', 2.5, false) || CAST0.tecelao(), parasita: () => SK('parasita', 1.8, false) || CAST0.fieira(), fieira: () => SK('fieira', 1.86, false) || CAST0.fieira(),
 };

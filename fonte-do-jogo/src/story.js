@@ -31,7 +31,7 @@ function until(cond) { const tok = MIS.token; return new Promise(res => MIS.wait
 function wait(s) { const t0 = S.time; return until(() => S.time - t0 >= s); }
 function rwait(s) { const t0 = performance.now(); return until(() => MIS.skip || performance.now() - t0 >= s * 1000); }
 function tickWaiters() { for (let i = MIS.waiters.length - 1; i >= 0; i--) { const w = MIS.waiters[i]; if (w.tok !== MIS.token) { MIS.waiters.splice(i, 1); continue; } if (w.cond()) { MIS.waiters.splice(i, 1); w.res(); } } }
-const WHO = { Orven: '#e8c98a', Nera: '#f1dfb8', Lira: '#a8d48a', Iaro: '#e3a45a', Ruan: '#8fb4ff', Mireia: '#8fd8cf', Oren: '#a9e6ff', 'Tia Brena': '#e0b090', Destrem: '#e77aa8', 'Pastor Tomé': '#d8c090', 'Irmã Rasga-Dobra': '#d07ae0', '': '#d8d0c0' };
+const WHO = { Orven: '#e8c98a', Nera: '#f1dfb8', Lira: '#a8d48a', Iaro: '#e3a45a', Ruan: '#8fb4ff', Mireia: '#8fd8cf', Oren: '#a9e6ff', 'Tia Brena': '#e0b090', Destrem: '#e77aa8', 'Pastor Tomé': '#d8c090', 'Rasga-Dobra': '#d07ae0', '': '#d8d0c0' };
 let DLG = null;
 function showLine(l, auto) {
   return new Promise(res => { const box = $('dlg'); box.classList.add('on'); box.querySelector('.who').textContent = l.who || ''; box.querySelector('.who').style.color = WHO[l.who || ''] || '#ddd';
@@ -155,21 +155,21 @@ async function M5(retry, chained) {
   await completeMission(4, 'Resgate na fenda'); if (tok !== MIS.token) return;
   runMission(5, false, true);
 }
-// ---------- MISSÃO 6: Irmã Rasga-Dobra ----------
+// ---------- MISSÃO 6: Rasga-Dobra ----------
 async function M6(retry, chained) {
   const tok = MIS.token; stage(5); if (!chained || retry) { P.pos = [SX, 0, retry ? -95 : -78]; P.yaw = Math.PI; camRelease(); }
   AU.music('calm'); objective('Suba até a fenda grande'); MARK = [SX + 2, 0, -98];
   await until(() => P.pos[2] < -98); MARK = null; if (tok !== MIS.token) return;
   let boss; const C = [SX + 2, -112];
   await cut([
-    { on: () => { boss = spawn('irma', C[0], C[1] - 5, { instant: true }); boss.st = 'roar'; boss.inv = true; boss.yaw = 0; P.cutAct = null; }, cam: [[SX + 6, 2, -101], [SX + 4, 1.8, -104], [C[0], 1.6, C[1] - 5]], dur: 3, line: { who: 'Irmã Rasga-Dobra', t: 'Recosturadeira... você tem as mãos do velho Orven.' } },
+    { on: () => { boss = spawn('irma', C[0], C[1] - 5, { instant: true }); boss.st = 'roar'; boss.inv = true; boss.yaw = 0; P.cutAct = null; }, cam: [[SX + 6, 2, -101], [SX + 4, 1.8, -104], [C[0], 1.6, C[1] - 5]], dur: 3, line: { who: 'Rasga-Dobra', t: 'Recosturadeira... você tem as mãos do velho Orven.' } },
     { cam: [[SX - .6, 1.7, -98.6], [SX - .4, 1.7, -99.2], [SX, 1.6, -100]], dur: 2, line: { who: 'Nera', t: 'E a lâmina dele.' } },
-    { on: () => { AU.roar(); S.shake = .8; for (let k = 0; k < 3; k++) openHole(C[0] + rnd(-6, 6), C[1] + rnd(-6, 6), 2, 3); }, cam: [[C[0] + 3, 1.3, C[1]], [C[0] + 2.5, 1.5, C[1] - 1], [C[0], 1.8, C[1] - 5]], dur: 3, line: { who: 'Irmã Rasga-Dobra', t: 'Então vamos ver quanto chão sobra embaixo de você.' }, card: 'Irmã Rasga-Dobra', sub: 'Desfiadora da Serra' },
+    { on: () => { AU.roar(); S.shake = .8; for (let k = 0; k < 3; k++) openHole(C[0] + rnd(-6, 6), C[1] + rnd(-6, 6), 2, 3); }, cam: [[C[0] + 3, 1.3, C[1]], [C[0] + 2.5, 1.5, C[1] - 1], [C[0], 1.8, C[1] - 5]], dur: 3, line: { who: 'Rasga-Dobra', t: 'Então vamos ver quanto chão sobra embaixo de você.' }, card: 'Rasga-Dobra', sub: 'Desfiadora da Serra' },
   ]);
   if (tok !== MIS.token) return;
   boss.st = 'chase'; boss.inv = false; boss.cd = 1.2; P.pos = [SX + 2, 0, -100]; P.yaw = Math.PI; camRelease();
-  W.confine = { c: C, r: 15.2 }; AU.music('boss'); $('bossbar').classList.add('on'); $('bossbar').querySelector('.nm').textContent = 'Irmã Rasga-Dobra';
-  objective('Derrote a Irmã Rasga-Dobra'); hint('Os cortes dela abrem buracos no chão: saia do vermelho. Na fúria a arena encolhe e ela dá um salto mortal — esquive no pouso.', 8000);
+  W.confine = { c: C, r: 15.2 }; AU.music('boss'); $('bossbar').classList.add('on'); $('bossbar').querySelector('.nm').textContent = 'Rasga-Dobra';
+  objective('Derrote a Rasga-Dobra'); hint('Os cortes dela abrem buracos no chão: saia do vermelho. Na fúria a arena encolhe e ela dá um salto mortal — esquive no pouso.', 8000);
   await until(() => MIS.bossDead); if (tok !== MIS.token) return;
   for (const e of ENEMIES) if (!e.dead) killEnemy(e);
   AU.music('none'); S.slow = 1.5; S.ts = .25; $('bossbar').classList.remove('on'); W.confine = null; HOLES.length = 0; P.pts++; P.unl.cap2 = true; await wait(2); if (tok !== MIS.token) return;
@@ -178,8 +178,8 @@ async function M6(retry, chained) {
   for (const n of NPCS) { if (n.key === 'lira') { n.pos = [C[0] - 3, 0, C[1] + 4]; n.face = Math.PI; } if (n.key === 'oren') { n.pos = [C[0] + 3, 0, C[1] + 4]; n.face = Math.PI; } }
   P.pos = [C[0], 0, C[1] + 1]; P.yaw = Math.PI;
   await cut([
-    { cam: [[C[0] + 2.4, 1.2, C[1] - 1.5], [C[0] + 2, 1.1, C[1] - 2], [C[0], .9, C[1] - 4]], dur: 3.5, line: { who: 'Irmã Rasga-Dobra', t: 'Vocês nem sabem a quem servem... Destrem não foi discípulo de Orven.' } },
-    { cam: [[C[0] - 2, 1.1, C[1] - 2], [C[0] - 1.6, 1, C[1] - 2.4], [C[0], .9, C[1] - 4]], dur: 3.5, line: { who: 'Irmã Rasga-Dobra', t: 'Foi o mestre dele. Orven aprendeu a costurar com quem hoje quer soltar tudo.' } },
+    { cam: [[C[0] + 2.4, 1.2, C[1] - 1.5], [C[0] + 2, 1.1, C[1] - 2], [C[0], .9, C[1] - 4]], dur: 3.5, line: { who: 'Rasga-Dobra', t: 'Vocês nem sabem a quem servem... Destrem não foi discípulo de Orven.' } },
+    { cam: [[C[0] - 2, 1.1, C[1] - 2], [C[0] - 1.6, 1, C[1] - 2.4], [C[0], .9, C[1] - 4]], dur: 3.5, line: { who: 'Rasga-Dobra', t: 'Foi o mestre dele. Orven aprendeu a costurar com quem hoje quer soltar tudo.' } },
     { on: () => { irm.act = 'dead'; }, cam: [[C[0] - 3.5, 1.7, C[1] + 6], [C[0] - 3.2, 1.7, C[1] + 5.4], [C[0] - 3, 1.6, C[1] + 4]], dur: 2.5, line: { who: 'Lira', t: 'Mentira. O tio nunca...' } },
     { cam: [[C[0] + 3.5, 1.8, C[1] + 6], [C[0] + 3.2, 1.8, C[1] + 5.4], [C[0] + 3, 1.7, C[1] + 4]], dur: 3, line: { who: 'Oren', t: 'Talvez não seja mentira. O Arquivo de Lume guarda o nome de todos os mestres da ordem.' } },
     { cam: [[C[0] + .8, 1.7, C[1] - 1.2], [C[0] + .6, 1.7, C[1] - 1.6], [C[0], 1.6, C[1] + 1]], dur: 2.5, line: { who: 'Nera', t: 'Então vamos atrás da verdade. E do Destrem.' } },
@@ -298,7 +298,7 @@ async function M2(retry, chained) {
   runMission(2, false, true);
 }
 
-// ---------- MISSÃO 3: O Cão de Fios Rotos ----------
+// ---------- MISSÃO 3: O Fera de Fios Rotos ----------
 async function M3(retry, chained) {
   const tok = MIS.token; stage(2); if (!chained) { P.pos = [0, 0, retry ? -108 : -98]; P.yaw = Math.PI; camRelease(); }
   AU.music('calm');
@@ -310,12 +310,12 @@ async function M3(retry, chained) {
   await cut([
     { on: () => { RIFT.ts = 1.3; AU.roar(); P.cutAct = null; }, cam: [[2, 1.6, -112], [1, 2.2, -115], [0, 8, -132], [0, 9, -134]], dur: 2.4 },
     { on: () => { boss = spawn('cao', 0, -132, { instant: true }); boss.y = 9; boss.st = 'roar'; boss.t = 0; boss.inv = true; S.shake = 1; }, cam: [[5, 2, -122], [4, 1.5, -124], [0, 3, -132], [0, 2, -132]], dur: 2.6 },
-    { on: () => { AU.roar(); RIFT.ts = .5; }, cam: [[3, 1.2, -126], [2.5, 1.4, -127], [0, 2.4, -131.5], [0, 2.6, -131]], dur: 2.6, card: 'Cão de Fios Rotos', sub: 'Primeiro dos Desfiadores' },
+    { on: () => { AU.roar(); RIFT.ts = .5; }, cam: [[3, 1.2, -126], [2.5, 1.4, -127], [0, 2.4, -131.5], [0, 2.6, -131]], dur: 2.6, card: 'Fera de Fios Rotos', sub: 'Primeiro dos Desfiadores' },
   ]);
   if (tok !== MIS.token) return;
   boss.st = 'chase'; boss.inv = false; boss.cd = 1.5; P.pos = [0, 0, -116]; P.yaw = Math.PI; camRelease();
-  W.confine = { c: BOSS_C, r: BOSS_R }; AU.music('boss'); $('bossbar').classList.add('on'); $('bossbar').querySelector('.nm').textContent = 'Cão de Fios Rotos';
-  objective('Derrote o Cão de Fios Rotos'); hint('Fique atento ao chão vermelho (investida) e ao fio que puxa — esquive no tempo certo.', 6000);
+  W.confine = { c: BOSS_C, r: BOSS_R }; AU.music('boss'); $('bossbar').classList.add('on'); $('bossbar').querySelector('.nm').textContent = 'Fera de Fios Rotos';
+  objective('Derrote a Fera de Fios Rotos'); hint('Fique atento ao chão vermelho (investida) e ao fio que puxa — esquive no tempo certo.', 6000);
   await until(() => MIS.bossDead); if (tok !== MIS.token) return;
   for (const e of ENEMIES) if (!e.dead) killEnemy(e);
   AU.music('none'); S.slow = 1.5; S.ts = .25; $('bossbar').classList.remove('on'); W.confine = null; P.pts++; await wait(2.2); if (tok !== MIS.token) return;
@@ -487,8 +487,8 @@ function cutPlayer(dt) {
 async function loadMaps() {
   if (typeof MAPZ === 'undefined') return;
   for (const k in MAPZ) { try {
-    const bin = Uint8Array.from(atob(MAPZ[k]), c => c.charCodeAt(0));
-    const txt = await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+    const bin = /\.gz$/.test(MAPZ[k]) ? new Uint8Array(await (await fetch(MAPZ[k])).arrayBuffer()) : Uint8Array.from(atob(MAPZ[k]), c => c.charCodeAt(0));
+    const txt = bin[0] === 0x1f && bin[1] === 0x8b ? await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text() : new TextDecoder().decode(bin);
     MAPS[k] = JSON.parse(txt);
   } catch (e) { console.error('mapa ' + k, e); } }
 }

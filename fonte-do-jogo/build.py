@@ -19,4 +19,17 @@ astag = '<script>const ASSETS=' + _j.dumps(assets) + ';const MAPZ=' + _j.dumps(m
 html = open(os.path.join(src, 'index.html'), encoding='utf-8').read().replace('/*JS*/', '{\n' + js + '\n}').replace('<script>\n{', astag + '<script>\n{', 1)
 os.makedirs(os.path.join(d, 'dist'), exist_ok=True)
 open(os.path.join(d, 'dist', 'Fio de Alvorada.html'), 'w', encoding='utf-8').write(html)
-print(len(html))
+print('arquivo unico', len(html))
+# versão web em vários arquivos (modelos e mapa separados)
+import shutil
+wd = os.path.join(d, 'dist', 'web'); shutil.rmtree(wd, ignore_errors=True); os.makedirs(os.path.join(wd, 'modelos')); os.makedirs(os.path.join(wd, 'mapas'))
+urls = {}
+for f in glob.glob(os.path.join(d, 'assets', '*.glb')):
+    k = os.path.splitext(os.path.basename(f))[0]; shutil.copy(f, os.path.join(wd, 'modelos', k + '.glb')); urls[k] = 'modelos/' + k + '.glb'
+murls = {}
+for k, v in maps.items():
+    open(os.path.join(wd, 'mapas', k + '.json.gz'), 'wb').write(_gz.compress(v.encode(), 9)); murls[k] = 'mapas/' + k + '.json.gz'
+wtag = '<script>const ASSETS=' + _j.dumps(urls) + ';const MAPZ=' + _j.dumps(murls) + ';var MAPS={};</script>\n'
+whtml = open(os.path.join(src, 'index.html'), encoding='utf-8').read().replace('/*JS*/', '{\n' + js + '\n}').replace('<script>\n{', wtag + '<script>\n{', 1)
+open(os.path.join(wd, 'index.html'), 'w', encoding='utf-8').write(whtml)
+print('web', len(whtml))

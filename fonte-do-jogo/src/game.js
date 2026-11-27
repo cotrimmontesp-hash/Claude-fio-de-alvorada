@@ -129,11 +129,15 @@ function camUpdate(dt, I) {
     CAM.yaw -= I.lx; CAM.pitch = clamp(CAM.pitch + I.ly, -.3, 1.05);
     const tg = P.lock && !P.lock.dead ? P.lock : null;
     if (tg) { const dy = Math.atan2(tg.pos[0] - P.pos[0], tg.pos[2] - P.pos[2]); CAM.yaw += angDiff(CAM.yaw, dy) * (1 - Math.exp(-6 * dt)); CAM.pitch += (.3 - CAM.pitch) * (1 - Math.exp(-3 * dt)); }
-    const boss = ENEMIES.some(e => e.boss && !e.dead), dist = (boss ? 5.6 : 4.4) - CAM.zoom * 1.6;
+    const bossE = ENEMIES.find(e => e.boss && !e.dead && e.spawnT <= 0), boss = !!bossE;
+    // luta de chefe sem alvo travado: a câmera vira devagar para o chefe não sumir atrás dela
+    if (bossE && !tg && Math.abs(I.lx) < .002) { const dy = Math.atan2(bossE.pos[0] - P.pos[0], bossE.pos[2] - P.pos[2]), df = angDiff(CAM.yaw, dy); if (Math.abs(df) > .7) CAM.yaw += df * (1 - Math.exp(-2.2 * dt)); }
+    let dist = (boss ? 6.4 : 4.4) - CAM.zoom * 1.6;
     CAM.dist += (dist - CAM.dist) * (1 - Math.exp(-4 * dt)); CAM.zoom = Math.max(0, CAM.zoom - dt * 1.5);
     const f = [Math.sin(CAM.yaw), 0, Math.cos(CAM.yaw)], rgt = [-Math.cos(CAM.yaw), 0, Math.sin(CAM.yaw)];
     const at = V.add(P.pos, [0, 1.45 + (P.rig.yOff || 0) * .4, 0]), cp = Math.cos(CAM.pitch), sp = Math.sin(CAM.pitch);
     let eye = V.add(V.add(at, V.sc(f, -CAM.dist * cp)), V.add([0, CAM.dist * sp, 0], V.sc(rgt, .65)));
+    if (bossE) { const bd = Math.hypot(eye[0] - bossE.pos[0], eye[2] - bossE.pos[2]), lim = 1.6 * (bossE.baseScale || 1) + .8; if (bd < lim) eye[1] += (lim - bd) * 1.4; } // sobe a câmera se o chefe estiver colado nela
     const gh = groundH(eye[0], eye[2]) + .35; if (eye[1] < gh) eye[1] = gh;
     const k = 1 - Math.exp(-18 * dt); CAM.eye = V.lerp(CAM.eye, eye, k); CAM.at = V.lerp(CAM.at, V.add(at, V.sc(rgt, .65)), k);
   }
@@ -307,16 +311,17 @@ const EDEF = {
   filhote: { hp: 150, post: 60, dmg: 9, spd: 5.4, rad: .6, xp: 40, name: 'Cão menor' },
   bruta: { hp: 170, post: 90, dmg: 20, spd: 2.1, rad: .7, xp: 70, name: 'Costura-Bruta', scale: 1.38 },
   saltador: { hp: 52, post: 30, dmg: 14, spd: 4.4, rad: .45, xp: 45, name: 'Saltador de Fenda', scale: .92 },
-  irma: { hp: 1280, post: 260, dmg: 17, spd: 4.4, rad: .8, xp: 450, name: 'Irmã Rasga-Dobra', boss: true, scale: 1.12 },
-  cao: { hp: 950, post: 220, dmg: 14, spd: 4.2, rad: 1.2, xp: 300, name: 'Cão de Fios Rotos', boss: true },
+  irma: { hp: 1280, post: 260, dmg: 17, spd: 4.4, rad: 1.1, xp: 450, name: 'Rasga-Dobra', boss: true, scale: 1.12 },
+  cao: { hp: 950, post: 220, dmg: 14, spd: 4.2, rad: 1.2, xp: 300, name: 'Fera de Fios Rotos', boss: true },
 };
 let EID = 0;
 function spawn(type, x, z, o = {}) {
   const d = EDEF[type]; const e = { id: EID++, type, d, pos: [x, 0, z], yaw: Math.atan2(P.pos[0] - x, P.pos[2] - z), hp: d.hp, maxhp: d.hp, post: d.post, maxpost: d.post, st: 'chase', t: 0, cd: rnd(.6, 1.6), ph: rnd(0, 6), sp: 0,
     flash: 0, stun: 0, y: 0, vy: 0, dead: false, deadT: 0, rad: d.rad, boss: !!d.boss, spawnT: o.instant ? 0 : .8, aggro: o.aggro || 30, seg: [] };
-  if (type === 'tecelao') e.rig = CAST.tecelao(); else if (type === 'fieira') e.rig = CAST.fieira(); else if (type === 'cao') e.rig = dogRig(1.7); else if (type === 'filhote') e.rig = dogRig(.78);
-  else if (type === 'bruta') { e.rig = CAST.tecelao(); e.rig.tint = [lin(0x7a756c), .5]; } else if (type === 'saltador') { e.rig = CAST.fieira(); e.rig.tint = [lin(0x6a7a58), .4]; } else if (type === 'irma') { e.rig = CAST.mireia(); e.rig.tint = [lin(0x3a2040), .55]; }
-  e.baseScale = d.scale || 1; e.human = ['tecelao', 'fieira', 'bruta', 'saltador', 'irma'].includes(type);
+  if (type === 'tecelao') e.rig = CAST.tecelao(); else if (type === 'fieira') e.rig = CAST.fieira(); else if (type === 'cao') e.rig = MODELS.warrok ? CAST.warrok() : dogRig(1.7); else if (type === 'filhote') e.rig = MODELS.parasita ? CAST.parasita() : dogRig(.78);
+  else if (type === 'bruta') { e.rig = CAST.tecelao(); e.rig.tint = [lin(0x7a756c), .5]; } else if (type === 'saltador') { e.rig = MODELS.parasita ? CAST.parasita() : CAST.fieira(); if (!MODELS.parasita) e.rig.tint = [lin(0x6a7a58), .4]; } else if (type === 'irma') { e.rig = MODELS.mutante ? CAST.mutante() : CAST.mireia(); if (!MODELS.mutante) e.rig.tint = [lin(0x3a2040), .55]; }
+  e.baseScale = d.scale || 1; e.human = ['tecelao', 'fieira', 'bruta', 'saltador', 'irma'].includes(type) || (e.rig && e.rig.isSkin);
+  if (type === 'irma' && MODELS.mutante) e.baseScale = 1; if (type === 'cao' && e.rig.isSkin) e.baseScale = 1.15; if (type === 'filhote' && e.rig.isSkin) e.baseScale = .72; if (type === 'saltador' && MODELS.parasita) e.baseScale = .95;
   if (MIS.cur >= 3 && !d.boss) { const k = ['tecelao', 'fieira', 'larva'].includes(type) ? 1.25 : 1; e.hp = e.maxhp = Math.round(d.hp * k); e.dmgMul = 1.15; e.cdMul = .85; }
   if (o.elite) { e.hp = e.maxhp = e.maxhp * 2; e.post = e.maxpost = e.maxpost * 1.6; e.baseScale *= 1.18; e.elite = true; e.dmgMul = (e.dmgMul || 1) * 1.2; }
   if (e.rig) e.rig.yaw = e.yaw;
@@ -404,7 +409,8 @@ function bossFury(e) {
 }
 function dogAI(e, dt, d, pd) {
   const fm = e.fury ? 1.28 : 1, D = e.d, boss = e.boss; let mv = 0;
-  if (e.boss) { const ts = e.fury ? 2.2 : 1.7; e.rig.scale += (ts - e.rig.scale) * (1 - Math.exp(-2 * dt)); }
+  if (e.boss && !e.rig.isSkin) { const ts = e.fury ? 2.2 : 1.7; e.rig.scale += (ts - e.rig.scale) * (1 - Math.exp(-2 * dt)); }
+  if (e.boss && e.rig.isSkin) e.baseScale += ((e.fury ? 1.4 : 1.15) - e.baseScale) * (1 - Math.exp(-2 * dt));
   if (e.st === 'stun' || e.st === 'hurt') { if (e.st === 'hurt' && e.t > .3) e.st = 'chase'; }
   else if (e.st === 'roar') { if (e.t > 1.7) { e.st = 'chase'; e.inv = false; e.cd = .5; } if (Math.random() < .8) part(V.add(e.pos, [rnd(-1, 1), rnd(1, 3), rnd(-1, 1)]), [rnd(-4, 4), rnd(1, 5), rnd(-4, 4)], .7, .1, [1, .35, .5]); }
   else if (pd) { }
@@ -422,7 +428,7 @@ function dogAI(e, dt, d, pd) {
   }
   else if (e.st === 'biteW') { faceP(e, dt, 8); if (e.t > (boss ? .5 : .4) / fm) { e.st = 'bite'; e.t = 0; e.hit = false; AU.bite(); } if (Math.random() < .5) part(e.rig.wp('head', [0, 0, .6]), [0, .5, 0], .2, .15, [1, .3, .3]); }
   else if (e.st === 'bite') { if (e.t < .18) { const s = (boss ? 14 : 9) * dt; moveEnt(e.pos, Math.sin(e.yaw) * s, Math.cos(e.yaw) * s, e.rad); }
-    if (!e.hit && e.t > .14) { e.hit = true; enemyHitCheck(e, boss ? 3.0 * e.rig.scale / 1.7 : 1.6, 1.8, D.dmg * (e.fury ? 1.15 : 1)); }
+    if (!e.hit && e.t > .14) { e.hit = true; enemyHitCheck(e, boss ? (e.rig.isSkin ? 2.6 * e.baseScale : 3.0 * e.rig.scale / 1.7) : 1.6, 1.8, D.dmg * (e.fury ? 1.15 : 1)); }
     if (e.t > .55) { e.bites--; if (e.bites > 0) { e.st = 'biteW'; e.t = .25; } else { e.st = 'chase'; e.cd = rnd(.9, 1.6) / fm; } } }
   else if (e.st === 'chargeW') { const tel = (e.fury ? .7 : .95); e.yaw += angDiff(e.yaw, e.cdir) * .3; if (e.t < tel * .6) e.cdir = Math.atan2(P.pos[0] - e.pos[0], P.pos[2] - e.pos[2]);
     R.flat(e.pos[0] + Math.sin(e.cdir) * 9, e.pos[2] + Math.cos(e.cdir) * 9, e.cdir, 18, 3.2, [1, .15, .1], .35 + .3 * Math.sin(e.t * 30));
@@ -457,7 +463,9 @@ function enemyDraw(e, dt) {
   const r = e.rig; if (!r) return;
   if (e.human) {
     const AM = { tecelao: { wind: 'fwind', atk: 'hv' }, fieira: { wind: 'fcast', atk: 'fcast' }, bruta: { wind: 'bwind', atk: 'batk' }, saltador: { leapW: 'fwind', leap: 'leap', atk: 'hv' },
-      irma: { comboW: 's1', combo: 's3', rasgoW: 's4', dashW: 'charge', dash: 's2', roar: 'fwind', jumpW: 'fwind', jump: 'leap', land: 'hv' } }[e.type];
+      irma: { comboW: 's1', combo: 's3', rasgoW: 's4', dashW: 'charge', dash: 's2', roar: 'fwind', jumpW: 'fwind', jump: 'leap', land: 'hv' },
+      cao: { biteW: 'bwind', bite: 'batk', chargeW: 'fwind', howl: 'fwind', pullW: 'fcast', pull: 'fcast', whipW: 'bwind', whip: 'batk', roar: 'fwind' },
+      filhote: { biteW: 'bwind', bite: 'batk', chargeW: 'fwind', pullW: 'fcast', pull: 'fcast' } }[e.type] || {};
     const actM = { hurt: 'hit', stun: 'kneel', ...AM };
     animAny(r, { ph: e.ph, sp: e.sp, act: e.dead ? 'dead' : actM[e.st], t: e.at != null ? e.at : e.st === 'atk' ? .45 + e.t * 1.2 : e.t, ready: true }, dt);
     r.pos = [e.pos[0], (r.yOff || 0) + e.y + (e.dead ? (r.isSkin ? (e.deadT > 1.5 ? -(e.deadT - 1.5) * .5 : 0) : .1 - e.deadT * .3) : 0), e.pos[2]]; r.yaw = e.yaw; r.pitch = e.dead && !r.isSkin ? lerp(r.pitch, -Math.PI / 2, 1 - Math.exp(-6 * dt)) : 0;
