@@ -112,10 +112,10 @@ function trilhaEm(s) { const T = TRILHA; for (let i = 0; i < T.length - 1; i++) 
 function trilhaEmT(T, s) { for (let i = 0; i < T.length - 1; i++) if (T[i + 1].s >= s) { const k = (s - T[i].s) / ((T[i + 1].s - T[i].s) || 1); return [lerp(T[i][0], T[i + 1][0], k), lerp(T[i][2], T[i + 1][2], k), lerp(T[i][1], T[i + 1][1], k)]; } const L = T[T.length - 1]; return [L[0], L[2], L[1]]; }
 // caminhada longa com emboscadas (uns na frente, outros pulando do alto)
 async function jornada(T, tok, o) {
-  const TOT = T.total, pontos = o.pontos.filter(v => v < TOT - 8); let k = 0;
+  const TOT = T.total, pontos = o.pontos.filter(v => v < TOT - 8); let k = 0, sp = 0;
   objective(o.texto); if (o.dica) hint(o.dica, 7000);
   while (tok === MIS.token) {
-    const me = pertoT(T, P.pos[0], P.pos[2]), s = me.d < 25 ? me.s : 0;
+    const me = pertoT(T, P.pos[0], P.pos[2]), s = me.d < 25 && me.s <= sp + 18 ? me.s : sp; sp = Math.max(sp, s); // não pula pro fim por estar perto do outro lado da trilha
     MARK = trilhaEmT(T, Math.min(TOT, s + 20)); $('obj').textContent = o.texto + ' — faltam ' + Math.max(0, Math.round(TOT - s)) + ' m';
     if (k < pontos.length && s > pontos[k]) {
       const g = o.grupos[k % o.grupos.length]; let j = 0;

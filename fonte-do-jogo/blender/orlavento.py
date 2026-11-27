@@ -76,8 +76,8 @@ def catmull(P, n=8):
             out.append(tuple(.5 * ((2 * p1[j]) + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3) for j in range(3)))
     out.append(P[-1]); return out
 SX, HS, LARG = 170, 45, 6.0
-T_VILA = catmull([(-8, -42, 0), (-22, -46, 0), (-40, -38, 0), (-52, -22, 0), (-62, -36, 0), (-50, -50, 0), (-25, -51, 0), (-4, -51, 0)])
-T_RAVINA = catmull([(0, -100, 0), (-15, -104, 0), (-35, -98, 0), (-55, -108, 0), (-50, -128, 0), (-30, -140, 0), (-14, -134, 0)])
+T_VILA = catmull([(-19, -34, 0), (-32, -33, 2), (-46, -22, 7), (-60, -28, 11), (-63, -42, 12), (-49, -49, 8), (-28, -51, 3), (-4, -51, 0)])
+T_RAVINA = catmull([(0, -100, 0), (-15, -104, 2), (-35, -98, 6), (-55, -108, 9), (-50, -128, 7), (-30, -140, 3), (-14, -134, 0)])
 PONTOS = [(16, -126, 0), (45, -120, 2), (100, -110, 7), (112, -95, 10), (60, -80, 15), (48, -65, 18), (100, -50, 24), (112, -35, 27),
           (60, -20, 32), (50, -5, 35), (105, 8, 40), (150, 18, 44), (170, 9, 45)]
 CAMINHO = catmull(PONTOS)
@@ -106,12 +106,20 @@ def alt_monte(x, z):  # encosta aberta: média das alturas da trilha (sem parede
         t = max(0, min(1, ((x - ax) * dx + (z - az) * dz) / L)); d = math.hypot(x - ax - dx * t, z - az - dz * t); w = 1 / (d * d + 6)
         sw += w; sh += w * (ah + (bh - ah) * t)
     return sh / sw
+BARREIRAS = [(-26, 24, -42.5, -47.8, 17), (-9, 22, -101.5, -110.5, 16)]  # morros que escondem a próxima área
 def altura(x, z):
     dL = dist_walk(x, z); dM, hp, _ = perto_caminho(x, z)
     if dM <= LARG / 2: return hp - .03
+    dV, hV, _ = seg_perto(T_VILA, x, z); dR, hR, _ = seg_perto(T_RAVINA, x, z)
+    if dV <= LARG / 2: return hV - .03
+    if dR <= LARG / 2: return hR - .03
     if dL <= 0: return 0
     n = noise.noise(Vector((x * .045, z * .045, 1.3))) * .5 + .5
-    colina = sst(4, 42, dL) * (1.5 + n * 8) + noise.noise(Vector((x * .25, z * .25, 4))) * .3 * sst(1, 6, dL)
+    base = max(hV * (1 - sst(LARG / 2, 22, dV)), hR * (1 - sst(LARG / 2, 22, dR)))
+    colina = base + sst(2.5, 22, dL) * (7 + n * 13) + noise.noise(Vector((x * .25, z * .25, 4))) * .4 * sst(1, 6, dL)
+    for x0, x1, z0, z1, H in BARREIRAS:
+        dr = math.hypot(max(x0 - x, 0, x - x1), max(z1 - z, 0, z - z0))
+        colina = max(colina, H * sst(.4, 3, dL) * (1 - sst(0, 9, dr)) * (.85 + .3 * n))
     if x > 152 and dM > LARG / 2 + 1: return -70
     if dM > 60: return colina
     monte = alt_monte(x, z) + min(2.2, (dM - LARG / 2) * .22) + noise.noise(Vector((x * .08, z * .08, 2.2))) * 1.2 * sst(3, 10, dM)
