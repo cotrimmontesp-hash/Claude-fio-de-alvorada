@@ -13,7 +13,7 @@ addEventListener('keyup', e => { K[e.code] = 0; });
 addEventListener('blur', () => { for (const k in K) K[k] = 0; });
 // câmera no mouse (como antes): clicar no jogo prende o mouse; M solta a seta e pausa o jogo
 function grabMouse() { if (TOUCH || locked) return; try { const p = cv.requestPointerLock(); if (p && p.catch) p.catch(() => { }); } catch (er) { } }
-cv.addEventListener('mousedown', e => { AU.init(); if (!TOUCH && !locked && S.mode === 'play') { grabMouse(); return; } const b = 'M' + e.button; KP[b] = 1; K[b] = 1; });
+cv.addEventListener('mousedown', e => { AU.init(); if (!TOUCH && !locked && S.mode === 'play') grabMouse(); const b = 'M' + e.button; KP[b] = 1; K[b] = 1; });
 function toggleMouseCam() { if (TOUCH) return; if (locked) { S.noPauseOnUnlock = true; document.exitPointerLock(); if (typeof openPause === 'function') openPause(); } else if (S.mode === 'play') grabMouse(); }
 addEventListener('mouseup', e => { K['M' + e.button] = 0; });
 cv.addEventListener('contextmenu', e => e.preventDefault());
