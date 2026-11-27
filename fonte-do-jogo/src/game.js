@@ -133,16 +133,18 @@ function camUpdate(dt, I) {
     // luta de chefe sem alvo travado: a câmera vira devagar para o chefe não sumir atrás dela
     if (bossE && !tg && Math.abs(I.lx) < .002) { const dy = Math.atan2(bossE.pos[0] - P.pos[0], bossE.pos[2] - P.pos[2]), df = angDiff(CAM.yaw, dy); if (Math.abs(df) > .7) CAM.yaw += df * (1 - Math.exp(-2.2 * dt)); }
     const naTrilha = (P.pos[0] > 14 && P.pos[0] < SX - 15 && pertoTrilha(P.pos[0], P.pos[2]).d < 6) || !!naTrilhaSerra(P.pos[0], P.pos[2]); CAM.trilha = lerp(CAM.trilha || 0, naTrilha ? 1 : 0, 1 - Math.exp(-2 * dt));
-    let dist = (boss ? 6.4 : 4.4) + CAM.trilha * 2.6 - CAM.zoom * 1.6;
+    const cav = naCaverna(P.pos[0], P.pos[2]); CAM.cav = lerp(CAM.cav || 0, cav ? 1 : 0, 1 - Math.exp(-3 * dt)); if (cav) CAM.pitch = Math.min(CAM.pitch, .42);
+    let dist = (boss ? 6.4 : 4.4) + CAM.trilha * 1.4 * (1 - CAM.cav) - CAM.zoom * 1.6 - CAM.cav * .6;
     CAM.dist += (dist - CAM.dist) * (1 - Math.exp(-4 * dt)); CAM.zoom = Math.max(0, CAM.zoom - dt * 1.5);
     const f = [Math.sin(CAM.yaw), 0, Math.cos(CAM.yaw)], rgt = [-Math.cos(CAM.yaw), 0, Math.sin(CAM.yaw)];
     const at = V.add(P.pos, [0, 1.45 + (P.rig.yOff || 0) * .4, 0]), cp = Math.cos(CAM.pitch), sp = Math.sin(CAM.pitch);
-    let eye = V.add(V.add(at, V.sc(f, -CAM.dist * cp)), V.add([0, CAM.dist * sp + (CAM.trilha || 0) * 3.2, 0], V.sc(rgt, .65)));
+    let eye = V.add(V.add(at, V.sc(f, -CAM.dist * cp)), V.add([0, CAM.dist * sp + (CAM.trilha || 0) * 1.2 * (1 - CAM.cav), 0], V.sc(rgt, .65)));
     if (bossE) { const bd = Math.hypot(eye[0] - bossE.pos[0], eye[2] - bossE.pos[2]), lim = 1.6 * (bossE.baseScale || 1) + .8; if (bd < lim) eye[1] += (lim - bd) * 1.4; } // sobe a câmera se o chefe estiver colado nela
     // a câmera não entra no chão nem em barrancos entre ela e o personagem
-    for (let k = 1; k <= 5; k++) { const q = k / 5, px = lerp(at[0], eye[0], q), pz = lerp(at[2], eye[2], q), py = lerp(at[1], eye[1], q), gh = groundH(px, pz) + .7;
-      if (py < gh) eye[1] += (gh - py) / q; }
-    { const gh = groundH(eye[0], eye[2]) + .9; if (eye[1] < gh) eye[1] = gh; }
+    // se tiver morro no meio, a câmera chega mais perto (em vez de subir e virar vista de cima)
+    for (let k = 1; k <= 6; k++) { const q = k / 6, px = lerp(at[0], eye[0], q), pz = lerp(at[2], eye[2], q), py = lerp(at[1], eye[1], q), gh = groundH(px, pz) + .6;
+      if (py < gh) { eye = V.lerp(at, eye, Math.max(.3, q - .12)); break; } }
+    { const gh = groundH(eye[0], eye[2]) + .8; if (eye[1] < gh) eye[1] = Math.min(gh, at[1] + 3.2); }
     const k = 1 - Math.exp(-18 * dt); CAM.eye = V.lerp(CAM.eye, eye, k); CAM.at = V.lerp(CAM.at, V.add(at, V.sc(rgt, .65)), k);
   }
   let e = CAM.eye; if (S.shake > 0) { const m = S.shake * .25; e = V.add(e, [rnd(-m, m), rnd(-m, m), rnd(-m, m)]); S.shake = Math.max(0, S.shake - dt * 3); }

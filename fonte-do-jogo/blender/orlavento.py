@@ -329,6 +329,45 @@ def serra_cristas():
             x, z, h = T[k]; x2, z2, _ = T[k + 1]; a = math.atan2(x2 - x, z2 - z); px, pz = math.cos(a), -math.sin(a)
             sx = x + px * (LARG / 2 - .4); sz = z + pz * (LARG / 2 - .4)
             caixa('PosteLume', sx, sz, h + 1, .16, .16, 2, madeira); caixa('Lanterna', sx, sz, h + 2.1, .28, .28, .3, fogo, bev=0)
+CAV_S = []
+CAVERNAS = [('vila', .34, .62), ('ravina', .38, .66), ('monte', .30, .44), ('serra1', .40, .58), ('serra2', .35, .6), ('serra3', .38, .62)]
+@etapa
+def cavernas():
+    TR = {'vila': T_VILA, 'ravina': T_RAVINA, 'monte': CAMINHO, 'serra1': T_SERRA[0], 'serra2': T_SERRA[1], 'serra3': T_SERRA[2]}
+    pedra = mat('rocha_caverna', 0x3a3430, .95); verde = mat('janela_verde', 0x5dffa0, .3)
+    verde.node_tree.nodes['Principled BSDF'].inputs['Emission Color'].default_value = srgb(0x40ff90); verde.node_tree.nodes['Principled BSDF'].inputs['Emission Strength'].default_value = 4
+    for nome, f0, f1 in CAVERNAS:
+        T = TR[nome]; i0, i1 = int(len(T) * f0), int(len(T) * f1)
+        acc = [0]
+        for q in range(1, len(T)): acc.append(acc[-1] + math.hypot(T[q][0] - T[q - 1][0], T[q][1] - T[q - 1][1]))
+        CAV_S.append([nome, round(acc[i0], 2), round(acc[i1], 2)])
+        bm = bmesh.new(); aneis = []; NA = 14
+        for i in range(i0, i1 + 1):
+            x, z, h = T[i]; x2, z2, _ = T[min(i + 1, len(T) - 1)] if i < len(T) - 1 else T[i - 1]
+            a = math.atan2(x2 - x, z2 - z); px, pz = math.cos(a), -math.sin(a)
+            boca = min(i - i0, i1 - i) / 3.0; esc = .78 + .22 * min(1, boca)  # entrada um pouco mais baixa
+            anel = []
+            for k in range(NA + 1):
+                t = math.pi * (-.08 + 1.16 * k / NA); n = noise.noise(Vector((x * .3, z * .3, k * .7))) * .7
+                r = 6.6 + n; hx = math.cos(t) * r; hy = max(-.6, math.sin(t) * (6.0 + n) * esc)
+                anel.append(bm.verts.new(GP(x + px * hx, z + pz * hx, h - .4 + hy)))
+            aneis.append(anel)
+        for j in range(len(aneis) - 1):
+            for k in range(NA):
+                f = bm.faces.new((aneis[j][k], aneis[j + 1][k], aneis[j + 1][k + 1], aneis[j][k + 1])); f.smooth = True
+        me = bpy.data.meshes.new('Caverna'); bm.to_mesh(me); bm.free(); link(bpy.data.objects.new('Caverna', me), pedra)
+        for i in range(i0 + 1, i1, 2):  # cristais verdes nas paredes
+            x, z, h = T[i]; x2, z2, _ = T[i + 1]; a = math.atan2(x2 - x, z2 - z); px, pz = math.cos(a), -math.sin(a)
+            for sg in (-1, 1):
+                if random.random() < .35: continue
+                d = 4.4 + random.random() * .8; s = random.uniform(.5, 1.1)
+                o = cil('CristalG' if (i - i0) % 6 == 1 and sg > 0 else 'Cristal', x + px * sg * d, z + pz * sg * d, h + .2 + s * .9, .28 * s, 2.2 * s, verde, 5, 0)
+                o.rotation_euler = (random.uniform(-.4, .4), random.uniform(-.4, .4), random.uniform(0, 3))
+    # pedras de lume verdes na beira das trilhas (o caminho brilha de leve)
+    for T in (T_VILA, T_RAVINA, CAMINHO) + tuple(T_SERRA):
+        for i in range(3, len(T) - 1, 7):
+            x, z, h = T[i]; x2, z2, _ = T[i + 1]; a = math.atan2(x2 - x, z2 - z); px, pz = math.cos(a), -math.sin(a); sg = 1 if i % 2 else -1
+            o = cil('Cristal', x + px * sg * (LARG / 2 + .3), z + pz * sg * (LARG / 2 + .3), h + .35, .18, .9, verde, 5, 0); o.rotation_euler = (.3 * sg, .2, i)
 @etapa
 def exportar():
     import json
@@ -359,7 +398,7 @@ def exportar():
         R = [[mw[0][0], mw[0][2], -mw[0][1], mw[0][3]], [mw[2][0], mw[2][2], -mw[2][1], mw[2][3]], [-mw[1][0], -mw[1][2], mw[1][1], -mw[1][3]]]
         objs.append([me.name, [round(x, 4) for row in R for x in row], cor, emis])
     p = os.path.join(OUT, 'orlavento.json')
-    with open(p, 'w') as f: json.dump({'malhas': meshes, 'objetos': objs, 'caminho': {'pts': [[round(a, 2), round(b, 2), round(c, 2)] for a, b, c in CAMINHO], 'larg': LARG, 'sx': SX, 'hs': HS}, 'alturas': HGRID}, f, separators=(',', ':'))
+    with open(p, 'w') as f: json.dump({'malhas': meshes, 'objetos': objs, 'caminho': {'pts': [[round(a, 2), round(b, 2), round(c, 2)] for a, b, c in CAMINHO], 'larg': LARG, 'sx': SX, 'hs': HS}, 'alturas': HGRID, 'cavernas': CAV_S}, f, separators=(',', ':'))
     open(os.path.join(OUT, 'orlavento_log.txt'), 'a').write('EXPORTADO %d objetos, %d malhas, %d bytes\n' % (len(objs), len(meshes), os.path.getsize(p)))
 # ---------- câmera da vista para acompanhar ----------
 import mathutils

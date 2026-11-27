@@ -77,7 +77,7 @@ async function completeMission(i, title) {
 }
 
 // ---------- montagem de cena por missão ----------
-const ENV0 = { ...R.env }, ENV_TRILHA = { ...R.env, sun: V.norm([.3, .88, .38]), sunC: [2.7, 2.2, 1.8], night: .12, fogD: .007 }, ENV_SERRA = { ...R.env, sun: V.norm([.35, .55, .6]), sunC: [2.2, 2.0, 1.8], skyA: lin(0x4f6c8e), skyB: lin(0xd0a890), fog: lin(0x7d8796), fogD: .017, riftN: V.norm([.6, .3, .7]), night: .2 };
+const ENV0 = { ...R.env }, ENV_TRILHA = { ...R.env, sun: V.norm([.3, .88, .38]), sunC: [2.7, 2.2, 1.8], night: .12, fogD: .007 }, ENV_SERRA = { ...R.env, sun: V.norm([.35, .55, .6]), sunC: [2.2, 2.0, 1.8], skyA: lin(0x4f6c8e), skyB: lin(0xd0a890), fog: lin(0x7d8796), fogD: .011, riftN: V.norm([.6, .3, .7]), night: .2 };
 function stage(i) {
   clearCombat(); NPCS.length = 0; RIFT.ts = 0; RIFT.s = 0; RIFT.bind = null; MARK = null; MIS.bossDead = false;
   P.hp = maxHp(); P.vig = 100; P.lume = 30; P.st = 'move'; P.cd = { q: 0, e: 0, r: 0 }; P.heal = null; P.rig.pitch = 0; P.trail.length = 0;

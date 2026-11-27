@@ -29,6 +29,8 @@ const TRILHAS = { monte: TRILHA,
   serra2: trilhaDensa([[170, -117, 45], [192, -126, 46], [211, -145, 48], [196, -161, 47], [176, -168, 46], [170, -179, 45]]),
   serra3: trilhaDensa([[171, -216, 45], [195, -228, 47], [215, -245, 49], [201, -262, 47.5], [180, -267, 46], [172, -278, 45]]) };
 const TR_SERRA = [TRILHAS.serra1, TRILHAS.serra2, TRILHAS.serra3];
+function naCaverna(x, z) { const L = typeof MAPS !== 'undefined' && MAPS.orlavento && MAPS.orlavento.cavernas; if (!L) return false;
+  for (const [n, s0, s1] of L) { const T = TRILHAS[n]; if (!T) continue; const p = pertoT(T, x, z); if (p.d < 7 && p.s > s0 - 2 && p.s < s1 + 2) return true; } return false; }
 function naTrilhaSerra(x, z) { if (x < SX - 10) return null; for (const T of TR_SERRA) { const p = pertoT(T, x, z); if (p.d <= TRILHA_L / 2) return p; } return null; }
 function pertoT(T, x, z) { const b = T.box; if (x < b[0] || x > b[1] || z < b[2] || z > b[3]) return { d: 1e9, h: 0, s: 0 };
   let bd = 1e9, bh = 0, bs = 0;
@@ -233,7 +235,8 @@ function buildWorld() {
     for (const th of W.threads.slice(n0.th)) { th.a = [th.a[0], th.a[1] + HS, th.a[2]]; th.b = [th.b[0], th.b[1] + HS, th.b[2]]; }
     for (const l of W.lights.slice(n0.li)) l.p = [l.p[0], l.p[1] + HS, l.p[2]];
     for (let k = n0.to; k < W.torches.length; k++) W.torches[k] = [W.torches[k][0], W.torches[k][1] + HS, W.torches[k][2]]; }
-  if (MAPA) { const bm = blenderMap(MAPA, b => b === 'Boneco' || b === 'Palha'); if (bm.ground) { W.ground = bm.ground[0]; W.grounds = bm.ground.slice(1); } W.blender = mkMesh(bm.mesh); }
+  if (MAPA) { for (const [nm, R] of MAPA.objetos) if (nm.split('.')[0] === 'CristalG') W.lights.push({ p: [R[3], R[7] + .6, R[11]], c: V.sc(C(0x40ff90), 2.4), r: 9 });
+    const bm = blenderMap(MAPA, b => b === 'Boneco' || b === 'Palha'); if (bm.ground) { W.ground = bm.ground[0]; W.grounds = bm.ground.slice(1); } W.blender = mkMesh(bm.mesh); }
   W.mesh = mkMesh(g); W.vc = g.p.length / 3;
   // bonecos de treino
   W.dummies = [[-6.2, 0, 2.2], [-6.2, 0, -0.2]].map(p => ({ pos: p, hp: 1, shake: 0, hits: 0 }));
