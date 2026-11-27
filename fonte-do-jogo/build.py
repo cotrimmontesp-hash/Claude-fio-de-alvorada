@@ -1,7 +1,7 @@
 import os
 d = os.path.dirname(os.path.abspath(__file__))
 src = os.path.join(d, 'src')
-js = '\n'.join(open(os.path.join(src, f), encoding='utf-8').read() for f in ['engine.js', 'skin.js', 'models.js', 'world.js', 'game.js', 'lobby.js', 'story.js', 'coop.js'])
+js = '\n'.join(open(os.path.join(src, f), encoding='utf-8').read() for f in ['engine.js', 'skin.js', 'models.js', 'world.js', 'game.js', 'lobby.js', 'story.js', 'coop.js', 'vozes.js'])
 import base64, glob
 assets = {os.path.splitext(os.path.basename(f))[0]: base64.b64encode(open(f, 'rb').read()).decode() for f in glob.glob(os.path.join(d, 'assets', '*.glb'))}
 import json as _j
