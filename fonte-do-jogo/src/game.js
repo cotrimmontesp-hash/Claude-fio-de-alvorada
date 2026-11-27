@@ -429,7 +429,7 @@ function bossFury(e) {
   setTimeout(() => { if (!e.dead) { spawn('filhote', e.pos[0] + 4, e.pos[2] + 2); spawn('filhote', e.pos[0] - 4, e.pos[2] + 2); } }, 900);
 }
 function dogAI(e, dt, d, pd) {
-  const fm = e.fury ? 1.28 : 1, D = e.d, boss = e.boss; let mv = 0;
+  const fm = e.fury ? 1.4 : 1, D = e.d, boss = e.boss; let mv = 0;
   if (e.boss && !e.rig.isSkin) { const ts = e.fury ? 2.2 : 1.7; e.rig.scale += (ts - e.rig.scale) * (1 - Math.exp(-2 * dt)); }
   if (e.boss && e.rig.isSkin) e.baseScale += ((e.fury ? 1.4 : 1.15) - e.baseScale) * (1 - Math.exp(-2 * dt));
   if (e.st === 'stun' || e.st === 'hurt') { if (e.st === 'hurt' && e.t > .3) e.st = 'chase'; }

@@ -1674,7 +1674,7 @@ function bossFury(e) {
   setTimeout(() => { if (!e.dead) { spawn('filhote', e.pos[0] + 4, e.pos[2] + 2); spawn('filhote', e.pos[0] - 4, e.pos[2] + 2); } }, 900);
 }
 function dogAI(e, dt, d, pd) {
-  const fm = e.fury ? 1.28 : 1, D = e.d, boss = e.boss; let mv = 0;
+  const fm = e.fury ? 1.4 : 1, D = e.d, boss = e.boss; let mv = 0;
   if (e.boss && !e.rig.isSkin) { const ts = e.fury ? 2.2 : 1.7; e.rig.scale += (ts - e.rig.scale) * (1 - Math.exp(-2 * dt)); }
   if (e.boss && e.rig.isSkin) e.baseScale += ((e.fury ? 1.4 : 1.15) - e.baseScale) * (1 - Math.exp(-2 * dt));
   if (e.st === 'stun' || e.st === 'hurt') { if (e.st === 'hurt' && e.t > .3) e.st = 'chase'; }
@@ -2713,15 +2713,26 @@ setTimeout(vozesOpcao, 500);
 const _escolherHeroiV = escolherHeroi; escolherHeroi = function (k) { _escolherHeroiV(k); const h = heroBy(k); falar(h.nome, { nera: 'Eu sou Nera. Vamos recosturar o mundo.', iaro: 'Iaro. A brasa não se apaga.', lira: 'Lira! Tenta me acompanhar.', ruan: 'Ruan. Fico na frente, sempre.', mireia: 'Mireia. A maré sabe o caminho.', oren: 'Oren. Já vi muita tempestade.' }[h.k]); };
 
 // ================= DIFICULDADE, MOEDAS E LOJA DO FERREIRO =================
-// mais inimigos e mais fortes
+// níveis de dificuldade: cada jogador escolhe (fica salvo no aparelho)
+const DIFS = [
+  { nome: 'Fácil', vida: .8, dano: .7, cd: 1.1, extra: 0, chefeVida: .9, chefeDano: .8, fura: 1.1, resiste: 1, resisteFuria: .85 },
+  { nome: 'Normal', vida: 1.3, dano: 1.2, cd: .9, extra: 3, chefeVida: 1.25, chefeDano: 1, fura: 1.15, resiste: 1, resisteFuria: .75 },
+  { nome: 'Difícil', vida: 1.75, dano: 1.5, cd: .82, extra: 2, chefeVida: 1.7, chefeDano: 1.3, fura: 1.4, resiste: .8, resisteFuria: .5 },
+  { nome: 'Muito difícil', vida: 2.3, dano: 1.9, cd: .72, extra: 1, chefeVida: 2.2, chefeDano: 1.6, fura: 1.6, resiste: .7, resisteFuria: .4 },
+];
+let DIF_I = 2; try { const v = +localStorage.getItem('fio_dif'); if (v >= 0 && v < DIFS.length && localStorage.getItem('fio_dif') !== null) DIF_I = v; } catch (e) {}
+const DIF = () => DIFS[DIF_I];
+function trocarDif() { DIF_I = (DIF_I + 1) % DIFS.length; try { localStorage.setItem('fio_dif', DIF_I); } catch (e) {} difBotoes(); if (typeof hint === 'function') hint('Dificuldade: <b>' + DIF().nome + '</b> (vale para os próximos inimigos)', 3000); }
+function difBotoes() { for (const id of ['lbDif', 'bDif']) { const b = document.getElementById(id); if (b) b.textContent = 'Dificuldade: ' + DIF().nome; } }
 const _spawnD = spawn;
 spawn = function (type, x, z, o = {}) {
   const e = _spawnD(type, x, z, o);
   if (e.ghost || (typeof NET !== 'undefined' && NET.guest)) return e;
-  if (e.boss) { e.hp = e.maxhp = Math.round(e.maxhp * 1.25); }
-  else { e.hp = e.maxhp = Math.round(e.maxhp * 1.3); e.dmgMul = (e.dmgMul || 1) * 1.2; e.cdMul = (e.cdMul || 1) * .9;
-    // a cada dois inimigos comuns, vem um a mais
-    if (!o.extra && S.mode !== 'lobby') { spawn.n = (spawn.n || 0) + 1; if (spawn.n % 2 === 0) { const a = rnd(0, 6.28); const nx = x + Math.sin(a) * 1.8, nz = z + Math.cos(a) * 1.8; if (walkable(nx, nz)) spawn(type, nx, nz, { ...o, extra: true }); } } }
+  const D = DIF();
+  if (e.boss) { e.hp = e.maxhp = Math.round(e.maxhp * D.chefeVida); }
+  else { e.hp = e.maxhp = Math.round(e.maxhp * D.vida); e.dmgMul = (e.dmgMul || 1) * D.dano; e.cdMul = (e.cdMul || 1) * D.cd;
+    // inimigos a mais (no Difícil, 1 a cada 2; no Muito difícil, 1 a cada 1)
+    if (D.extra && !o.extra && S.mode !== 'lobby') { spawn.n = (spawn.n || 0) + 1; if (spawn.n % D.extra === 0) { const a = rnd(0, 6.28); const nx = x + Math.sin(a) * 1.8, nz = z + Math.cos(a) * 1.8; if (walkable(nx, nz)) spawn(type, nx, nz, { ...o, extra: true }); } } }
   return e;
 };
 // ---------- moedas ----------
@@ -2773,9 +2784,15 @@ function lojaInit() {
   $('ljFechar').onclick = () => $('loja').classList.remove('on');
   const bl = document.createElement('button'); bl.id = 'lbLoja'; bl.textContent = 'Ferreiro'; bl.onclick = () => abrirLoja('lobby'); $('lbMini').insertBefore(bl, $('lbMini').firstChild);
   const bp = document.createElement('button'); bp.id = 'bLoja'; bp.textContent = 'Ferreiro (loja)'; bp.onclick = () => abrirLoja('pause'); const pb = $('bTree'); pb.parentNode.insertBefore(bp, pb.nextSibling);
+  const dl = document.createElement('button'); dl.id = 'lbDif'; dl.onclick = trocarDif; $('lbMini').insertBefore(dl, bl.nextSibling);
+  const dp = document.createElement('button'); dp.id = 'bDif'; dp.onclick = trocarDif; pb.parentNode.insertBefore(dp, bp.nextSibling); difBotoes();
   moedasHUD();
 }
 setTimeout(lojaInit, 300);
+
+// chefes mais fortes: batem mais forte e, na fúria, batem ainda mais e aguentam mais golpes
+{ const _hp = hurtPlayer; hurtPlayer = function (a, src, ...r) { const D = DIF(); if (src && src.boss) a *= D.chefeDano * (src.fury ? D.fura : 1); return _hp.call(this, a, src, ...r); };
+  const _he = hurtEnemy; hurtEnemy = function (e, base, ...r) { const D = DIF(); if (e && e.boss) base *= e.fury ? D.resisteFuria : D.resiste; return _he.call(this, e, base, ...r); }; }
 
 }
 </script>
