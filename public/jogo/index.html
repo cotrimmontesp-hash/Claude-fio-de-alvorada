@@ -1559,6 +1559,11 @@ function enemyUpdate(e, dt) {
   const d = V.d2(e.pos, P.pos), pd = P.st === 'dead';
   if (e.y > 0 || e.vy > 0) { e.vy -= 18 * dt; e.y += e.vy * dt; if (e.y <= 0) { e.y = 0; e.vy = 0; if (e.st !== 'stun') { e.st = 'hurt'; e.t = -.3; } puff(e.pos, [.5, .45, .4], 4, .4, .2); } }
   if (e.stun > 0) { e.stun -= dt; e.st = 'stun'; if (e.stun <= 0) { e.st = 'chase'; e.cd = .5; } }
+  // proteções do chefe: nunca fica imune fora do rugido, nunca sai da arena nem fica preso no ar
+  if (e.inv && e.st !== 'roar' && S.mode === 'play') e.inv = false;
+  if (e.boss) { if (!isFinite(e.pos[0]) || !isFinite(e.pos[2])) { const c = W.confine && W.confine.c ? W.confine.c : [P.pos[0], P.pos[2] - 4]; e.pos[0] = c[0]; e.pos[2] = c[1]; }
+    if (W.confine && W.confine.c) { const c = W.confine.c, dd = Math.hypot(e.pos[0] - c[0], e.pos[2] - c[1]); if (dd > W.confine.r + 2.5) { e.pos[0] = c[0] + (e.pos[0] - c[0]) / dd * (W.confine.r - 2); e.pos[2] = c[1] + (e.pos[2] - c[1]) / dd * (W.confine.r - 2); } }
+    e.airT = e.y > .05 ? (e.airT || 0) + dt : 0; if (e.airT > 4 && e.st !== 'jump') { e.y = 0; e.vy = 0; e.airT = 0; } }
   e.t += dt; e.cd -= dt;
   e.markT = (e.markT || 0) - dt;
   if (e.type === 'cao' || e.type === 'filhote') return dogAI(e, dt, d, pd);
@@ -1599,7 +1604,7 @@ function separate() { for (let i = 0; i < ENEMIES.length; i++) { const a = ENEMI
   const dx = P.pos[0] - a.pos[0], dz = P.pos[2] - a.pos[2], d = Math.hypot(dx, dz), m = a.rad + .35; if (d < m && d > 0 && P.st !== 'dodge') { const p = m - d, ox = P.pos[0], oz = P.pos[2]; P.pos[0] += dx / d * p * .5; P.pos[2] += dz / d * p * .5; if (!walkable(P.pos[0], P.pos[2])) { P.pos[0] = ox; P.pos[2] = oz; } a.pos[0] -= dx / d * p * .5; a.pos[2] -= dz / d * p * .5; } } }
 // ---------- chefe ----------
 function bossFury(e) {
-  e.fury = true; e.st = 'roar'; e.t = 0; e.inv = true; AU.stinger(); AU.roar(); S.shake = 1.5; CAM.zoom = 1; banner('FÚRIA', 'O Cão de Fios Rotos se rasga por dentro', 'fury');
+  e.stun = 0; e.fury = true; e.st = 'roar'; e.t = 0; e.inv = true; AU.stinger(); AU.roar(); S.shake = 1.5; CAM.zoom = 1; banner('FÚRIA', 'O Cão de Fios Rotos se rasga por dentro', 'fury');
   $('bossbar').classList.add('fury');
   setTimeout(() => { if (!e.dead) { spawn('filhote', e.pos[0] + 4, e.pos[2] + 2); spawn('filhote', e.pos[0] - 4, e.pos[2] + 2); } }, 900);
 }
@@ -1740,7 +1745,7 @@ function updHoles(dt) {
     const d = Math.hypot(P.pos[0] - c.c[0], P.pos[2] - c.c[1]); if (d > c.r - .2) { P.pos[0] = c.c[0] + (P.pos[0] - c.c[0]) / d * (c.r - .3); P.pos[2] = c.c[1] + (P.pos[2] - c.c[1]) / d * (c.r - .3); } }
 }
 function irmaFury(e) {
-  e.fury = true; e.st = 'roar'; e.t = 0; e.inv = true; AU.stinger(); S.shake = 1.4; CAM.zoom = 1; banner('FÚRIA', 'O chão da arena começa a ruir', 'fury'); $('bossbar').classList.add('fury');
+  e.stun = 0; e.fury = true; e.st = 'roar'; e.t = 0; e.inv = true; AU.stinger(); S.shake = 1.4; CAM.zoom = 1; banner('FÚRIA', 'O chão da arena começa a ruir', 'fury'); $('bossbar').classList.add('fury');
   if (W.confine && W.confine.c) { W.confine.shrink = true; W.confine.to = 10.5; }
 }
 function irmaAI(e, dt, d, pd) {
