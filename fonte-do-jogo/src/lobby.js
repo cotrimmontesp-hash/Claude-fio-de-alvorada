@@ -68,11 +68,11 @@ function lobbyFrame(dt) {
   const t = S.time; R.setCam([LP[0] - 1.0, 1.45, LP[2] + 4.3], [LP[0] - .55, 1.05, LP[2]], .9);
   LOB.yaw *= 1 - Math.min(1, dt * .2);
   animAny(P.rig, { ph: t * 2, sp: 0, act: null, t: 0, ready: true }, dt);
-  P.rig.pos = [...LP]; P.rig.yaw = Math.PI + LOB.yaw + Math.sin(t * .5) * .08; P.rig.pitch = 0; P.rig.update();
+  P.rig.pos = [...LP]; P.rig.yaw = LOB.yaw + Math.sin(t * .5) * .08; P.rig.pitch = 0; P.rig.update();
   R.ring(LP[0], LP[2], .95, .08, HERO.cor, .8); R.ring(LP[0], LP[2], 1.25 + Math.sin(t * 2) * .05, .03, HERO.cor, .5); R.light([LP[0], 2.2, LP[2] + 1.2], V.sc(HERO.cor, 2.2), 6);
   if (Math.random() < .3) part([LP[0] + rnd(-.8, .8), 0, LP[2] + rnd(-.8, .8)], [0, rnd(.5, 1.5), 0], 1.4, .05, HERO.cor);
   LOB.amigos.forEach((a, i) => { if (i >= SLOTS.length) return; let r = LOB.rigs[a.id]; if (!r || r.k !== a.k) { r = LOB.rigs[a.id] = CAST[a.k](); r.k = a.k; }
-    const s = SLOTS[i]; animAny(r, { ph: t * 2 + i, sp: 0, act: null, t: 0, ready: false }, dt); r.pos = [...s]; r.yaw = Math.PI + (s[0] < 0 ? .35 : -.35); r.pitch = 0; r.scale = .97; r.update(); r.draw();
+    const s = SLOTS[i]; animAny(r, { ph: t * 2 + i, sp: 0, act: null, t: 0, ready: false }, dt); r.pos = [...s]; r.yaw = s[0] < 0 ? .35 : -.35; r.pitch = 0; r.scale = .97; r.update(); r.draw();
     R.ring(s[0], s[2], .75, .05, heroBy(a.k).cor, .5); });
 }
 // ---------- esquadrão online (PeerJS: conexão direta entre os aparelhos) ----------
