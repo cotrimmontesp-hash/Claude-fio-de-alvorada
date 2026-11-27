@@ -132,7 +132,7 @@ function camUpdate(dt, I) {
     const bossE = ENEMIES.find(e => e.boss && !e.dead && e.spawnT <= 0), boss = !!bossE;
     // luta de chefe sem alvo travado: a câmera vira devagar para o chefe não sumir atrás dela
     if (bossE && !tg && Math.abs(I.lx) < .002) { const dy = Math.atan2(bossE.pos[0] - P.pos[0], bossE.pos[2] - P.pos[2]), df = angDiff(CAM.yaw, dy); if (Math.abs(df) > .7) CAM.yaw += df * (1 - Math.exp(-2.2 * dt)); }
-    const naTrilha = P.pos[0] > 14 && P.pos[0] < SX - 15 && pertoTrilha(P.pos[0], P.pos[2]).d < 6; CAM.trilha = lerp(CAM.trilha || 0, naTrilha ? 1 : 0, 1 - Math.exp(-2 * dt));
+    const naTrilha = (P.pos[0] > 14 && P.pos[0] < SX - 15 && pertoTrilha(P.pos[0], P.pos[2]).d < 6) || !!naTrilhaSerra(P.pos[0], P.pos[2]); CAM.trilha = lerp(CAM.trilha || 0, naTrilha ? 1 : 0, 1 - Math.exp(-2 * dt));
     let dist = (boss ? 6.4 : 4.4) + CAM.trilha * 2.6 - CAM.zoom * 1.6;
     CAM.dist += (dist - CAM.dist) * (1 - Math.exp(-4 * dt)); CAM.zoom = Math.max(0, CAM.zoom - dt * 1.5);
     const f = [Math.sin(CAM.yaw), 0, Math.cos(CAM.yaw)], rgt = [-Math.cos(CAM.yaw), 0, Math.sin(CAM.yaw)];

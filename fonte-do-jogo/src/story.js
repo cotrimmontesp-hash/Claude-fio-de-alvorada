@@ -77,7 +77,7 @@ async function completeMission(i, title) {
 }
 
 // ---------- montagem de cena por missão ----------
-const ENV0 = { ...R.env }, ENV_TRILHA = { ...R.env, sun: V.norm([.3, .88, .38]), sunC: [2.7, 2.2, 1.8], night: .12, fogD: .007 }, ENV_SERRA = { ...R.env, sun: V.norm([.35, .55, .6]), sunC: [2.2, 2.0, 1.8], skyA: lin(0x4f6c8e), skyB: lin(0xd0a890), fog: lin(0x7d8796), fogD: .0085, riftN: V.norm([.6, .3, .7]), night: .2 };
+const ENV0 = { ...R.env }, ENV_TRILHA = { ...R.env, sun: V.norm([.3, .88, .38]), sunC: [2.7, 2.2, 1.8], night: .12, fogD: .007 }, ENV_SERRA = { ...R.env, sun: V.norm([.35, .55, .6]), sunC: [2.2, 2.0, 1.8], skyA: lin(0x4f6c8e), skyB: lin(0xd0a890), fog: lin(0x7d8796), fogD: .017, riftN: V.norm([.6, .3, .7]), night: .2 };
 function stage(i) {
   clearCombat(); NPCS.length = 0; RIFT.ts = 0; RIFT.s = 0; RIFT.bind = null; MARK = null; MIS.bossDead = false;
   P.hp = maxHp(); P.vig = 100; P.lume = 30; P.st = 'move'; P.cd = { q: 0, e: 0, r: 0 }; P.heal = null; P.rig.pitch = 0; P.trail.length = 0;
@@ -85,8 +85,8 @@ function stage(i) {
     Object.assign(R.env, ENV_SERRA); W.bridgeOk = true; W.gate.off = true;
     const B = W.serra.bridges; B[1].ok = i >= 4 || !!MIS.flags.b2; B[2].ok = i >= 5 || !!MIS.flags.b3;
     const li = npc('lira', SX - 2.5, 4, Math.PI, { name: 'Lira' }), or = npc('oren', SX + 2.5, 4.5, Math.PI, { name: 'Oren' });
-    if (i >= 4) { li.pos = [SX - 2.5, 0, -40]; or.pos = [SX + 2.5, 0, -41]; } if (i >= 5) { li.pos = [SX - 3, 0, -60]; or.pos = [SX + 3, 0, -61]; }
-    if (i === 4) { const pa = npc('aldeao', SX, -74, 0, { name: 'Pastor Tomé' }); pa.act = 'kneel'; pa.key = 'pastor'; }
+    if (i >= 4) { li.pos = [SX - 2.5, 0, SZ(-40)]; or.pos = [SX + 2.5, 0, SZ(-41)]; } if (i >= 5) { li.pos = [SX - 3, 0, SZ(-60)]; or.pos = [SX + 3, 0, SZ(-61)]; }
+    if (i === 4) { const pa = npc('aldeao', SX, SZ(-74), 0, { name: 'Pastor Tomé' }); pa.act = 'kneel'; pa.key = 'pastor'; }
     return;
   }
   Object.assign(R.env, ENV0);
@@ -106,6 +106,7 @@ async function seamTask(b, flag, tok) {
   for (let k = 0; k < 60; k++) part([SX + rnd(-1.4, 1.4), rnd(-.5, .3), rnd(b.rect[3], b.rect[2])], [0, 1.5, 0], rnd(.6, 1.2), .08, [1, .85, .5]);
   b.ok = true; MIS.flags[flag] = true; await wait(.8);
 }
+// a Serra ficou mais longa: cada parte foi empurrada para longe da anterior (trilhas no meio)
 // ponto da trilha a "s" metros do começo
 function trilhaEm(s) { const T = TRILHA; for (let i = 0; i < T.length - 1; i++) if (T[i + 1].s >= s) { const k = (s - T[i].s) / ((T[i + 1].s - T[i].s) || 1); return [lerp(T[i][0], T[i + 1][0], k), lerp(T[i][2], T[i + 1][2], k), lerp(T[i][1], T[i + 1][1], k)]; } const L = T[T.length - 1]; return [L[0], L[2], L[1]]; }
 function trilhaEmT(T, s) { for (let i = 0; i < T.length - 1; i++) if (T[i + 1].s >= s) { const k = (s - T[i].s) / ((T[i + 1].s - T[i].s) || 1); return [lerp(T[i][0], T[i + 1][0], k), lerp(T[i][2], T[i + 1][2], k), lerp(T[i][1], T[i + 1][1], k)]; } const L = T[T.length - 1]; return [L[0], L[2], L[1]]; }
@@ -136,35 +137,39 @@ async function subida(tok) {
     fim: () => naSerra(P.pos[0], P.pos[2]) && P.pos[0] > SX - 15 });
   for (const e of ENEMIES) { e.dead = true; e.deadT = 9; }
 }
-const fight = async (list, tok) => { for (const [t, x, z, o] of list) spawn(t, SX + x, z, o || {}); await until(() => alive() === 0); };
+const fight = async (list, tok) => { for (const [t, x, z, o] of list) spawn(t, SX + x, SZ(z), o || {}); await until(() => alive() === 0); };
 
 // ---------- CAPÍTULO 2 · MISSÃO 4: Travessia da Serra ----------
 async function M4(retry) {
-  const tok = MIS.token; stage(3); P.pos = [SX, 0, 5]; P.yaw = Math.PI; camRelease();
+  const tok = MIS.token; stage(3); P.pos = [SX, 0, SZ(5)]; P.yaw = Math.PI; camRelease();
   if (!retry) {
     // a subida: sai da arena do chefe 1 e sobe a trilha em curvas até o topo da montanha
     P.pos = [10, 0, -125]; P.yaw = Math.PI / 2; camRelease(); CAM.yaw = Math.PI / 2;
     banner('A subida', 'A Serra das Costuras fica no topo da montanha'); AU.music('combat');
     await subida(tok); if (tok !== MIS.token) return;
-    P.pos = [SX, 0, 5]; P.yaw = Math.PI; camRelease();
+    P.pos = [SX, 0, SZ(5)]; P.yaw = Math.PI; camRelease();
     AU.music('calm');
     await cut([
-      { on: () => { P.cutAct = null; }, cam: [[SX + 24, 14, 18], [SX + 14, 9, 6], [SX, 0, -40], [SX, 2, -70]], dur: 5, card: 'Capítulo 2', sub: 'Serra das Costuras' },
-      { cam: [[SX + 4, 1.8, 1.5], [SX + 3.6, 1.8, 1], [SX + 2.5, 1.6, 4.5]], dur: 3, line: { who: 'Oren', t: 'Serra das Costuras. Eu vigiava estas dobras antes de entrar para o Pacto.' } },
-      { cam: [[SX - 4, 1.8, 1.5], [SX - 3.6, 1.8, 1], [SX - 2.5, 1.6, 4]], dur: 3, line: { who: 'Lira', t: 'Os fios estão todos expostos. Dá até pra ouvir eles rangendo.' } },
-      { cam: [[SX, 3, -6], [SX, 4, -9], [SX, 0, -30], [SX, 0, -55]], dur: 3.5, line: { who: 'Oren', t: 'As pontes daqui são de lume. Se cortaram as costuras, a travessia caiu junto.' } },
-      { cam: [[SX + 1, 1.7, 2.6], [SX + .8, 1.7, 2.2], [SX, 1.6, 5]], dur: 2.5, line: { who: 'Nera', t: 'Então a gente recostura uma por uma.' } },
+      { on: () => { P.cutAct = null; }, cam: [[SX + 24, 14, SZ(18)], [SX + 14, 9, SZ(6)], [SX, 0, SZ(-40)], [SX, 2, SZ(-70)]], dur: 5, card: 'Capítulo 2', sub: 'Serra das Costuras' },
+      { cam: [[SX + 4, 1.8, SZ(1.5)], [SX + 3.6, 1.8, SZ(1)], [SX + 2.5, 1.6, SZ(4.5)]], dur: 3, line: { who: 'Oren', t: 'Serra das Costuras. Eu vigiava estas dobras antes de entrar para o Pacto.' } },
+      { cam: [[SX - 4, 1.8, SZ(1.5)], [SX - 3.6, 1.8, SZ(1)], [SX - 2.5, 1.6, SZ(4)]], dur: 3, line: { who: 'Lira', t: 'Os fios estão todos expostos. Dá até pra ouvir eles rangendo.' } },
+      { cam: [[SX, 3, SZ(-6)], [SX, 4, SZ(-9)], [SX, 0, SZ(-30)], [SX, 0, SZ(-55)]], dur: 3.5, line: { who: 'Oren', t: 'As pontes daqui são de lume. Se cortaram as costuras, a travessia caiu junto.' } },
+      { cam: [[SX + 1, 1.7, SZ(2.6)], [SX + .8, 1.7, SZ(2.2)], [SX, 1.6, SZ(5)]], dur: 2.5, line: { who: 'Nera', t: 'Então a gente recostura uma por uma.' } },
     ]);
     if (tok !== MIS.token) return;
-    P.pos = [SX, 0, 2]; P.yaw = Math.PI; camRelease();
+    P.pos = [SX, 0, SZ(2)]; P.yaw = Math.PI; camRelease();
   }
-  AU.music('calm'); objective('Atravesse a ponte de lume até o platô'); MARK = [SX, 0, -30];
-  await until(() => P.pos[2] < -28); MARK = null; if (tok !== MIS.token) return;
-  W.confine = [SX - 7.5, SX + 7.5, -23.6, -49.9]; AU.music('combat'); MIS.barrier = false;
+  AU.music('calm');
+  await jornada(TRILHAS.serra1, tok, { texto: 'Siga a crista da Serra até o platô', pontos: [25, 60, 95],
+    dica: 'A crista é estreita e tem abismo dos dois lados. Os Desfiadores vigiam a trilha.',
+    grupos: [[['tecelao', 0], ['saltador', 1], ['fieira', 0]], [['bruta', 0], ['tecelao', 1], ['larva', 1]], [['saltador', 1], ['saltador', 1], ['fieira', 0], ['tecelao', 0]]],
+    fim: () => inRect(P.pos[0], P.pos[2], [SX - 7.5, SX + 7.5, SZ(-23.5), SZ(-50)]) }); if (tok !== MIS.token) return;
+  for (const e of ENEMIES) { e.dead = true; e.deadT = 9; }
+  W.confine = [SX - 7.5, SX + 7.5, SZ(-23.6), SZ(-49.9)]; AU.music('combat'); MIS.barrier = false;
   objective('Emboscada! Derrote os Desfiadores'); hint('A <b>Costura-Bruta</b> não para de atacar quando apanha. Esquive do golpe dela e quebre a postura com o ataque pesado.', 7000);
   await fight([['tecelao', -4, -42], ['tecelao', 4, -44], ['bruta', 0, -47]], tok); if (tok !== MIS.token) return;
   W.confine = null; AU.music('calm');
-  for (const n of NPCS) { if (n.key === 'lira') n.pos = [SX - 2.5, 0, -40]; if (n.key === 'oren') n.pos = [SX + 2.5, 0, -41]; }
+  for (const n of NPCS) { if (n.key === 'lira') n.pos = [SX - 2.5, 0, SZ(-40)]; if (n.key === 'oren') n.pos = [SX + 2.5, 0, SZ(-41)]; }
   await dialog([{ who: 'Oren', t: 'A próxima ponte foi cortada no poste. Nera, é com você.' }]);
   await seamTask(W.serra.bridges[1], 'b2', tok); if (tok !== MIS.token) return;
   await completeMission(3, 'Travessia da Serra'); if (tok !== MIS.token) return;
@@ -172,12 +177,17 @@ async function M4(retry) {
 }
 // ---------- MISSÃO 5: Resgate na fenda ----------
 async function M5(retry, chained) {
-  const tok = MIS.token; stage(4); if (!chained || retry) { P.pos = [SX, 0, -44]; P.yaw = Math.PI; camRelease(); }
-  AU.music('calm'); objective('Atravesse até o platô da fenda'); MARK = [SX, 0, -62];
-  await until(() => P.pos[2] < -60); MARK = null; if (tok !== MIS.token) return;
+  const tok = MIS.token; stage(4); if (!chained || retry) { P.pos = [SX, 0, SZ(-44)]; P.yaw = Math.PI; camRelease(); }
+  AU.music('calm'); objective('Atravesse a ponte de lume'); MARK = [SX, HS, SZ(-58)];
+  await until(() => P.pos[2] < SZ(-57.5)); MARK = null; if (tok !== MIS.token) return;
+  await jornada(TRILHAS.serra2, tok, { texto: 'Siga a crista até o platô da fenda', pontos: [20, 45],
+    dica: 'Dá pra ouvir alguém pedindo socorro mais à frente, atrás das pedras.',
+    grupos: [[['fieira', 0], ['saltador', 1], ['tecelao', 1]], [['bruta', 0], ['saltador', 1], ['fieira', 1], ['larva', 0]]],
+    fim: () => Math.hypot(P.pos[0] - SX, P.pos[2] - SZ(-70)) < 12 }); if (tok !== MIS.token) return;
+  for (const e of ENEMIES) { e.dead = true; e.deadT = 9; }
   const pa = NPCS.find(n => n.key === 'pastor');
   await dialog([{ who: 'Pastor Tomé', t: 'Moça! Aqui! Uma mulher de lâmina torta prendeu a gente nesses fios. Ela disse que era a Irmã.' }, { who: 'Nera', t: 'Fica quieto aí, eu já te tiro. Primeiro esses dois.' }]);
-  W.confine = { c: [SX, -70], r: 12.3 }; AU.music('combat'); objective('Proteja o pastor — onda 1 de 2');
+  W.confine = { c: [SX, SZ(-70)], r: 12.3 }; AU.music('combat'); objective('Proteja o pastor — onda 1 de 2');
   hint('O <b>Saltador de Fenda</b> pula em cima de você: saia do círculo vermelho ou esquive no momento do pouso.', 7000);
   await fight([['saltador', -6, -76], ['saltador', 6, -64], ['fieira', -8, -66], ['fieira', 8, -78]], tok); if (tok !== MIS.token) return;
   await wait(1.5); objective('Proteja o pastor — onda 2 de 2'); banner('Bruta da Serra', 'Elite: o dobro de vida');
@@ -186,24 +196,29 @@ async function M5(retry, chained) {
   await until(() => V.d2(P.pos, pa.pos) < 2.6 && MIS.act); if (tok !== MIS.token) return;
   MARK = null; pa.act = null; P.st = 'cast'; P.t = 0; AU.heal();
   await dialog([{ who: 'Pastor Tomé', t: 'Obrigado... Ela levou o rebanho para a fenda grande, lá no alto. Disse que ia rasgar o chão debaixo de quem viesse.' }, { who: 'Lira', t: 'Ótimo. Eu adoro gente que avisa o plano.' }]);
-  for (const n of NPCS) { if (n.key === 'lira') n.pos = [SX - 3, 0, -60]; if (n.key === 'oren') n.pos = [SX + 3, 0, -61]; }
+  for (const n of NPCS) { if (n.key === 'lira') n.pos = [SX - 3, 0, SZ(-60)]; if (n.key === 'oren') n.pos = [SX + 3, 0, SZ(-61)]; }
   await seamTask(W.serra.bridges[2], 'b3', tok); if (tok !== MIS.token) return;
   await completeMission(4, 'Resgate na fenda'); if (tok !== MIS.token) return;
   runMission(5, false, true);
 }
 // ---------- MISSÃO 6: Rasga-Dobra ----------
 async function M6(retry, chained) {
-  const tok = MIS.token; stage(5); if (!chained || retry) { P.pos = [SX, 0, retry ? -95 : -78]; P.yaw = Math.PI; camRelease(); }
-  AU.music('calm'); objective('Suba até a fenda grande'); MARK = [SX + 2, 0, -98];
-  await until(() => P.pos[2] < -98); MARK = null; if (tok !== MIS.token) return;
-  let boss; const C = [SX + 2, -112];
+  const tok = MIS.token; stage(5); if (!chained || retry) { P.pos = [SX, 0, SZ(retry ? -95 : -78)]; P.yaw = Math.PI; camRelease(); }
+  AU.music('calm');
+  if (!retry) { objective('Atravesse a ponte de lume'); MARK = [SX, HS, SZ(-97)]; await until(() => P.pos[2] < SZ(-96.5)); MARK = null; if (tok !== MIS.token) return; }
+  await jornada(TRILHAS.serra3, tok, { texto: 'Suba a última crista até a fenda grande', pontos: [15, 40],
+    dica: 'O chão treme. A Rasga-Dobra está perto.',
+    grupos: [[['bruta', 0], ['saltador', 1], ['saltador', 1]], [['bruta', 1], ['fieira', 0], ['tecelao', 1], ['saltador', 0]]],
+    fim: () => Math.hypot(P.pos[0] - SX - 2, P.pos[2] - SZ(-112)) < 13 }); if (tok !== MIS.token) return;
+  for (const e of ENEMIES) { e.dead = true; e.deadT = 9; }
+  let boss; const C = [SX + 2, SZ(-112)];
   await cut([
-    { on: () => { boss = spawn('irma', C[0], C[1] - 5, { instant: true }); boss.st = 'roar'; boss.inv = true; boss.yaw = 0; P.cutAct = null; }, cam: [[SX + 6, 2, -101], [SX + 4, 1.8, -104], [C[0], 1.6, C[1] - 5]], dur: 3, line: { who: 'Rasga-Dobra', t: 'Recosturadeira... você tem as mãos do velho Orven.' } },
-    { cam: [[SX - .6, 1.7, -98.6], [SX - .4, 1.7, -99.2], [SX, 1.6, -100]], dur: 2, line: { who: 'Nera', t: 'E a lâmina dele.' } },
+    { on: () => { boss = spawn('irma', C[0], C[1] - 5, { instant: true }); boss.st = 'roar'; boss.inv = true; boss.yaw = 0; P.cutAct = null; }, cam: [[SX + 6, 2, SZ(-101)], [SX + 4, 1.8, SZ(-104)], [C[0], 1.6, C[1] - 5]], dur: 3, line: { who: 'Rasga-Dobra', t: 'Recosturadeira... você tem as mãos do velho Orven.' } },
+    { cam: [[SX - .6, 1.7, SZ(-98.6)], [SX - .4, 1.7, SZ(-99.2)], [SX, 1.6, SZ(-100)]], dur: 2, line: { who: 'Nera', t: 'E a lâmina dele.' } },
     { on: () => { AU.roar(); S.shake = .8; for (let k = 0; k < 3; k++) openHole(C[0] + rnd(-6, 6), C[1] + rnd(-6, 6), 2, 3); }, cam: [[C[0] + 3, 1.3, C[1]], [C[0] + 2.5, 1.5, C[1] - 1], [C[0], 1.8, C[1] - 5]], dur: 3, line: { who: 'Rasga-Dobra', t: 'Então vamos ver quanto chão sobra embaixo de você.' }, card: 'Rasga-Dobra', sub: 'Desfiadora da Serra' },
   ]);
   if (tok !== MIS.token) return;
-  boss.st = 'chase'; boss.inv = false; boss.cd = 1.2; P.pos = [SX + 2, 0, -100]; P.yaw = Math.PI; camRelease();
+  boss.st = 'chase'; boss.inv = false; boss.cd = 1.2; P.pos = [SX + 2, 0, SZ(-100)]; P.yaw = Math.PI; camRelease();
   W.confine = { c: C, r: 15.2 }; AU.music('boss'); $('bossbar').classList.add('on'); $('bossbar').querySelector('.nm').textContent = 'Rasga-Dobra';
   objective('Derrote a Rasga-Dobra'); hint('Os cortes dela abrem buracos no chão: saia do vermelho. Na fúria a arena encolhe e ela dá um salto mortal — esquive no pouso.', 8000);
   await until(() => MIS.bossDead); if (tok !== MIS.token) return;

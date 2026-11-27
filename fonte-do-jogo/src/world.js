@@ -24,7 +24,12 @@ function trilhaDensa(P) { const out = [];
 const TRILHA = trilhaDensa(TRILHA_P);
 const TRILHAS = { monte: TRILHA,
   vila: trilhaDensa([[-8, -42, 0], [-22, -46, 0], [-40, -38, 0], [-52, -22, 0], [-62, -36, 0], [-50, -50, 0], [-25, -51, 0], [-4, -51, 0]]),
-  ravina: trilhaDensa([[0, -100, 0], [-15, -104, 0], [-35, -98, 0], [-55, -108, 0], [-50, -128, 0], [-30, -140, 0], [-14, -134, 0]]) };
+  ravina: trilhaDensa([[0, -100, 0], [-15, -104, 0], [-35, -98, 0], [-55, -108, 0], [-50, -128, 0], [-30, -140, 0], [-14, -134, 0]]),
+  serra1: trilhaDensa([[170, -9, 45], [188, -22, 46], [206, -13, 48], [223, -30, 49.5], [206, -50, 48], [186, -58, 47], [172, -72, 46], [170, -85, 45]]),
+  serra2: trilhaDensa([[170, -117, 45], [192, -126, 46], [211, -145, 48], [196, -161, 47], [176, -168, 46], [170, -179, 45]]),
+  serra3: trilhaDensa([[171, -216, 45], [195, -228, 47], [215, -245, 49], [201, -262, 47.5], [180, -267, 46], [172, -278, 45]]) };
+const TR_SERRA = [TRILHAS.serra1, TRILHAS.serra2, TRILHAS.serra3];
+function naTrilhaSerra(x, z) { if (x < SX - 10) return null; for (const T of TR_SERRA) { const p = pertoT(T, x, z); if (p.d <= TRILHA_L / 2) return p; } return null; }
 function pertoT(T, x, z) { const b = T.box; if (x < b[0] || x > b[1] || z < b[2] || z > b[3]) return { d: 1e9, h: 0, s: 0 };
   let bd = 1e9, bh = 0, bs = 0;
   for (let i = 0; i < T.length - 1; i++) { const a = T[i], c = T[i + 1], dx = c[0] - a[0], dz = c[1] - a[1], L = dx * dx + dz * dz || 1;
@@ -41,17 +46,19 @@ function alturaMapa(x, z) { const A = typeof MAPS !== 'undefined' && MAPS.orlave
 function naSerra(x, z) { if (x < SX - 40) return false; for (const i of W.serra.islands) { if (i.c ? Math.hypot(x - i.c[0], z - i.c[1]) <= i.r : inRect(x, z, i.rect)) return true; }
   for (const b of W.serra.bridges) if (b.ok && inRect(x, z, b.rect)) return true; return false; }
 // altura do chão onde as pessoas pisam
-function groundY(x, z) { if (x > SX - 40 && naSerra(x, z)) return HS; const t = pertoTrilha(x, z); if (t.d <= TRILHA_L / 2 + .6) return t.h; return 0; }
+function groundY(x, z) { if (x > SX - 40 && naSerra(x, z)) return HS; { const ts = naTrilhaSerra(x, z); if (ts) return ts.h; } const t = pertoTrilha(x, z); if (t.d <= TRILHA_L / 2 + .6) return t.h; return 0; }
+function SZ(z) { return z > -12 ? z : z > -58.25 ? z - 60 : z > -97.25 ? z - 120 : z - 180; }
+// Serra das Costuras: as partes ficaram longe umas das outras, ligadas por trilhas de crista
 W.serra = {
-  islands: [{ c: [SX, 0], r: 11 }, { rect: [SX - 7.5, SX + 7.5, -23.5, -50] }, { c: [SX, -70], r: 12.5 }, { c: [SX + 2, -112], r: 15.5 }],
-  bridges: [{ rect: [SX - 1.45, SX + 1.45, -10.2, -24], ok: true }, { rect: [SX - 1.45, SX + 1.45, -49.5, -58], ok: false, seam: [SX - 3.4, 0, -47.6] }, { rect: [SX - 1.45, SX + 1.45, -82, -97], ok: false, seam: [SX + 3.2, 0, -80.8] }],
+  islands: [{ c: [SX, 0], r: 11 }, { rect: [SX - 7.5, SX + 7.5, -83.5, -110] }, { c: [SX, -190], r: 12.5 }, { c: [SX + 2, -292], r: 15.5 }],
+  bridges: [{ rect: [9990, 9991, 9990, 9989], ok: true, fake: true }, { rect: [SX - 1.45, SX + 1.45, -109.5, -118], ok: false, seam: [SX - 3.4, 0, -107.6] }, { rect: [SX - 1.45, SX + 1.45, -202, -217], ok: false, seam: [SX + 3.2, 0, -200.8] }],
 };
 const HOLES = [];
 function walkable(x, z) {
   for (const h of HOLES) if (h.open && Math.hypot(x - h.p[0], z - h.p[1]) < h.r) return false;
   if (W.confine) { const c = W.confine; if (c.c) return Math.hypot(x - c.c[0], z - c.c[1]) <= c.r; return inRect(x, z, c); }
   if (naSerra(x, z)) return true;
-  if (pertoTrilha(x, z).d <= TRILHA_L / 2 || naTrilhaBaixa(x, z)) return true;
+  if (pertoTrilha(x, z).d <= TRILHA_L / 2 || naTrilhaBaixa(x, z) || naTrilhaSerra(x, z)) return true;
   for (const r of W.walk) if (inRect(x, z, r)) return true;
   if (W.bridgeOk && inRect(x, z, W.bridge)) return true;
   if (Math.hypot(x - BOSS_C[0], z - BOSS_C[1]) <= BOSS_R) return true;
@@ -62,7 +69,7 @@ function distWalk(x, z) { // distância aproximada até a área andável (para r
   let d = 1e9; for (const r of W.walk) { const dx = Math.max(r[0] - x, 0, x - r[1]), dz = Math.max(r[3] - z, 0, z - r[2]); d = Math.min(d, Math.hypot(dx, dz)); }
   d = Math.min(d, Math.max(0, Math.hypot(x - BOSS_C[0], z - BOSS_C[1]) - BOSS_R)); return d;
 }
-function groundH(x, z) { { const am = alturaMapa(x, z); if (am != null && !(x > SX - 20 && naSerra(x, z))) return am; } if (x > 26) { const t = pertoTrilha(x, z); if (t.d < 1e8) { if (t.d <= TRILHA_L / 2) return t.h; if (x > 152 && t.d > TRILHA_L / 2 + 1) return naSerra(x, z) ? HS : -70; return t.h + Math.min(6.5, (t.d - TRILHA_L / 2) * 1.5); } if (naSerra(x, z)) return HS; } const d = distWalk(x, z); return sstep(2, 26, d) * (4 + vnoise(x * .06, z * .06) * 10) + (d > 1 ? vnoise(x * .3, z * .3) * .5 * sstep(1, 6, d) : 0); }
+function groundH(x, z) { if (x > 158) { let best = -70; for (const T of TR_SERRA) { const p = pertoT(T, x, z); if (p.d < 40) best = Math.max(best, p.h - Math.max(0, p.d - TRILHA_L / 2) * 1.3); } if (naSerra(x, z)) best = Math.max(best, HS); return best; } { const am = alturaMapa(x, z); if (am != null && !(x > SX - 20 && naSerra(x, z))) return am; } if (x > 26) { const t = pertoTrilha(x, z); if (t.d < 1e8) { if (t.d <= TRILHA_L / 2) return t.h; if (x > 152 && t.d > TRILHA_L / 2 + 1) return naSerra(x, z) ? HS : -70; return t.h + Math.min(6.5, (t.d - TRILHA_L / 2) * 1.5); } if (naSerra(x, z)) return HS; } const d = distWalk(x, z); return sstep(2, 26, d) * (4 + vnoise(x * .06, z * .06) * 10) + (d > 1 ? vnoise(x * .3, z * .3) * .5 * sstep(1, 6, d) : 0); }
 function pushOut(e, rad) { // empurra para fora de obstáculos (círculos e caixas)
   for (const o of W.obst) {
     if (o.off) continue;
@@ -271,7 +278,7 @@ function buildSerra(g, box) {
   }
   // agulhas de pedra com fios expostos
   const spires = [];
-  for (let k = 0; k < 26; k++) { const z = rnd(-135, 15), x = SX + rnd(18, 45), h = rnd(10, 30);
+  for (let k = 0; k < 26; k++) { const z = rnd(-300, 15), x = SX + (k % 2 ? rnd(75, 110) : -rnd(30, 60)), h = rnd(10, 30);
     g.add(G.cone, M.trs(x, h / 2 - 22, z, rnd(0, 6), 0, 0, rnd(4, 8), h + 22, rnd(4, 8)), rk()); spires.push([x, h - 2, z]); }
   for (let k = 0; k + 1 < spires.length; k += 2) W.threads.push({ a: spires[k], b: spires[k + 1], sag: 2, col: [1, .82, .5], w: .06 });
   for (const i of W.serra.islands) { const c = i.c || [(i.rect[0] + i.rect[1]) / 2, (i.rect[2] + i.rect[3]) / 2], s = spires[Math.floor(rnd(0, spires.length))]; W.threads.push({ a: [c[0], .2, c[1]], b: s, sag: 1, col: [1, .8, .45], w: .045 }); }
@@ -281,9 +288,9 @@ function buildSerra(g, box) {
     b.rails = [[[SX - 1.6, HS + 1.15, b.rect[2] - .3], [SX - 1.6, HS + 1.15, b.rect[3] + .3]], [[SX + 1.6, HS + 1.15, b.rect[2] - .3], [SX + 1.6, HS + 1.15, b.rect[3] + .3]]];
     if (b.seam) { box(b.seam[0], 1.1, b.seam[2], .32, 2.2, .32, C(0x5a4a3a)); box(b.seam[0], 2.25, b.seam[2], .5, .15, .5, C(0xb08a3e)); W.obst.push({ x: b.seam[0], z: b.seam[2], r: .4 }); } });
   // gaiola do pastor e tochas
-  for (const [x, z] of [[SX - 9, -64], [SX + 9, -76], [SX - 6, -3], [SX + 6, -3], [SX - 11, -106], [SX + 14, -116]]) { box(x, 1, z, .15, 2, .15, C(0x3e2c1c)); box(x, 2.1, z, .25, .25, .25, C(0xffa040), 4); W.lights.push({ p: [x, 2.3, z], c: V.sc(C(0xff8a40), 3), r: 8 }); W.obst.push({ x, z, r: .25 }); W.torches.push([x, 2.25, z]); }
+  for (const [x, z0] of [[SX - 9, -64], [SX + 9, -76], [SX - 6, -3], [SX + 6, -3], [SX - 11, -106], [SX + 14, -116]]) { const z = SZ(z0); box(x, 1, z, .15, 2, .15, C(0x3e2c1c)); box(x, 2.1, z, .25, .25, .25, C(0xffa040), 4); W.lights.push({ p: [x, 2.3, z], c: V.sc(C(0xff8a40), 3), r: 8 }); W.obst.push({ x, z, r: .25 }); W.torches.push([x, 2.25, z]); }
   // pedras em pé na arena da chefe
-  for (let k = 0; k < 12; k++) { const a = k / 12 * 6.28; if (Math.abs(angDiff(a, 0)) < .4) continue; const x = SX + 2 + Math.sin(a) * 16.5, z = -112 + Math.cos(a) * 16.5, h = rnd(3, 6); box(x, h / 2 - .5, z, 1.2, h, .9, rk(), a); }
+  for (let k = 0; k < 12; k++) { const a = k / 12 * 6.28; if (Math.abs(angDiff(a, 0)) < .4) continue; const x = SX + 2 + Math.sin(a) * 16.5, z = SZ(-112) + Math.cos(a) * 16.5, h = rnd(3, 6); box(x, h / 2 - .5, z, 1.2, h, .9, rk(), a); }
 }
 function drawSerra(time) {
   for (const b of W.serra.bridges) {

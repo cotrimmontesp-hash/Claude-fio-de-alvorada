@@ -81,6 +81,9 @@ T_RAVINA = catmull([(0, -100, 0), (-15, -104, 0), (-35, -98, 0), (-55, -108, 0),
 PONTOS = [(16, -126, 0), (45, -120, 2), (100, -110, 7), (112, -95, 10), (60, -80, 15), (48, -65, 18), (100, -50, 24), (112, -35, 27),
           (60, -20, 32), (50, -5, 35), (105, 8, 40), (150, 18, 44), (170, 9, 45)]
 CAMINHO = catmull(PONTOS)
+T_SERRA = [catmull([(170, -9, 45), (188, -22, 46), (206, -13, 48), (223, -30, 49.5), (206, -50, 48), (186, -58, 47), (172, -72, 46), (170, -85, 45)]),
+           catmull([(170, -117, 45), (192, -126, 46), (211, -145, 48), (196, -161, 47), (176, -168, 46), (170, -179, 45)]),
+           catmull([(171, -216, 45), (195, -228, 47), (215, -245, 49), (201, -262, 47.5), (180, -267, 46), (172, -278, 45)])]
 def seg_perto(T, x, z):
     best = (1e9, 0, 0)
     for i in range(len(T) - 1):
@@ -287,6 +290,37 @@ def trilha_detalhes():
     pico = mat('montanha', 0x5a5a68, .95); neve = mat('neve', 0xd8d4d0, .6)
     for x, z, r, hh in [(40, -190, 30, 70), (120, -195, 35, 85), (70, 80, 38, 100), (-10, 75, 26, 60)]:  # picos em volta
         cil('Pico', x, z, hh / 2 - 4, r, hh, pico, 9, 0); cil('Neve', x, z, hh * .85 - 4, r * .22, hh * .3, neve, 9, 0)
+@etapa
+def serra_cristas():
+    S = 2.0; X0, X1, Z0, Z1 = 159, 250, 25, -305
+    nx, nz = int((X1 - X0) / S), int((Z0 - Z1) / S)
+    bm = bmesh.new(); vs = {}; cl = bm.loops.layers.color.new('Col'); info = {}
+    for j in range(nz + 1):
+        for i in range(nx + 1):
+            x, z = X0 + i * S, Z0 - j * S; best, bd = -85, 1e9
+            for T in T_SERRA:
+                d, h, _ = seg_perto(T, x, z)
+                if d < 50: best = max(best, h - .03 - max(0, d - LARG / 2) * 1.35 + (noise.noise(Vector((x * .15, z * .15, 3))) * 1.5 if d > LARG / 2 + 1 else 0)); bd = min(bd, d)
+            vs[i, j] = bm.verts.new(GP(x, z, best)); info[i, j] = bd
+    for j in range(nz):
+        for i in range(nx):
+            f = bm.faces.new((vs[i, j], vs[i + 1, j], vs[i + 1, j + 1], vs[i, j + 1])); f.smooth = True
+            n2 = noise.noise(Vector(((X0 + i * S) * .5, (Z0 - j * S) * .5, 5))) * .5 + .5; d = info[i, j]
+            c = (.37 + .05 * n2, .3 + .04 * n2, .2) if d <= LARG / 2 else (.36 + .07 * n2, .35 + .07 * n2, .37 + .06 * n2) if d < 14 else (.22 + .05 * n2, .23 + .05 * n2, .27)
+            for l in f.loops: l[cl] = (c[0], c[1], c[2], 1)
+    me = bpy.data.meshes.new('Cristas'); bm.to_mesh(me); bm.free()
+    link(bpy.data.objects.new('Cristas', me), mat('terra', 0xffffff, .95, vc=True))
+    # rochas enormes nas curvas: escondem a próxima parte até você chegar perto
+    m = mat('rocha_escura', 0x4a4038, .9); madeira = mat('madeira', 0x5a3e28); fogo = mat('janela', 0xffb060)
+    for n, T in enumerate(T_SERRA):
+        L = len(T)
+        for q, fr in enumerate((.3, .55, .8)):
+            k = int(L * fr); x, z, h = T[k]; x2, z2, _ = T[min(k + 1, L - 1)]; a = math.atan2(x2 - x, z2 - z); px, pz = math.cos(a), -math.sin(a); sg = 1 if q % 2 else -1
+            rocha('Agulha', x + px * sg * 7.5, z + pz * sg * 7.5, h - 4, (5, 4.5, 13), m, n * 7 + q)
+        for k in range(0, L - 1, 6):
+            x, z, h = T[k]; x2, z2, _ = T[k + 1]; a = math.atan2(x2 - x, z2 - z); px, pz = math.cos(a), -math.sin(a)
+            sx = x + px * (LARG / 2 - .4); sz = z + pz * (LARG / 2 - .4)
+            caixa('PosteLume', sx, sz, h + 1, .16, .16, 2, madeira); caixa('Lanterna', sx, sz, h + 2.1, .28, .28, .3, fogo, bev=0)
 @etapa
 def exportar():
     import json
