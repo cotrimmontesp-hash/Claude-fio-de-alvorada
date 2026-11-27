@@ -484,7 +484,16 @@ function cutPlayer(dt) {
   animAny(P.rig, { ph: P.ph, sp: P.sp, act: P.cutAct || null, t: 0, ready: false }, Math.max(dt, .016));
   P.rig.pos = [P.pos[0], P.rig.yOff || 0, P.pos[2]]; P.rig.yaw = P.yaw; P.rig.pitch = 0; P.rig.update();
 }
+async function loadMaps() {
+  if (typeof MAPZ === 'undefined') return;
+  for (const k in MAPZ) { try {
+    const bin = Uint8Array.from(atob(MAPZ[k]), c => c.charCodeAt(0));
+    const txt = await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+    MAPS[k] = JSON.parse(txt);
+  } catch (e) { console.error('mapa ' + k, e); } }
+}
 async function loadAssets() {
+  await loadMaps();
   if (typeof ASSETS === 'undefined' || !ASSETS.anims) return;
   try {
     const lib = await loadModel(ASSETS.anims);

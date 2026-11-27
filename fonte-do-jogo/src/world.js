@@ -49,8 +49,37 @@ function moveEnt(p, dx, dz, rad) {
   if (!walkable(p[0], p[2])) { p[0] -= dx; p[2] -= dz; }
 }
 
+// ---------- mapa feito no Blender (orlavento.json) ----------
+function blenderMap(J, skip) {
+  const cache = {}, out = new GB(); let ground = null;
+  const geo = name => cache[name] || (cache[name] = (() => {
+    const m = J.malhas[name], P = m.p, I = m.i;
+    if (m.liso) { const N = new Array(P.length).fill(0);
+      for (let t = 0; t < I.length; t += 3) { const a = I[t] * 3, b = I[t + 1] * 3, c = I[t + 2] * 3;
+        const ux = P[b] - P[a], uy = P[b + 1] - P[a + 1], uz = P[b + 2] - P[a + 2], vx = P[c] - P[a], vy = P[c + 1] - P[a + 1], vz = P[c + 2] - P[a + 2];
+        const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx; for (const q of [a, b, c]) { N[q] += nx; N[q + 1] += ny; N[q + 2] += nz; } }
+      for (let k = 0; k < N.length; k += 3) { const l = Math.hypot(N[k], N[k + 1], N[k + 2]) || 1; N[k] /= l; N[k + 1] /= l; N[k + 2] /= l; }
+      return { p: P, n: N, i: I, c: m.c }; }
+    const p = [], n = [], i = [];
+    for (let t = 0; t < I.length; t += 3) { const a = I[t] * 3, b = I[t + 1] * 3, c = I[t + 2] * 3;
+      const ux = P[b] - P[a], uy = P[b + 1] - P[a + 1], uz = P[b + 2] - P[a + 2], vx = P[c] - P[a], vy = P[c + 1] - P[a + 1], vz = P[c + 2] - P[a + 2];
+      let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx; const l = Math.hypot(nx, ny, nz) || 1; nx /= l; ny /= l; nz /= l;
+      for (const q of [a, b, c]) { i.push(p.length / 3); p.push(P[q], P[q + 1], P[q + 2]); n.push(nx, ny, nz); } }
+    return { p, n, i };
+  })());
+  for (const [name, R, cor, em] of J.objetos) {
+    const base = name.split('.')[0]; if (skip(base)) continue;
+    const g = geo(name), m = [R[0], R[4], R[8], 0, R[1], R[5], R[9], 0, R[2], R[6], R[10], 0, R[3], R[7], R[11], 1];
+    if (base === 'Terreno' && g.c) { // chão com cor por vértice
+      const c = []; for (let k = 0; k < g.c.length; k += 3) c.push(g.c[k], g.c[k + 1], g.c[k + 2], 0);
+      const p = []; for (let k = 0; k < g.p.length; k += 3) { const x = g.p[k], y = g.p[k + 1], z = g.p[k + 2]; p.push(m[0] * x + m[4] * y + m[8] * z + m[12], m[1] * x + m[5] * y + m[9] * z + m[13], m[2] * x + m[6] * y + m[10] * z + m[14]); }
+      ground = mkMesh({ p, n: g.n, c, i: g.i }); continue; }
+    out.add(g, m, cor, em ? 3 : base === 'Nevoa' ? .8 : 0);
+  }
+  return { mesh: out, ground };
+}
 function buildWorld() {
-  const g = new GB(), C = lin;
+  const C = lin, MAPA = typeof MAPS !== 'undefined' && MAPS.orlavento, gReal = new GB(); let g = MAPA ? new GB() : gReal;
   const box = (x, y, z, w, h, d, col, ry = 0, em = 0, rx = 0, rz = 0) => g.add(G.box, M.trs(x, y, z, ry, rx, rz, w, h, d), col, em);
   const ob = (x0, x1, z0, z1) => W.obst.push({ b: [x0, x1, z0, z1] });
   const oc = (x, z, r) => W.obst.push({ x, z, r });
@@ -158,9 +187,11 @@ function buildWorld() {
   for (let k = 0; k < 6; k++) W.threads.push({ a: [rnd(-2, 2), 10, BOSS_C[1] + rnd(-2, 2)], b: [rnd(-14, 14), 0, BOSS_C[1] + rnd(-14, 14)], sag: .3, col: [.9, .3, .55], w: .05, broken: true });
   // trilha final
   for (let z = -97; z > -110; z -= 3) for (const s of [-1, 1]) { g.add(G.rock, M.trs(s * rnd(4.5, 6), .6, z, rnd(0, 6), 0, 0, rnd(1.5, 2.5), rnd(1.2, 2.5), rnd(1.5, 2.5)), C(0x6a6056)); }
+  g = gReal; // daqui pra frente vai para o mapa de verdade
   // tochas da ravina e da trilha
   for (const [x, z] of [[-12, -70], [12, -70], [-12, -93], [12, -93], [-3.3, -103], [3.3, -103]]) { box(x, 1, z, .15, 2, .15, C(0x3e2c1c)); box(x, 2.1, z, .25, .25, .25, C(0xffa040), 4); W.lights.push({ p: [x, 2.3, z], c: V.sc(C(0xff8a40), 3), r: 8 }); oc(x, z, .25); W.torches.push([x, 2.25, z]); }
   buildSerra(g, box);
+  if (MAPA) { const bm = blenderMap(MAPA, b => b === 'Boneco' || b === 'Palha'); if (bm.ground) W.ground = bm.ground; W.blender = mkMesh(bm.mesh); }
   W.mesh = mkMesh(g); W.vc = g.p.length / 3;
   // bonecos de treino
   W.dummies = [[-6.2, 0, 2.2], [-6.2, 0, -0.2]].map(p => ({ pos: p, hp: 1, shake: 0, hits: 0 }));
@@ -171,6 +202,7 @@ function drawWorld(time) {
   if (R.cam[0] > 200) drawSerra(time);
   R.draw(W.ground, M.I(), [1, 1, 1], { spec: .05, grain: .5, rim: 0 });
   R.draw(W.mesh, M.I(), [1, 1, 1], { spec: .15, grain: .35, rim: .03 });
+  if (W.blender) R.draw(W.blender, M.I(), [1, 1, 1], { spec: .12, grain: .35, rim: .03 });
   if (W.bridgeOk) R.draw(W.dyn.bridgeMid, M.I(), [1, 1, 1], { spec: .1, grain: .3 });
   for (const l of W.lights) R.light(l.p, V.sc(l.c, .9 + Math.sin(time * 9 + l.p[2]) * .08), l.r);
   for (const t of W.torches) { for (let k = 0; k < 2; k++) R.pt([t[0] + rnd(-.08, .08), t[1] + .15 + rnd(0, .25), t[2] + rnd(-.08, .08)], rnd(.15, .3), [1, .55, .2], .7); }
