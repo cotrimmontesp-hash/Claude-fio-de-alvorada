@@ -198,7 +198,7 @@ function buildWorld() {
   for (const [x, z, ry] of [[-6, -10, .3], [-6.5, -15, -.2], [6.5, -7, .1]]) { box(x, .45, z, 1.8, .9, 1.0, C(0x5e4630), ry); for (const s of [-1, 1]) box(x + s * .8, 1.2, z, .1, 2.4, .1, C(0x3e2c1c), ry); box(x, 2.4, z, 2.2, .08, 1.5, C(0x8a3a2a), ry, 0, .15); oc(x, z, 1.0); }
   for (let k = 0; k < 14; k++) { const x = (hash(k, 9) > .5 ? 1 : -1) * (6 + hash(k, 10) * 2), z = 12 - hash(k, 11) * 52; if (Math.abs(x) < 5.5) continue; box(x, .3, z, .6, .6, .6, C(0x6e5434), hash(k, 12) * 3); oc(x, z, .45); }
   // cercas
-  for (let z = 15; z > -41; z -= 2.2) for (const s of [-1, 1]) { if (s < 0 && z < -29 && z > -39) continue; box(s * 19.8, .5, z, .12, 1, .12, C(0x4a3a2a)); box(s * 19.8, .75, z - 1.1, .06, .08, 2.2, C(0x5a4632)); }
+  for (let z = 15; z > -41; z -= 2.2) for (const s of [-1, 1]) { if (s < 0 && z < -27.5 && z > -40.5) continue; box(s * 19.8, .5, z, .12, 1, .12, C(0x4a3a2a)); box(s * 19.8, .75, z - 1.1, .06, .08, 2.2, C(0x5a4632)); }
   // ---- árvores ----
   const tree = (x, z, s = 1) => { const y = groundH(x, z); g.add(G.cyl, M.trs(x, y + 1.6 * s, z, 0, 0, 0, .35 * s, 3.2 * s, .35 * s), C(0x3e2e22));
     for (let k = 0; k < 4; k++) g.add(G.sphL, M.trs(x + rnd(-.8, .8) * s, y + (3.2 + k * .5) * s, z + rnd(-.8, .8) * s, 0, 0, 0, rnd(2, 2.8) * s, rnd(1.6, 2.2) * s, rnd(2, 2.8) * s), V.lerp(C(0x3a4a22), C(0x5a5a28), rnd()));
@@ -206,7 +206,7 @@ function buildWorld() {
   for (let k = 0; k < 140; k++) { const x = rnd(-64, 64), z = rnd(-168, 32); if (z < CHASM[0] + 2 && z > CHASM[1] - 2) continue; const d = distWalk(x, z); if (d < 1.5) continue; { const tb = pertoT(TRILHAS.vila, x, z).d, tr = pertoT(TRILHAS.ravina, x, z).d; if (Math.min(tb, tr) < TRILHA_L / 2 + 2) continue; } if (d < 6 && Math.abs(x) < 15 && z < -66 && z > -97) continue; tree(x, z, rnd(.8, 1.4)); }
   for (const [x, z] of [[-15, 12], [15, 12], [-14, -16], [15, -30], [-16, -38]]) tree(x, z, 1.1);
   // pedras e capim
-  for (let k = 0; k < 160; k++) { const x = rnd(-60, 60), z = rnd(-165, 30); if (z < CHASM[0] + 1 && z > CHASM[1] - 1) continue; const d = distWalk(x, z); if (d < 2) continue; g.add(G.rock, M.trs(x, groundH(x, z), z, rnd(0, 6), 0, 0, rnd(.6, 2.5), rnd(.4, 1.4), rnd(.6, 2.2)), V.lerp(C(0x7a7064), C(0x5a544c), rnd())); }
+  for (let k = 0; k < 160; k++) { const x = rnd(-60, 60), z = rnd(-165, 30); if (z < CHASM[0] + 1 && z > CHASM[1] - 1) continue; const d = distWalk(x, z); if (d < 2) continue; if (Math.min(pertoT(TRILHAS.vila, x, z).d, pertoT(TRILHAS.ravina, x, z).d, pertoTrilha(x, z).d) < TRILHA_L / 2 + 2.5) continue; const sx = rnd(.6, 2.5), sz = rnd(.6, 2.2); g.add(G.rock, M.trs(x, groundH(x, z), z, rnd(0, 6), 0, 0, sx, rnd(.4, 1.4), sz), V.lerp(C(0x7a7064), C(0x5a544c), rnd())); oc(x, z, Math.min(sx, sz) * .8); }
   for (let k = 0; k < 1700; k++) { const x = rnd(-50, 50), z = rnd(-160, 28); if (z < CHASM[0] + .8 && z > CHASM[1] - .8) continue; if (Math.abs(x) < 3.4 && z > -112) continue; if (Math.hypot(x, z + 12) < 7.5) continue;
     const y = groundH(x, z); for (let q = 0; q < 3; q++) { const h = rnd(.22, .45); g.add(G.blade, M.trs(x + rnd(-.12, .12), y + h * .5, z + rnd(-.12, .12), rnd(0, 6), rnd(-.35, .35), rnd(-.35, .35), .05, h, .05), V.lerp(C(0x4a5a22), C(0x7a7434), rnd())); } }
   // ---- montanhas ao fundo ----
@@ -235,7 +235,10 @@ function buildWorld() {
     for (const th of W.threads.slice(n0.th)) { th.a = [th.a[0], th.a[1] + HS, th.a[2]]; th.b = [th.b[0], th.b[1] + HS, th.b[2]]; }
     for (const l of W.lights.slice(n0.li)) l.p = [l.p[0], l.p[1] + HS, l.p[2]];
     for (let k = n0.to; k < W.torches.length; k++) W.torches[k] = [W.torches[k][0], W.torches[k][1] + HS, W.torches[k][2]]; }
-  if (MAPA) { for (const [nm, R] of MAPA.objetos) if (nm.split('.')[0] === 'CristalG') W.lights.push({ p: [R[3], R[7] + .6, R[11]], c: V.sc(C(0x40ff90), 2.4), r: 9 });
+  if (MAPA) { // pedras sempre no chão (não flutuam) e com colisão (não dá pra subir nelas)
+    for (const o of MAPA.objetos) { const base = o[0].split('.')[0], R = o[1]; if (!/^(PedraTrilha|Agulha|Pedra|Pedregulho|Trilha)$/.test(base)) continue;
+      if (base !== 'Agulha') { const g = groundH(R[3], R[11]); if (Math.abs(R[7] - g) > .4) R[7] = g + .1; } const s = Math.hypot(R[0], R[4], R[8]), s2 = Math.hypot(R[2], R[6], R[10]); W.obst.push({ x: R[3], z: R[11], r: Math.max(.3, Math.min(s, s2) * .85) }); }
+    for (const [nm, R] of MAPA.objetos) if (nm.split('.')[0] === 'CristalG') W.lights.push({ p: [R[3], R[7] + .6, R[11]], c: V.sc(C(0x40ff90), 2.4), r: 9 });
     const bm = blenderMap(MAPA, b => b === 'Boneco' || b === 'Palha'); if (bm.ground) { W.ground = bm.ground[0]; W.grounds = bm.ground.slice(1); } W.blender = mkMesh(bm.mesh); }
   W.mesh = mkMesh(g); W.vc = g.p.length / 3;
   // bonecos de treino

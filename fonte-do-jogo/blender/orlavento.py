@@ -219,7 +219,9 @@ def praca():
         for s in (-1, 1):
             x = s * 4.2; caixa('PosteLume', x, z, 1.4, .18, .18, 2.8, madeira); caixa('Lanterna', x, z, 2.6, .24, .24, .34, mat('janela', 0xffb060))
     for z in [15 - k * 2.2 for k in range(26)]:
-        for s in (-1, 1): caixa('Cerca', s * 19.8, z, .5, .12, .12, 1, madeira); caixa('Cerca', s * 19.8, z - 1.1, .75, .06, 2.2, .08, madeira)
+        for s in (-1, 1):
+            if s < 0 and -40.5 < z < -27.5: continue  # abertura da cerca para a trilha das colinas
+            caixa('Cerca', s * 19.8, z, .5, .12, .12, 1, madeira); caixa('Cerca', s * 19.8, z - 1.1, .75, .06, 2.2, .08, madeira)
     for x, z in [(-6.2, 2.2), (-6.2, -.2)]:
         cil('Boneco', x, z, .8, .07, 1.6, madeira, 8); cil('Palha', x, z, 1.25, .25, .8, mat('palha', 0xb8a060, .95), 12)
 @etapa
