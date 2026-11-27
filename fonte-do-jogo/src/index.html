@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Fio de Alvorada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Alegreya+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/*
+VOICE: sério, cinematográfico, fantasia realista ao amanhecer
+IDEA: o mundo é costurado — a interface é fio de lume fino sobre o quadro
+PICTURE: a própria cena 3D; HUD mínimo nas bordas
+COLOUR and TYPE: tinta escura #0d0b0a, lume dourado-branco #f3d9a0, sangue #c8454a; Cormorant Garamond + Alegreya Sans
+LAYOUT: tela cheia, HUD nos cantos, menus centrados sobre véu escuro
+*/
+:root{--lume:#f3d9a0;--lume2:#d9a650;--ink:#0d0b0a;--txt:#efe6d6;--dim:#a89c88;--red:#c8454a;--vig:#8fb08a;--tf:'Cormorant Garamond',Georgia,serif;--uf:'Alegreya Sans','Segoe UI',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0;min-width:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;color:var(--txt);font:16px/1.4 var(--uf);user-select:none;-webkit-user-select:none;touch-action:none}
+#app{position:fixed;left:0;top:0;width:100vw;height:100vh;overflow:hidden}
+.rot #app{width:100vh;height:100vw;transform:rotate(90deg) translateY(-100%);transform-origin:top left}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block}
+#nogl,#load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0d0b0a;font:600 26px var(--tf);color:var(--lume);z-index:50;text-align:center;padding:24px}
+#nogl{display:none}
+#mouseBtn{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:7;font:500 13px var(--uf);padding:6px 12px;min-height:0;background:rgba(10,8,6,.5);color:var(--dim)}
+#mouseBtn b{color:var(--txt)}#mouseBtn.on b{color:var(--lume)}
+/* HUD */
+#hud{position:fixed;inset:0;pointer-events:none;transition:opacity .5s;z-index:5}
+#hud.hide{opacity:0}#hud.dim{opacity:.25}#hud.calm #pl,#hud.calm #ab{opacity:.45}
+#obj{position:absolute;top:18px;left:50%;transform:translateX(-50%);font:600 20px var(--tf);letter-spacing:.02em;color:var(--txt);text-shadow:0 1px 6px #000,0 0 2px #000;text-align:center;max-width:80%}
+#obj.new{animation:objIn .9s}
+@keyframes objIn{0%{opacity:0;transform:translate(-50%,-8px)}100%{opacity:1;transform:translate(-50%,0)}}
+#bossbar{position:absolute;top:56px;left:50%;transform:translateX(-50%);width:min(620px,78%);opacity:0;transition:opacity .4s}
+#bossbar.on{opacity:1}
+#bossbar .nm{font:600 18px var(--tf);text-align:center;margin-bottom:4px;text-shadow:0 1px 5px #000;color:#f0d8c8}
+#bossbar .bar{position:relative;height:7px;background:rgba(0,0,0,.55);border:1px solid rgba(243,217,160,.35)}
+#bossI{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(#d65a5e,#8e2a30);transition:width .2s}
+#bossbar.fury #bossI{background:linear-gradient(#ff7a5a,#b0242c);box-shadow:0 0 10px #ff5040}
+#bossbar .mk{position:absolute;left:50%;top:-4px;bottom:-4px;width:2px;background:var(--lume)}
+#bossP{position:absolute;left:0;bottom:-5px;height:2px;background:var(--lume2);transition:width .15s}
+#pl{position:absolute;left:22px;bottom:22px;display:flex;gap:12px;align-items:flex-end;transition:opacity .5s}
+#pl .pt{width:54px;height:54px;border-radius:50%;border:1px solid rgba(243,217,160,.55);background:radial-gradient(circle at 50% 38%,#c99a7a 0 22%,#1c1512 23% 34%,#2f4a4c 35%);box-shadow:0 0 0 3px rgba(0,0,0,.35)}
+#pl .bars{width:220px;display:flex;flex-direction:column;gap:5px}
+.b{position:relative;height:6px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.14)}
+.b i{position:absolute;left:0;top:0;bottom:0;transition:width .12s}
+.b.hp{height:9px}.b.hp i{background:linear-gradient(#e0676a,#9a2e34)}.b.vg i{background:linear-gradient(#a8c8a0,#5e8058)}.b.lu i{background:linear-gradient(#fff1c8,#d9a650)}
+.b.lu.full{box-shadow:0 0 10px rgba(243,217,160,.8)}
+#hpT{position:absolute;right:4px;top:-17px;font-size:13px;color:var(--dim);text-shadow:0 1px 3px #000}
+#lv{font:600 15px var(--tf);color:var(--lume);text-shadow:0 1px 3px #000}
+#xp{height:2px;background:rgba(0,0,0,.5);margin-top:2px}#xpI{height:100%;background:var(--lume2)}
+#ab{position:absolute;right:22px;bottom:22px;display:flex;gap:9px;transition:opacity .5s}
+.sk{position:relative;width:52px;height:52px;border:1px solid rgba(243,217,160,.45);background:rgba(10,8,6,.55);display:flex;align-items:center;justify-content:center}
+.sk svg{width:30px;height:30px;stroke:var(--lume);fill:none;stroke-width:1.6;opacity:.9}
+.sk .k{position:absolute;left:3px;top:1px;font-size:12px;color:var(--dim)}
+.sk .cd{position:absolute;inset:0}
+.sk .t{position:absolute;right:4px;bottom:2px;font:700 14px var(--uf);color:#fff;text-shadow:0 1px 3px #000}
+.sk.lock{opacity:.3}.sk.ready{box-shadow:0 0 0 1px rgba(243,217,160,.4),0 0 14px rgba(243,217,160,.35)}
+#skR{width:60px;height:60px}
+#combo{position:absolute;right:12%;top:42%;font:700 italic 26px var(--tf);color:var(--lume);text-shadow:0 2px 8px #000;transition:opacity .3s}
+#prompt{position:absolute;left:50%;top:62%;transform:translateX(-50%);font:500 17px var(--uf);background:rgba(10,8,6,.6);padding:7px 14px;border:1px solid rgba(243,217,160,.4);transition:opacity .2s}
+#prompt b{color:var(--lume);margin-right:6px}
+#hint{position:absolute;left:22px;top:42%;max-width:330px;font-size:15px;line-height:1.45;background:rgba(10,8,6,.62);border-left:2px solid var(--lume2);padding:10px 14px;opacity:0;transform:translateX(-10px);transition:.4s}
+#hint.on{opacity:1;transform:none}#hint b{color:var(--lume);font-weight:700}
+#lockm,#mark{position:absolute;left:0;top:0;display:none}
+#lockm::before{content:'';position:absolute;left:-11px;top:-11px;width:22px;height:22px;border:2px solid var(--lume);border-radius:50%;box-shadow:0 0 8px var(--lume)}
+#mark::before{content:'';position:absolute;left:-7px;top:-20px;width:14px;height:14px;transform:rotate(45deg);border:2px solid var(--lume);background:rgba(243,217,160,.25)}
+#mark span{position:absolute;left:-30px;width:60px;top:2px;text-align:center;font-size:13px;color:var(--lume);text-shadow:0 1px 3px #000}
+#nums{position:fixed;inset:0;pointer-events:none;z-index:6;overflow:hidden}
+.num{position:absolute;left:0;top:0;font:700 19px var(--uf);text-shadow:0 1px 2px #000,0 0 6px rgba(0,0,0,.8);white-space:nowrap;will-change:transform}
+.num.w{color:#fff}.num.o{color:#ffab52;font-size:22px}.num.p{color:#c98bff}.num.c{color:#ff4a46;font-size:25px}.num.g{color:#ffd45a;font-size:18px}.num.r{color:#ff7070;font-size:17px}.num.i{color:var(--lume);font-size:14px;font-weight:500}.num.big{font-size:27px}
+#flashicon{position:fixed;left:50%;top:34%;transform:translate(-50%,-50%) scale(.8);font:700 italic 30px var(--tf);color:#fff;text-shadow:0 0 18px rgba(243,217,160,.9),0 2px 6px #000;opacity:0;transition:.18s;pointer-events:none;z-index:7}
+#flashicon.show{opacity:1;transform:translate(-50%,-50%) scale(1)}#flashicon.gold{color:var(--lume)}
+#hurt{position:fixed;inset:0;pointer-events:none;box-shadow:inset 0 0 160px rgba(200,40,40,.9);opacity:0;transition:opacity .3s;z-index:4}
+#lb{position:fixed;inset:0;pointer-events:none;z-index:8}
+#lb i{position:absolute;left:0;right:0;height:0;background:#000;transition:height .7s}#lb i:last-child{bottom:0}
+#lb.on i{height:11%}
+#skip{position:fixed;right:20px;top:calc(11% + 12px);z-index:12;font-size:14px;color:var(--dim);background:none;border:1px solid rgba(255,255,255,.2);padding:6px 12px;opacity:0;pointer-events:none;cursor:pointer}
+#skip.on{opacity:1;pointer-events:auto}
+#dlg{position:fixed;left:50%;bottom:calc(11% + 18px);transform:translateX(-50%);width:min(820px,92%);z-index:11;background:linear-gradient(rgba(10,8,6,.15),rgba(10,8,6,.82) 30%);padding:16px 26px 18px;opacity:0;transition:opacity .25s;pointer-events:none;border-top:1px solid rgba(243,217,160,.3)}
+#dlg.on{opacity:1}
+#dlg .who{font:700 20px var(--tf);margin-bottom:4px}
+#dlg .tx{font:400 19px/1.5 var(--uf);min-height:57px}
+#dlg.narr .tx{font:italic 500 21px/1.5 var(--tf);text-align:center;color:#e8dcc4}
+#dlg.voice .tx{color:#f2c4d8;font-style:italic}
+#dlg .more{position:absolute;right:18px;bottom:12px;color:var(--lume);animation:bob 1s infinite}
+@keyframes bob{50%{transform:translateY(-3px)}}
+#banner{position:fixed;left:0;right:0;top:24%;text-align:center;z-index:9;pointer-events:none;opacity:0;transition:opacity .5s}
+#banner.on{opacity:1}
+#banner h2{font:700 clamp(28px,5vw,44px)/1.05 var(--tf);color:var(--lume);text-shadow:0 2px 14px #000}
+#banner p{font-size:16px;color:var(--txt);text-shadow:0 1px 6px #000;margin-top:6px}#banner p b{color:var(--lume)}
+#banner.fury h2{color:#ff6a4a;letter-spacing:.2em;font-size:clamp(36px,7vw,64px)}
+#card{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;pointer-events:none;opacity:0;transition:opacity 1.2s}
+#card.on{opacity:1}#card h1{font:700 clamp(36px,6vw,60px)/1.05 var(--tf);color:var(--lume);text-shadow:0 2px 20px #000}#card p{font:italic 500 22px var(--tf);margin-top:8px;text-shadow:0 1px 8px #000}
+/* telas */
+.scr{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(13,11,10,.35),rgba(13,11,10,.88));padding:20px}
+.scr.on{display:flex}
+.panel{width:min(460px,100%);text-align:center}
+.panel h1{font:700 clamp(46px,9vw,82px)/1 var(--tf);color:var(--lume);text-shadow:0 0 30px rgba(243,217,160,.25),0 3px 18px #000}
+.panel h2{font:700 36px/1.05 var(--tf);color:var(--lume);margin-bottom:18px}
+.panel .sub{font:italic 500 20px var(--tf);color:#e8dcc4;margin:10px 0 30px}
+.thread{height:1px;background:linear-gradient(90deg,transparent,var(--lume),transparent);margin:14px auto;width:70%;opacity:.7}
+.btns{display:flex;flex-direction:column;gap:10px;align-items:stretch;max-width:300px;margin:0 auto}
+button{font:600 18px var(--uf);color:var(--txt);background:rgba(13,11,10,.55);border:1px solid rgba(243,217,160,.35);padding:12px 18px;cursor:pointer;transition:.15s;min-height:44px}
+button:hover:not(:disabled),button:focus-visible{border-color:var(--lume);color:#fff;background:rgba(60,44,22,.55);outline:none}
+button:disabled{opacity:.35;cursor:default}
+.info{font-size:14px;color:var(--dim);margin-top:14px}
+.keys{font-size:13px;color:var(--dim);margin-top:22px;line-height:1.7}.keys b{color:var(--txt);font-weight:500}
+.row{display:grid;grid-template-columns:minmax(0,1fr) 140px 54px;gap:10px;align-items:center;text-align:left;margin:10px 0}
+.row span:last-child{text-align:right;color:var(--lume);font-size:14px}
+input[type=range]{width:100%;accent-color:#d9a650;height:28px}
+input[type=checkbox]{width:22px;height:22px;accent-color:#d9a650}
+.node{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;text-align:left;padding:12px 0;border-bottom:1px solid rgba(243,217,160,.15)}
+.node h3{font:700 20px var(--tf);color:var(--txt)}.node p{font-size:14px;color:var(--dim)}.node.have h3{color:var(--lume)}.node button{font-size:15px;padding:8px 12px}
+/* toque */
+#touch.on~#hud #hint,.touchui #hint{left:84px;top:60px}
+#touch{display:none;position:fixed;inset:0;z-index:6;pointer-events:none}#touch.on{display:block}
+#joy{position:absolute;width:120px;height:120px;border-radius:50%;border:1px solid rgba(255,255,255,.25);opacity:0;left:40px;bottom:40px}#joy.on{opacity:1}
+#joy i{position:absolute;left:38px;top:38px;width:44px;height:44px;border-radius:50%;background:rgba(243,217,160,.35)}
+.tb{position:absolute;pointer-events:auto;width:58px;height:58px;border-radius:50%;border:1px solid rgba(243,217,160,.5);background:rgba(10,8,6,.45);color:var(--lume);font:700 13px var(--uf);display:flex;align-items:center;justify-content:center}
+#touch .big{width:78px;height:78px;font-size:15px}
+@media(max-height:500px){#obj{font-size:16px;top:10px}#bossbar{top:40px}#pl{left:12px;bottom:12px}#ab{right:12px;bottom:auto;top:12px;transform:scale(.75);transform-origin:right top}#hint{top:22%;max-width:45%;font-size:13px}.panel h1{font-size:44px}.panel .sub{margin:6px 0 14px}.btns{gap:6px}button{padding:8px 14px}.keys{display:none}#dlg .tx{font-size:16px;min-height:44px}#dlg{padding:10px 18px 12px}}
+.rot #obj{font-size:16px;top:10px}.rot #bossbar{top:40px}.rot #pl{left:12px;bottom:12px}.rot #ab{right:12px;bottom:auto;top:12px;transform:scale(.75);transform-origin:right top}.rot #hint{top:22%;max-width:45%;font-size:13px}.rot .panel h1{font-size:44px}.rot .panel .sub{margin:6px 0 14px}.rot .btns{gap:6px}.rot button{padding:8px 14px}.rot .keys{display:none}.rot #dlg .tx{font-size:16px;min-height:44px}.rot #dlg{padding:10px 18px 12px}
+.rot .keys{display:none}
+@media(max-width:600px){html:not(.rot) #pl .pt{display:none}html:not(.rot) #ab{bottom:auto;top:90px;right:12px;transform:scale(.8);transform-origin:right top}html:not(.rot) #hint{top:20%;max-width:70%}html:not(.rot) #obj{font-size:17px}}
+</style>
+</head>
+<body>
+<div id="app">
+<canvas id="cv"></canvas>
+<div id="nogl">Seu navegador não suporta WebGL2.<br>Abra no Chrome ou no Edge atualizado.</div>
+<div id="load">Costurando Orlavento…</div>
+<button id="mouseBtn" title="Mexer a câmera com o mouse (M)">Câmera no mouse: <b>desligada</b> (M)</button>
+<div id="hud" class="hide">
+  <div id="obj"></div>
+  <div id="bossbar"><div class="nm"></div><div class="bar"><i id="bossI"></i><span class="mk"></span><i id="bossP"></i></div></div>
+  <div id="pl"><div class="pt"></div><div><div id="lv">Nv 1</div><div class="bars"><div class="b hp"><i id="hpI"></i><span id="hpT"></span></div><div class="b vg"><i id="vgI"></i></div><div class="b lu"><i id="luI"></i></div><div id="xp"><div id="xpI"></div></div></div></div></div>
+  <div id="ab">
+    <div class="sk" id="skP"><span class="k">1</span><svg viewBox="0 0 30 30"><path d="M12 4h6M13 4v6l-5 8a5 5 0 0 0 4 8h6a5 5 0 0 0 4-8l-5-8V4"/><path d="M9 19h12"/></svg><i class="cd"></i><span class="t"></span></div>
+    <div class="sk" id="skQ"><span class="k">Q</span><svg viewBox="0 0 30 30"><path d="M5 24C10 12 18 7 26 6"/><path d="M8 26c6-8 12-12 18-13" opacity=".5"/></svg><i class="cd"></i><span class="t"></span></div>
+    <div class="sk" id="skE"><span class="k">E</span><svg viewBox="0 0 30 30"><path d="M15 26c-6 0-9-4-9-8s4-7 9-7 7 3 7 6-3 4-5 4-3-2-3-3"/><path d="M15 4v5"/></svg><i class="cd"></i><span class="t"></span></div>
+    <div class="sk" id="skR"><span class="k">R</span><svg viewBox="0 0 30 30"><path d="M15 3l-3 7 5 3-4 6 4 3-2 5"/><circle cx="15" cy="15" r="11" opacity=".4"/></svg><i class="cd"></i><span class="t"></span></div>
+  </div>
+  <div id="combo"></div><div id="prompt"></div><div id="hint"></div><div id="lockm"></div><div id="mark"><span></span></div>
+</div>
+<div id="nums"></div><div id="flashicon"></div><div id="hurt"></div>
+<div id="lb"><i></i><i></i></div><button id="skip">Pular cena (Esc)</button>
+<div id="dlg"><div class="who"></div><div class="tx"></div><div class="more">▸</div></div>
+<div id="banner"></div><div id="card"></div>
+
+<div class="scr" id="menu"><div class="panel">
+  <h1>Fio de Alvorada</h1><p class="sub">Seis espadachins recosturam o mundo golpe a golpe.</p>
+  <div class="btns"><button id="bNew">Nova jornada</button><button id="bCont">Continuar</button><button id="bOpt">Opções</button><button id="bQuit">Sair</button></div>
+  <p class="info" id="saveInfo"></p>
+  <p class="keys"><b>WASD</b> andar · <b>Shift</b> correr · <b>Setas</b> câmera · <b>M</b> câmera no mouse · <b>Clique esq.</b> ataque · <b>Clique dir.</b> pesado (segure)<br><b>Espaço</b> esquiva · <b>Q E R</b> poderes · <b>1</b> poção · <b>Tab</b> travar alvo · <b>F</b> interagir · <b>Esc</b> pausa<br>Controle de Xbox/PlayStation também funciona.</p>
+</div></div>
+<div class="scr" id="confirm"><div class="panel"><h2>Começar de novo?</h2><p class="info" style="margin-bottom:20px">Já existe uma jornada salva. Uma nova jornada apaga o save solo atual.</p><div class="btns"><button id="bYes">Sim, nova jornada</button><button id="bNo">Voltar</button></div></div></div>
+<div class="scr" id="opts"><div class="panel" style="width:min(520px,100%)"><h2>Opções</h2>
+  <div class="row"><label for="oSens">Sensibilidade da câmera</label><input id="oSens" type="range" min=".3" max="2.5" step=".1"><span id="vSens"></span></div>
+  <div class="row"><label for="oInv">Inverter eixo vertical</label><input id="oInv" type="checkbox"><span></span></div>
+  <div class="row"><label for="oMus">Música</label><input id="oMus" type="range" min="0" max="1" step=".05"><span id="vMus"></span></div>
+  <div class="row"><label for="oSfx">Efeitos</label><input id="oSfx" type="range" min="0" max="1" step=".05"><span id="vSfx"></span></div>
+  <div class="row"><label for="oQual">Resolução</label><input id="oQual" type="range" min=".5" max="1" step=".25"><span id="vQual"></span></div>
+  <div class="row"><label for="oEco">Economia de energia (menos barulho)</label><input id="oEco" type="checkbox"><span></span></div>
+  <div class="row"><label for="oNums">Números de dano</label><input id="oNums" type="checkbox"><span></span></div>
+  <div class="btns" style="margin-top:18px"><button id="bOptBack">Voltar</button></div></div></div>
+<div class="scr" id="pause"><div class="panel"><h2>Pausa</h2><div class="btns"><button id="bRes">Continuar</button><button id="bTree">Árvore de Nera</button><button id="bOpt2">Opções</button><button id="bMenu">Voltar ao menu</button></div><p class="info">O jogo salva sozinho no fim de cada missão.<br>Para fechar o jogo: <b>Ctrl + W</b> ou o X da aba.</p></div></div>
+<div class="scr" id="tree"><div class="panel" style="width:min(560px,100%)"><h2>Árvore de Nera</h2><p class="info" style="margin-top:-8px">Pontos disponíveis: <b id="ptsN" style="color:var(--lume)"></b> · <span id="wInfo"></span></p><div id="treeL" style="margin:12px 0 18px"></div><div class="btns"><button id="bTreeBack">Voltar</button></div></div></div>
+<div class="scr" id="over"><div class="panel"><h2 style="color:#e07070">O fio se rompeu</h2><p class="info" style="margin-bottom:22px">Nera caiu. Volte ao início desta missão com o progresso do checkpoint.</p><div class="btns"><button id="bRetry">Tentar de novo</button><button id="bOverMenu">Menu</button></div></div></div>
+<div class="scr" id="end"><div class="panel"><h2 id="endh">Capítulo 1 concluído</h2><div class="thread"></div><p class="info" id="endtxt" style="font-size:16px;line-height:1.6"></p><div class="btns" style="margin-top:24px"><button id="bNext">Seguir para o Capítulo 2</button><button id="bEndMenu">Voltar ao menu</button></div></div></div>
+<div class="scr" id="bye"><div class="panel"><h2>Até a próxima costura</h2><p class="info" style="margin-bottom:20px">Pode fechar esta janela. Seu progresso fica salvo neste navegador.</p><div class="btns"><button id="bBye">Voltar ao menu</button></div></div></div>
+<div id="touch"><div id="joy"><i></i></div>
+  <div class="tb big" data-b="atk" style="right:24px;bottom:30px">Atacar</div>
+  <div class="tb" data-b="hv" style="right:112px;bottom:22px">Pesado</div>
+  <div class="tb" data-b="dg" style="right:30px;bottom:120px">Esquiva</div>
+  <div class="tb" data-b="q" style="right:190px;bottom:26px">Q</div>
+  <div class="tb" data-b="e" style="right:118px;bottom:100px">E</div>
+  <div class="tb" data-b="r" style="right:40px;bottom:198px">R</div>
+  <div class="tb" data-b="po" style="left:24px;top:110px;width:48px;height:48px">Poção</div>
+  <div class="tb" data-b="lk" style="right:120px;bottom:178px;width:48px;height:48px">Travar</div>
+  <div class="tb" data-b="f" style="right:200px;bottom:110px;width:48px;height:48px">F</div>
+  <div class="tb" data-b="ps" style="left:24px;top:24px;width:44px;height:44px">II</div>
+</div>
+</div>
+<script>
+/*JS*/
+</script>
+</body>
+</html>

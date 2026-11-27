@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Fio de Alvorada",
+    "slug": "claude-fio-de-alvorada",
+    "version": "1.0.0",
+    "orientation": "landscape",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0d0b0a",
+    "android": {
+      "package": "com.claude.fiodealvorada",
+      "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#0d0b0a" }
+    },
+    "ios": { "bundleIdentifier": "com.claude.fiodealvorada", "supportsTablet": true },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "name": "Fio de Alvorada",
+      "shortName": "Fio de Alvorada",
+      "display": "standalone",
+      "orientation": "landscape",
+      "themeColor": "#0d0b0a",
+      "backgroundColor": "#0d0b0a",
+      "favicon": "./assets/icon.png"
+    }
+  }
+}
