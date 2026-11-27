@@ -126,7 +126,7 @@ class SkinChar {
     this.compute();
   }
   compute() {
-    const m = this.m, root = M.trs(this.pos[0], this.pos[1], this.pos[2], this.yaw, this.pitch || 0, 0, this.scale || 1, this.scale || 1, this.scale || 1);
+    const m = this.m, root = M.trs(this.pos[0], this.pos[1], this.pos[2], this.yaw, this.pitch || 0, this.roll || 0, this.scale || 1, this.scale || 1, this.scale || 1);
     const r0 = M.mul(root, M.T(0, -(this.foot || 0), 0));
     for (const i of m.order) { const n = m.nodes[i], L = n.m ? new Float32Array(n.m) : Q.trs(this.T[i], this.Rq[i], this.Sc[i]); this.W[i] = m.parent[i] < 0 ? M.mul(r0, L) : M.mul(this.W[m.parent[i]], L); }
   }
@@ -165,7 +165,7 @@ class SkinRig {
     this.sk = new SkinChar(model, height); this.isSkin = true; this.scale = 1; this.tint = null; this.noWeapon = wpn === false; if (wpn === false) wpn = null; this.pos = [0, 0, 0]; this.yaw = 0; this.pitch = 0; this.roll = 0; this.flash = 0; this.emAdd = null; this.yOff = 0; this.extraYaw = 0;
     this.bladeLen = .92; this.wpn = wpn || { off: [0, .08, .03], rx: 0, ry: Math.PI, rz: 0 }; this.by = {}; this.dt = 0;
   }
-  update() { const s = this.sk; s.pos = [this.pos[0], this.pos[1] - (this.yOff || 0), this.pos[2]]; s.yaw = this.yaw; s.pitch = this.pitch; s.scale = s.base * (this.scale ?? 1); s.update(this.dt); this.dt = 0;
+  update() { const s = this.sk; s.pos = [this.pos[0], this.pos[1] - (this.yOff || 0), this.pos[2]]; s.yaw = this.yaw; s.pitch = this.pitch; s.roll = this.roll || 0; s.scale = s.base * (this.scale ?? 1); s.update(this.dt); this.dt = 0;
     const h = s.boneM('RightHand'), w = this.wpn, n3 = (x, y, z) => { const l = Math.hypot(x, y, z) || 1; return [x / l, y / l, z / l]; };
     const X = n3(h[0], h[1], h[2]), Y0 = n3(h[4], h[5], h[6]), Z = n3(...V.cross(X, Y0)), Y = V.cross(Z, X);
     let m = new Float32Array([X[0], X[1], X[2], 0, Y[0], Y[1], Y[2], 0, Z[0], Z[1], Z[2], 0, h[12], h[13], h[14], 1]);
@@ -191,8 +191,9 @@ function animAny(r, a, dt) {
   if (act === 'kneel') return void s.play('kneel', { fade: .3 });
   if (act === 'cross') return void s.play('idle2', { fade: .3 });
   if (act === 'raise' || act === 'point') return void s.play('casting', { fade: .3 });
-  const sp = a.sp || 0;
-  if (sp > 1.25) s.play('run', { fade: .2, speed: clamp(sp / 1.65, .8, 1.3) });
-  else if (sp > .12) s.play('walk', { fade: .2, speed: clamp(sp * 1.1, .6, 1.4) });
-  else s.play(a.ready ? 'idle' : 'idle2', { fade: .3 });
+  // passo da animação acompanha a velocidade real (sem pé patinando); troca andar/correr com folga
+  const v = (a.sp || 0) * 4.4, correndo = s.name === 'run';
+  if (v > (correndo ? 2.1 : 2.7)) s.play('run', { fade: .28, speed: clamp(v / 4.3, .78, 1.7) });
+  else if (v > (s.name === 'walk' ? .22 : .4)) s.play('walk', { fade: .28, speed: clamp(v / 1.7, .65, 1.55) });
+  else s.play(a.ready ? 'idle' : 'idle2', { fade: .4 });
 }

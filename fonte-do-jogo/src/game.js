@@ -197,11 +197,18 @@ function playerUpdate(dt, I) {
   if (P.st === 'move') {
     const run = I.run && ml > .1 && P.vig > 1; let spd = (run ? 7.4 : 4.4) * ml * (P.slow > 0 ? .55 : 1) * (typeof HERO !== 'undefined' ? HERO.spd : 1);
     if (run) { P.vig -= 14 * dt; P.vigT = .5; }
-    if (ml > .05) { moveEnt(P.pos, mv[0] / ml * spd * dt, mv[1] / ml * spd * dt, .35); P.stats.moved += spd * dt;
-      const ty = (P.lock && !P.lock.dead && !run) ? Math.atan2(P.lock.pos[0] - P.pos[0], P.lock.pos[2] - P.pos[2]) : Math.atan2(mv[0], mv[1]); P.yaw += angDiff(P.yaw, ty) * (1 - Math.exp(-14 * dt)); }
-    P.sp += (spd / 4.4 - P.sp) * (1 - Math.exp(-10 * dt)); P.ph += dt * (2.2 + spd * 1.35);
-    if (P.sp > .3 && Math.floor(P.ph / Math.PI) !== Math.floor((P.ph - dt * (2.2 + spd * 1.35)) / Math.PI)) AU.step();
-  } else P.sp *= Math.exp(-10 * dt);
+    // velocidade com aceleração: arranca e freia aos poucos (mais natural)
+    const V0 = P.vel || (P.vel = [0, 0]), tv = ml > .05 ? [mv[0] / ml * spd, mv[1] / ml * spd] : [0, 0];
+    const rev = ml > .05 && (V0[0] * tv[0] + V0[1] * tv[1]) < 0; // virando para trás: freia mais forte
+    const ka = 1 - Math.exp(-(ml > .05 ? (rev ? 12 : 7.5) : 11) * dt); V0[0] += (tv[0] - V0[0]) * ka; V0[1] += (tv[1] - V0[1]) * ka;
+    const vl = Math.hypot(V0[0], V0[1]);
+    if (vl > .03) { moveEnt(P.pos, V0[0] * dt, V0[1] * dt, .35); P.stats.moved += vl * dt; }
+    if (ml > .05) { const ty = (P.lock && !P.lock.dead && !run) ? Math.atan2(P.lock.pos[0] - P.pos[0], P.lock.pos[2] - P.pos[2]) : Math.atan2(mv[0], mv[1]);
+      const turn = angDiff(P.yaw, ty); P.yaw += turn * (1 - Math.exp(-(run ? 8 : 10) * dt)); P.lean = lerp(P.lean || 0, clamp(turn * vl * .045, -.16, .16), 1 - Math.exp(-6 * dt)); }
+    else P.lean = lerp(P.lean || 0, 0, 1 - Math.exp(-6 * dt));
+    P.sp = vl / 4.4; const dph = dt * (2.2 + vl * 1.35); P.ph += dph;
+    if (P.sp > .3 && Math.floor(P.ph / Math.PI) !== Math.floor((P.ph - dph) / Math.PI)) AU.step();
+  } else { P.sp *= Math.exp(-10 * dt); if (P.vel) { P.vel[0] *= Math.exp(-10 * dt); P.vel[1] *= Math.exp(-10 * dt); } P.lean = lerp(P.lean || 0, 0, 1 - Math.exp(-8 * dt)); }
   // ações
   if (canAct) {
     if (I.dodge && P.vig >= 18) { const dir = ml > .1 ? [mv[0] / ml, 0, mv[1] / ml] : [-Math.sin(P.yaw), 0, -Math.cos(P.yaw)]; P.st = 'dodge'; P.t = 0; P.dodgeDir = dir; P.iframe = .32; P.dodgeT = 0; P.vig -= 18; P.vigT = .6; P.stats.dodges++; P.yaw = ml > .1 ? Math.atan2(dir[0], dir[2]) : P.yaw; AU.whoosh(.6); }
@@ -234,7 +241,7 @@ function playerUpdate(dt, I) {
   const actMap = { atk: P.cur && P.cur.pose, charge: 'charge', dodge: 'dodge', hit: 'hit', cast: 'cast', qcast: 's1', ult: 'ult', dead: 'dead' };
   const at = P.st === 'atk' ? P.t / P.cur.dur : P.st === 'qcast' ? P.t / .4 : P.st === 'ult' ? P.t / 1.05 : P.t;
   animAny(r, { ph: P.ph, sp: P.sp, act: actMap[P.st], t: at, ready: P.combatT > 0 }, dt);
-  r.pos = [P.pos[0], (r.yOff || 0) + (P.st === 'dead' && !r.isSkin ? .12 : 0), P.pos[2]]; r.yaw = P.yaw + (r.extraYaw || 0); r.pitch = P.st === 'dead' && !r.isSkin ? lerp(r.pitch, -Math.PI / 2, 1 - Math.exp(-5 * dt)) : 0;
+  r.pos = [P.pos[0], (r.yOff || 0) + (P.st === 'dead' && !r.isSkin ? .12 : 0), P.pos[2]]; r.yaw = P.yaw + (r.extraYaw || 0); r.roll = P.st === 'move' ? -(P.lean || 0) : 0; r.pitch = P.st === 'dead' && !r.isSkin ? lerp(r.pitch, -Math.PI / 2, 1 - Math.exp(-5 * dt)) : 0;
   r.flash = Math.max(0, (r.flash || 0) - dt * 4); r.emAdd = P.unl.q ? V.sc([1, .78, .4], .6 + (P.lume / 100) * 1.6 + (P.st === 'ult' || P.st === 'charge' ? 3 : 0)) : null;
   r.update();
   // rastro da lâmina
