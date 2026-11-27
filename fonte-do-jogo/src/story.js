@@ -216,7 +216,7 @@ async function M1(retry) {
     banner('Amanhecer', 'Os Desfiadores sentiram o rasgo.');
     // tutorial
     AU.music('calm'); objective('Mova-se pela praça');
-    hint(TOUCH ? 'Joystick esquerdo para andar · arraste a direita para olhar' : '<b>WASD</b> para andar · <b>Shift</b> correr · <b>setas</b> giram a câmera · aperte <b>M</b> para mexer a câmera com o mouse (M de novo solta a seta)', 0);
+    hint(TOUCH ? 'Joystick esquerdo para andar · arraste a direita para olhar' : '<b>WASD</b> para andar · <b>Shift</b> correr · <b>setas</b> giram a câmera · o <b>mouse</b> gira a câmera · aperte <b>M</b> para soltar a seta do mouse e pausar', 0);
     const m0 = P.stats.moved; await until(() => P.stats.moved - m0 > 6);
     objective('Golpeie o boneco de treino (0/4)'); MARK = W.dummies[0].pos; hint(TOUCH ? 'Botão <b>Atacar</b>: combo de 4 golpes' : '<b>Clique esquerdo</b>: ataque leve (combo de 4 golpes; o 4º corta fios)', 0);
     const d0 = P.stats.dummy; await until(() => { const n = P.stats.dummy - d0; $('obj').textContent = `Golpeie o boneco de treino (${Math.min(n, 4)}/4)`; return n >= 4; });
@@ -387,7 +387,7 @@ function hideScr() { document.querySelectorAll('.scr').forEach(s => s.classList.
 let PREV = 'menu';
 function openPause() { if (S.mode !== 'play') return; S.mode = 'pause'; showScr('pause'); unlockPtr(); }
 function bindMouseBtn() { const b = $('mouseBtn'); if (!b) return; if (TOUCH) { b.style.display = 'none'; return; } b.addEventListener('click', e => { e.stopPropagation(); toggleMouseCam(); }); }
-function closePause() { hideScr(); S.mode = 'play'; $('hud').classList.remove('hide'); }
+function closePause() { hideScr(); S.mode = 'play'; $('hud').classList.remove('hide'); grabMouse(); }
 function toMenu() { MIS.token++; MIS.waiters.length = 0; clearCombat(); DLG = null; $('dlg').classList.remove('on'); $('lb').classList.remove('on'); $('skip').classList.remove('on'); S.mode = 'menu'; CAM.script = null; stage(0); P.pos = [0, 0, -9]; refreshMenu(); showScr('menu'); AU.music('calm'); }
 function refreshMenu() { const s = readSave(); const b = $('bCont'); b.disabled = !s; $('saveInfo').textContent = s ? `Save solo · ${s.done ? 'Capítulos 1 e 2 concluídos' : 'Capítulo ' + (s.m < 3 ? 1 : 2) + ' · missão ' + (s.m % 3 + 1) + ' de 3'} · nível ${s.level} · ${new Date(s.t).toLocaleDateString('pt-BR')}` : 'Nenhuma jornada salva'; }
 const TREE = [

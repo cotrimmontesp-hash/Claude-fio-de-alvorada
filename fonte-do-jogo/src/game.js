@@ -11,9 +11,10 @@ const K = {}, KP = {}; let mdx = 0, mdy = 0, locked = false;
 addEventListener('keydown', e => { if (!K[e.code]) KP[e.code] = 1; K[e.code] = 1; if (['Tab', 'Space', 'ArrowUp', 'ArrowDown'].includes(e.code)) e.preventDefault(); AU.init(); });
 addEventListener('keyup', e => { K[e.code] = 0; });
 addEventListener('blur', () => { for (const k in K) K[k] = 0; });
-cv.addEventListener('mousedown', e => { AU.init(); const b = 'M' + e.button; KP[b] = 1; K[b] = 1; });
-// a seta do mouse fica livre; M (ou o botão na tela) prende/solta a câmera no mouse
-function toggleMouseCam() { if (TOUCH) return; if (locked) { S.noPauseOnUnlock = true; document.exitPointerLock(); } else if (S.mode === 'play') { try { const p = cv.requestPointerLock(); if (p && p.catch) p.catch(() => { }); } catch (er) { } } }
+// câmera no mouse (como antes): clicar no jogo prende o mouse; M solta a seta e pausa o jogo
+function grabMouse() { if (TOUCH || locked) return; try { const p = cv.requestPointerLock(); if (p && p.catch) p.catch(() => { }); } catch (er) { } }
+cv.addEventListener('mousedown', e => { AU.init(); if (!TOUCH && !locked && S.mode === 'play') { grabMouse(); return; } const b = 'M' + e.button; KP[b] = 1; K[b] = 1; });
+function toggleMouseCam() { if (TOUCH) return; if (locked) { S.noPauseOnUnlock = true; document.exitPointerLock(); if (typeof openPause === 'function') openPause(); } else if (S.mode === 'play') grabMouse(); }
 addEventListener('mouseup', e => { K['M' + e.button] = 0; });
 cv.addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('mousemove', e => { if (locked) { mdx += e.movementX; mdy += e.movementY; } });
