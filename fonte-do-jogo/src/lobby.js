@@ -37,6 +37,7 @@ function lobUI() {
     if (a) { d.className = 'slot'; d.innerHTML = '<b>' + esc(a.nome || 'Amigo') + '</b><span>' + heroBy(a.k).nome + (a.host ? ' · líder' : '') + '</span>'; }
     else { d.className = 'slot vazio'; d.innerHTML = '<i>+</i><span>Chamar amigo</span>'; d.onclick = abrirConvite; }
     sl.appendChild(d); }
+  if (typeof netLobbyBotao === 'function') netLobbyBotao();
   $('lbSala').textContent = LOB.sala ? 'Sala ' + LOB.sala + ' · ' + (1 + LOB.amigos.length) + '/5' : 'Esquadrão 1/5';
 }
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
@@ -91,7 +92,8 @@ async function abrirConvite() {
     c.on('open', () => { LOB.conns.push(c); }); c.on('data', d => hostRecebe(c, d)); c.on('close', () => { LOB.conns = LOB.conns.filter(x => x !== c); LOB.amigos = LOB.amigos.filter(a => a.id !== c.peer); delete LOB.rigs[c.peer]; hostParty(); lobUI(); }); });
 }
 function hostRecebe(c, d) {
-  if (d.t === 'eu') { let a = LOB.amigos.find(a => a.id === c.peer); if (!a) { a = { id: c.peer }; LOB.amigos.push(a); banner('Chegou no esquadrão', esc(d.nome || 'Amigo')); } a.nome = d.nome; a.k = heroBy(d.k).k; hostParty(); lobUI(); }
+  if (d.t !== 'eu') return netRecebe(c.peer, d);
+  if (d.t === 'eu') { let a = LOB.amigos.find(a => a.id === c.peer); if (!a) { a = { id: c.peer }; LOB.amigos.push(a); banner('Chegou no esquadrão', esc(d.nome || 'Amigo')); } a.nome = d.nome; a.k = heroBy(d.k).k; hostParty(); lobUI(); if (NET.on && ['play', 'cut', 'dialog'].includes(S.mode)) c.send({ t: 'start', i: MIS.cur, pos: P.pos }); }
 }
 function hostParty() { const lista = [{ id: 'host', nome: LOB.nome || 'Líder', k: HERO.k, host: true }, ...LOB.amigos.map(a => ({ id: a.id, nome: a.nome, k: a.k }))];
   for (const c of LOB.conns) if (c.open) c.send({ t: 'party', lista }); }
@@ -103,7 +105,7 @@ async function entrarSala(cod) {
   const peer = new Peer(); LOB.peer = peer;
   peer.on('open', id => { const c = peer.connect('fioalv-' + cod, { reliable: true }); LOB.host = c;
     c.on('open', () => { LOB.sala = cod; c.send({ t: 'eu', nome: LOB.nome, k: HERO.k }); $('cvMsg').textContent = 'Você entrou no esquadrão!'; lobUI(); setTimeout(() => $('conv').classList.remove('on'), 1200); });
-    c.on('data', d => { if (d.t === 'party') { LOB.amigos = d.lista.filter(a => a.id !== id).map(a => ({ ...a, k: heroBy(a.k).k })); lobUI(); } if (d.t === 'cheia') $('cvMsg').textContent = 'Essa sala já está cheia (5 de 5).'; });
+    c.on('data', d => { if (!['party', 'cheia'].includes(d.t)) return netRecebe('host', d); if (d.t === 'party') { LOB.amigos = d.lista.filter(a => a.id !== id).map(a => ({ ...a, k: heroBy(a.k).k })); lobUI(); } if (d.t === 'cheia') $('cvMsg').textContent = 'Essa sala já está cheia (5 de 5).'; });
     c.on('close', () => { LOB.sala = null; LOB.amigos = []; LOB.host = null; lobUI(); banner('Esquadrão', 'O líder fechou a sala'); }); });
   peer.on('error', e => { $('cvMsg').textContent = e.type === 'peer-unavailable' ? 'Sala ' + cod + ' não encontrada. Confira o código.' : 'Não deu para entrar (' + e.type + ').'; });
 }

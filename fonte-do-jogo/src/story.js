@@ -466,12 +466,13 @@ function frame(now) {
   if (TOUCH) { const v = S.mode === 'play' ? '' : 'hidden'; if ($('touch').style.visibility !== v) $('touch').style.visibility = v; }
   if (S.mode === 'play') { const nearBroken = (!W.bridgeOk && P.pos[0] < 200 && P.pos[2] < -50) || (P.pos[0] > 200 && W.serra.bridges.some(b => !b.ok && V.d2(P.pos, [SX, 0, b.rect[2]]) < 4));
     if (nearBroken && !(frame.bt > 0)) { frame.bt = 8; hint('A ponte está <b>quebrada</b>. Para atravessar, siga o objetivo lá em cima: <b>' + $('obj').textContent + '</b>. O losango dourado mostra o caminho.', 6000); } frame.bt = (frame.bt || 0) - rdt; }
-  dlgTick(I); tickWaiters();
+  dlgTick(I); tickWaiters(); if (typeof netTick === 'function') netTick(rdt);
   // desenhar
   const vdt = S.mode === 'play' || S.mode === 'cut' ? dt : rdt * .3;
   drawWorld(S.time);
   if (S.mode !== 'menu') P.rig.draw(); if (S.mode !== 'lobby') { updNpcs(vdt); drawNpcs(); }
   for (const e of ENEMIES) enemyDraw(e, (S.mode === 'play' || S.mode === 'cut') ? dt : 0);
+  if (typeof netDraw === 'function') netDraw(rdt);
   drawTrail(); updWaves(S.mode === 'play' ? dt : 0); updUlt(S.mode === 'play' ? dt : 0); drawRift(vdt); updParts(S.mode === 'pause' || S.mode === 'over' ? 0 : vdt);
   if (MIS.barrier) { for (const [z, w] of [[-68.4, 3.2], [-95.6, 4]]) for (let k = 0; k < 5; k++) { const y = .3 + k * .45; drawThread([-w, y, z], [w, y + .1, z], .05, [1, .3, .5], .05, S.time + k, false); } }
   if (!W.gate.off && !MIS.barrier) for (let k = 0; k < 4; k++) { const y = .4 + k * .5; drawThread([-3.6, y, -96], [3.6, y, -96], .1, [.9, .3, .5], .04, S.time + k, false); }
@@ -509,6 +510,6 @@ async function boot() {
   buildWorld(); W.gate = { b: [-3.6, 3.6, -95.6, -96.6], off: false }; W.obst.push(W.gate);
   bindUI(); bindTouch(); bindMouseBtn(); stage(0); P.pos = [0, 0, -9]; P.rig.update(); refreshMenu();
   $('load').style.display = 'none'; lobLoad(); buildLobby(); toLobby(); requestAnimationFrame(frame);
-  window.DBG = { get fps() { return fpsA; }, HEROIS, LOB, escolherHeroi, get HERO() { return HERO; }, SKANIM, P, MIS, ENEMIES, runMission, S, spawn, W, CAM, NPCS, hurtEnemy };
+  window.DBG = { get fps() { return fpsA; }, get NET() { return typeof NET !== 'undefined' ? NET : null; }, HEROIS, LOB, escolherHeroi, get HERO() { return HERO; }, SKANIM, P, MIS, ENEMIES, runMission, S, spawn, W, CAM, NPCS, hurtEnemy };
 }
 setTimeout(() => { try { boot(); } catch (e) { $('load').textContent = 'Erro ao carregar: ' + e.message; throw e; } }, 30);
