@@ -189,7 +189,7 @@ def fenda():
 def casas():
     pedra, reboco, madeira, telha, porta, janela = mat('pedra', 0x837a6c, .9), mat('reboco', 0xd2c4a6, .85), mat('madeira', 0x5a3e28, .7), mat('telha', 0x5e3528, .75), mat('porta', 0x3a2618, .6), mat('janela', 0xffb060, .4)
     janela.node_tree.nodes['Principled BSDF'].inputs['Emission Color'].default_value = srgb(0xffa040); janela.node_tree.nodes['Principled BSDF'].inputs['Emission Strength'].default_value = 3
-    for k, (x, z) in enumerate([(-10.5, 9), (10.5, 8), (-10.5, -3), (10.5, -4.5), (-11, -24), (10.5, -23), (-10, -35), (11, -34.5), (-16.5, 3), (17, -14)]):
+    for k, (x, z) in enumerate([(-10.5, 9), (10.5, 8), (-10.5, -3), (10.5, -4.5), (-11, -24), (10.5, -23), (11, -34.5), (-16.5, 3), (17, -14)]):
         w, d, h = 5.6 + random.random() * 1.5, 4.6 + random.random() * 1.2, 2.6 + random.random() * .8
         caixa('Base', x, z, h / 2, d, w, h, pedra, bev=.06)
         caixa('Andar', x, z, h + .9, d - .15, w - .15, 1.6, reboco, bev=.02)
@@ -370,6 +370,108 @@ def cavernas():
         for i in range(3, len(T) - 1, 7):
             x, z, h = T[i]; x2, z2, _ = T[i + 1]; a = math.atan2(x2 - x, z2 - z); px, pz = math.cos(a), -math.sin(a); sg = 1 if i % 2 else -1
             o = cil('Cristal', x + px * sg * (LARG / 2 + .3), z + pz * sg * (LARG / 2 + .3), h + .35, .18, .9, verde, 5, 0); o.rotation_euler = (.3 * sg, .2, i)
+# ===================== MUNDO NOVO: marcos e detalhes de cada área =====================
+COLISAO = []
+def sol(x, z, r): COLISAO.append([round(x, 2), round(z, 2), round(r, 2)])
+def brilho(nome, hx, forca=3):
+    m = mat('janela_' + nome, hx, .4); b_ = m.node_tree.nodes['Principled BSDF']
+    b_.inputs['Emission Color'].default_value = srgb(hx); b_.inputs['Emission Strength'].default_value = forca; return m
+def lado(T, i, d):
+    x, z, h = T[i]; x2, z2, _ = T[min(i + 1, len(T) - 1)] if i < len(T) - 1 else (T[i][0] + (T[i][0] - T[i - 1][0]), T[i][1] + (T[i][1] - T[i - 1][1]), 0)
+    a = math.atan2(x2 - x, z2 - z); return x + math.cos(a) * d, z - math.sin(a) * d, h, a
+@etapa
+def arvore_tear():  # o marco da vila: uma árvore gigante com fios de lume
+    tronco, folha, fio = mat('tronco_velho', 0x4a3426, .95), mat('folha_tear', 0x46602a, .8), brilho('fio', 0xffc860, 4)
+    X, Z = 0, 31; y = altura(X, Z)
+    cil('TroncoTear', X, Z, y + 9, 2.6, 20, tronco, 12, 1.6)
+    for k in range(6):
+        a = k / 6 * math.tau; caixa('Raiz', X + math.sin(a) * 2.8, Z + math.cos(a) * 2.8, y + .6, 1.1, 3.6, 1.4, tronco, a, rx=.5)
+    for k in range(9):
+        a = k / 9 * math.tau; r = 5 + random.random() * 3
+        rocha('CopaTear', X + math.sin(a) * r, Z + math.cos(a) * r, y + 19 + random.random() * 3, (5, 5, 3.6), folha, k)
+    rocha('CopaTear', X, Z, y + 23, (7, 7, 4.5), folha, 9)
+    for k in range(10):  # fios dourados pendurados
+        a = k / 10 * math.tau; r = 4 + random.random() * 4
+        caixa('FioTear', X + math.sin(a) * r, Z + math.cos(a) * r, y + 13, .06, .06, 9 + random.random() * 4, fio, bev=0)
+    sol(X, Z, 3.2)
+@etapa
+def arco_natural():  # arco de pedra sobre a trilha das colinas
+    m = mat('rocha_arco', 0x7a6a5a, .9)
+    for i in (int(len(T_VILA) * .2), int(len(T_VILA) * .78)):
+        xa, za, h, a = lado(T_VILA, i, LARG / 2 + 1.6); xb, zb, _, _ = lado(T_VILA, i, -(LARG / 2 + 1.6))
+        for x, z in ((xa, za), (xb, zb)): rocha('PilarArco', x, z, h + 3, (1.6, 1.6, 4.5), m, i); sol(x, z, 1.4)
+        caixa('TopoArco', (xa + xb) / 2, (za + zb) / 2, h + 7.5, LARG + 6, 2.4, 1.8, m, a + math.pi / 2, bev=.3)
+        rocha('TopoArco', (xa + xb) / 2, (za + zb) / 2, h + 8.3, (4.5, 2, 1.6), m, i + 3)
+@etapa
+def abismo():  # agulhas de pedra saindo da névoa do abismo
+    m = mat('rocha_abismo', 0x4a4048, .9); cr = brilho('cristal_abismo', 0x7a5aff, 3)
+    for k in range(16):
+        x = random.choice((-1, 1)) * random.uniform(8, 60); z = random.uniform(CH[1] + 2.5, CH[0] - 2.5); h = random.uniform(8, 22)
+        cil('AgulhaAbismo', x, z, -18 + h / 2, random.uniform(1, 2.2), h, m, 7, .3)
+        if k % 3 == 0: cil('CristalAbismo', x, z, -18 + h + .5, .4, 1.6, cr, 5, 0)
+@etapa
+def floresta_gigante():  # árvores enormes e cogumelos que brilham
+    tronco, folha, cog, chapeu = mat('tronco_gigante', 0x3a2c20, .95), mat('folha_gigante', 0x2e4a24, .85), mat('cogumelo', 0xd8ccb8, .7), brilho('cogumelo', 0x50c8ff, 3)
+    for x, z in [(-12.5, -71), (12.5, -74), (-12.8, -82), (12.8, -88), (-12, -93), (12, -94.5), (-22, -78), (22, -84), (-24, -92), (24, -70)]:
+        s = random.uniform(1, 1.3); y = altura(x, z)
+        cil('TroncoGigante', x, z, y + 7 * s, 1.25 * s, 15 * s, tronco, 10, .9 * s)
+        for q in range(4):
+            a = q / 4 * math.tau + random.random(); caixa('RaizGigante', x + math.sin(a) * 1.5 * s, z + math.cos(a) * 1.5 * s, y + .4, .7, 2.6 * s, .9, tronco, a, rx=.45)
+        for q in range(4): rocha('CopaGigante', x + random.uniform(-3, 3), z + random.uniform(-3, 3), y + 15 * s + q * .8, (4.5 * s, 4.5 * s, 2.6), folha, q + int(z))
+        sol(x, z, 1.3 * s)
+    for k in range(40):
+        x = random.choice((-1, 1)) * random.uniform(8.5, 14); z = random.uniform(-95, -69); y = altura(x, z); s = random.uniform(.4, 1)
+        cil('PeCogumelo', x, z, y + .35 * s, .1 * s, .7 * s, cog, 6); cil('Cogumelo', x, z, y + .75 * s, .45 * s, .22 * s, chapeu, 10, .1 * s)
+@etapa
+def ruinas():  # ruínas antigas pela trilha até a clareira do chefe
+    pedra, musgo = mat('ruina', 0x8a8478, .9), mat('ruina_musgo', 0x6a7458, .9); runa = brilho('runa', 0x60ffb0, 2.5)
+    T = T_RAVINA
+    for i in range(4, len(T) - 3, 5):
+        for sg in (-1, 1):
+            if random.random() < .25: continue
+            x, z, h, a = lado(T, i, sg * (LARG / 2 + 1.1)); alt = random.choice((5.5, 4.8, 2.2, 1.4))
+            cil('Coluna', x, z, h + alt / 2, .55, alt, pedra if alt > 3 else musgo, 12)
+            cil('BaseColuna', x, z, h + .2, .8, .4, pedra, 8); sol(x, z, .8)
+            if alt > 3: caixa('Capitel', x, z, h + alt + .15, 1.4, 1.4, .3, pedra, a, bev=.05)
+            else: rocha('Destroco', x + random.uniform(-1.5, 1.5), z + random.uniform(-1.5, 1.5), h + .2, (.8, .6, .4), musgo, i)
+    for f in (.3, .62):  # portais de ruína por cima do caminho
+        i = int(len(T) * f); xa, za, h, a = lado(T, i, LARG / 2 + 1.1); xb, zb, _, _ = lado(T, i, -(LARG / 2 + 1.1))
+        for x, z in ((xa, za), (xb, zb)): cil('ColunaPortal', x, z, h + 3.5, .65, 7, pedra, 12); sol(x, z, .8)
+        caixa('Lintel', (xa + xb) / 2, (za + zb) / 2, h + 7.3, LARG + 3.4, 1.2, .9, pedra, a + math.pi / 2, bev=.08)
+        caixa('Runa', (xa + xb) / 2, (za + zb) / 2, h + 7.3, 1.4, 1.25, .3, runa, a + math.pi / 2, bev=0)
+    # estátua quebrada atrás da arena (marco da clareira)
+    cil('Pedestal', 0, -151, altura(0, -151) + 1, 3.5, 2, pedra, 8); caixa('Estatua', 0, -151, altura(0, -151) + 6, 2.2, 1.6, 8, pedra, .2, bev=.2)
+    rocha('CabecaEstatua', 3, -147, altura(3, -147) + .8, (1.3, 1.3, 1.3), musgo, 4)
+@etapa
+def runas_arena():  # círculo de runas no chão da arena
+    runa = brilho('runa_arena', 0xff6090, 2)
+    for k in range(24):
+        a = k / 24 * math.tau
+        caixa('RunaChao', BOSS[0] + math.sin(a) * 12, BOSS[1] + math.cos(a) * 12, .03, .5, 1.6, .04, runa, a, bev=0)
+    for k in range(8):
+        a = k / 8 * math.tau; caixa('RunaChao', BOSS[0] + math.sin(a) * 6, BOSS[1] + math.cos(a) * 6, .03, .35, 1.0, .04, runa, a + .7, bev=0)
+@etapa
+def montanha_cordas():  # postes com corda na beira da subida e neve no alto
+    madeira, corda, neve = mat('madeira', 0x5a3e28), mat('corda', 0x8a6a42, .9), mat('neve', 0xd8d4d0, .6)
+    T = CAMINHO
+    for i in range(2, len(T) - 2, 3):
+        x, z, h, a = lado(T, i, LARG / 2 + .2)
+        if altura(x + math.cos(a) * 3, z - math.sin(a) * 3) > h - 2: x, z, h, a = lado(T, i, -(LARG / 2 + .2))
+        caixa('PosteCorda', x, z, h + .55, .16, .16, 1.2, madeira, bev=0)
+        x2, z2, h2, _ = lado(T, i + 3, LARG / 2 + .2) if i + 3 < len(T) else (x, z, h, a)
+        if math.hypot(x2 - x, z2 - z) < 12:
+            caixa('Corda', (x + x2) / 2, (z + z2) / 2, (h + h2) / 2 + .95, .05, math.hypot(x2 - x, z2 - z), .05, corda, math.atan2(x2 - x, z2 - z), bev=0)
+    for k in range(30):
+        i = random.randrange(len(T) * 2 // 3, len(T)); x, z, h, _ = lado(T, i, random.choice((-1, 1)) * random.uniform(5, 14))
+        y = altura(x, z)
+        if y > 25: rocha('Neve', x, z, y, (random.uniform(1.5, 3.5), random.uniform(1.5, 3), .4), neve, k)
+@etapa
+def ilhas_flutuantes():  # pedaços de rocha flutuando em volta da Serra
+    m = mat('rocha_flutua', 0x6a5e5a, .9); cr = brilho('cristal_serra', 0x60ffc8, 3.5); grama = mat('grama_ilha', 0x5a6a34, .9)
+    for k in range(22):
+        x = SX + random.choice((-1, 1)) * random.uniform(30, 75); z = random.uniform(-300, 20); y = HS + random.uniform(-10, 25); s = random.uniform(2, 6)
+        rocha('IlhaFlutua', x, z, y, (s, s, s * 1.6), m, k); rocha('TopoIlha', x, z, y + s * 1.1, (s * .9, s * .9, .5), grama, k + 1)
+        if k % 2 == 0: cil('CristalIlha', x, z, y + s * 1.4, .35, 1.8, cr, 5, 0)
 @etapa
 def exportar():
     import json
@@ -400,7 +502,7 @@ def exportar():
         R = [[mw[0][0], mw[0][2], -mw[0][1], mw[0][3]], [mw[2][0], mw[2][2], -mw[2][1], mw[2][3]], [-mw[1][0], -mw[1][2], mw[1][1], -mw[1][3]]]
         objs.append([me.name, [round(x, 4) for row in R for x in row], cor, emis])
     p = os.path.join(OUT, 'orlavento.json')
-    with open(p, 'w') as f: json.dump({'malhas': meshes, 'objetos': objs, 'caminho': {'pts': [[round(a, 2), round(b, 2), round(c, 2)] for a, b, c in CAMINHO], 'larg': LARG, 'sx': SX, 'hs': HS}, 'alturas': HGRID, 'cavernas': CAV_S}, f, separators=(',', ':'))
+    with open(p, 'w') as f: json.dump({'malhas': meshes, 'objetos': objs, 'caminho': {'pts': [[round(a, 2), round(b, 2), round(c, 2)] for a, b, c in CAMINHO], 'larg': LARG, 'sx': SX, 'hs': HS}, 'alturas': HGRID, 'cavernas': CAV_S, 'colisao': COLISAO}, f, separators=(',', ':'))
     open(os.path.join(OUT, 'orlavento_log.txt'), 'a').write('EXPORTADO %d objetos, %d malhas, %d bytes\n' % (len(objs), len(meshes), os.path.getsize(p)))
 # ---------- câmera da vista para acompanhar ----------
 import mathutils
@@ -410,6 +512,7 @@ def vista(alvo, dist, alt):
         if a.type == 'VIEW_3D':
             sp = a.spaces[0]; sp.shading.type = 'SOLID'; sp.shading.color_type = 'MATERIAL'; r3 = sp.region_3d
             r3.view_location = alvo; r3.view_distance = dist; r3.view_rotation = mathutils.Euler((math.radians(alt), 0, math.radians(20)), 'XYZ').to_quaternion()
+VNOME = {'terreno': (GP(40, -60), 260, 55), 'casas': (GP(0, -10), 60, 58), 'arvore_tear': (GP(0, 22), 60, 70), 'arco_natural': (GP(-45, -35), 70, 55), 'abismo': (GP(0, -61), 90, 50), 'floresta_gigante': (GP(0, -82), 60, 55), 'ruinas': (GP(-30, -125), 90, 50), 'runas_arena': (GP(0, -128), 50, 40), 'montanha_cordas': (GP(90, -50), 200, 50), 'ilhas_flutuantes': (GP(200, -140), 300, 45), 'exportar': (GP(60, -80), 330, 50)}
 VISTAS = {12: (GP(95, -55), 230, 50), 0: (GP(0, -50), 150, 55), 2: (GP(0, -10), 45, 60), 3: (GP(0, -12), 35, 62), 4: (GP(0, -30), 90, 58), 6: (GP(0, -60), 30, 62), 7: (GP(0, -85), 50, 58), 8: (GP(0, -128), 45, 55), 9: (GP(0, -60), 260, 70)}
 d = bpy.data.lights.new('Sol', 'SUN'); d.energy = 3.5; d.color = (1, .93, .82); d.angle = .05
 o = bpy.data.objects.new('Sol', d); col.objects.link(o); o.rotation_euler = (math.radians(50), math.radians(10), math.radians(35))
@@ -419,7 +522,7 @@ if bg: bg.inputs['Color'].default_value = (.45, .55, .75, 1); bg.inputs['Strengt
 LOG = os.path.join(OUT, 'orlavento_log.txt')
 for i, f in enumerate(ETAPAS):
     try:
-        if i in VISTAS: vista(*VISTAS[i])
+        if f.__name__ in VNOME: vista(*VNOME[f.__name__])
         f(); scn.view_layers[0].update()
         open(LOG, 'a').write('etapa %s ok (%d objetos)\n' % (f.__name__, len(col.objects)))
     except Exception as e:

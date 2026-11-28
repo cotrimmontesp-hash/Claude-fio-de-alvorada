@@ -164,7 +164,7 @@ function buildWorld() {
   W.seam = [-2.6, 0, -53.6];
   oc(-2.6, -53.6, .4);
   // ---- casas da vila ----
-  const houses = [[-10.5, 9, 0], [10.5, 8, 1], [-10.5, -3, 2], [10.5, -4.5, 3], [-11, -24, 4], [10.5, -23, 5], [-10, -35, 6], [11, -34.5, 7], [-16.5, 3, 8], [17, -14, 9]];
+  const houses = [[-10.5, 9, 0], [10.5, 8, 1], [-10.5, -3, 2], [10.5, -4.5, 3], [-11, -24, 4], [10.5, -23, 5], [11, -34.5, 7], [-16.5, 3, 8], [17, -14, 9]];
   for (const [x, z, k] of houses) {
     const w = 5.6 + hash(k, 1) * 1.5, d = 4.6 + hash(k, 2) * 1.2, h = 2.6 + hash(k, 3) * .8, face = x < 0 ? Math.PI / 2 : -Math.PI / 2;
     const stone = V.lerp(C(0x8a8070), C(0x6e665a), hash(k, 4)), wood = V.lerp(C(0x6a4a30), C(0x50382a), hash(k, 5)), roof = V.lerp(C(0x5a3a2a), C(0x3e3a38), hash(k, 6));
@@ -238,6 +238,7 @@ function buildWorld() {
   if (MAPA) { // pedras sempre no chão (não flutuam) e com colisão (não dá pra subir nelas)
     for (const o of MAPA.objetos) { const base = o[0].split('.')[0], R = o[1]; if (!/^(PedraTrilha|Agulha|Pedra|Pedregulho|Trilha)$/.test(base)) continue;
       if (base !== 'Agulha') { const g = groundH(R[3], R[11]); if (Math.abs(R[7] - g) > .4) R[7] = g + .1; } const s = Math.hypot(R[0], R[4], R[8]), s2 = Math.hypot(R[2], R[6], R[10]); W.obst.push({ x: R[3], z: R[11], r: Math.max(.3, Math.min(s, s2) * .85) }); }
+    for (const [x, z, r] of MAPA.colisao || []) W.obst.push({ x, z, r }); // colisão que vem junto do mapa do Blender
     for (const [nm, R] of MAPA.objetos) if (nm.split('.')[0] === 'CristalG') W.lights.push({ p: [R[3], R[7] + .6, R[11]], c: V.sc(C(0x40ff90), 2.4), r: 9 });
     const bm = blenderMap(MAPA, b => b === 'Boneco' || b === 'Palha'); if (bm.ground) { W.ground = bm.ground[0]; W.grounds = bm.ground.slice(1); } W.blender = mkMesh(bm.mesh); }
   W.mesh = mkMesh(g); W.vc = g.p.length / 3;
