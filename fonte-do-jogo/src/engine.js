@@ -228,7 +228,7 @@ gl.bindVertexArray(null);
 
 const R = {
   items: [], lights: [], view: M.I(), proj: M.I(), vp: M.I(), cam: [0, 5, 10], camR: [1, 0, 0], camU: [0, 1, 0],
-  env: { sun: V.norm([.55, .42, .35]), sunC: [2.6, 1.9, 1.35], skyA: lin(0x4d6fa0), skyB: lin(0xe9a07a), fog: lin(0xc3a08d), fogD: .011, rift: 1, riftN: V.norm([.25, .35, 1]), night: .35 },
+  env: { sun: V.norm([.5, .55, .35]), sunC: [2.35, 2.25, 2.0], skyA: lin(0x2b7896), skyB: lin(0xa6e4da), fog: lin(0x6aa3a0), fogD: .011, rift: 1, riftN: V.norm([.25, .35, 1]), night: .35 },
   draw(mesh, m, col = [1, 1, 1], o = {}) { this.items.push({ mesh, m, col, em: o.em || [0, 0, 0], spec: o.spec ?? .35, grain: o.grain || 0, rim: o.rim ?? .15, flash: o.flash || 0, sh: o.sh !== false }); },
   light(p, c, r) { this.lights.push({ p, c, r }); },
   quad(a, b, c, d, col, al, add = 1, hard = 0, uvs) {
@@ -304,11 +304,13 @@ const R = {
 const PPost = (fs) => prog(`#version 300 es
 in vec3 aP;out vec2 vU;void main(){vU=aP.xy*.5+.5;gl_Position=vec4(aP.xy,0.,1.);}`, `#version 300 es
 precision highp float;in vec2 vU;out vec4 o;uniform sampler2D uA,uB;uniform vec2 uPx;uniform float uK;` + fs);
-const PBright = PPost(`void main(){vec3 c=vec3(0.);for(int x=-1;x<=1;x++)for(int y=-1;y<=1;y++)c+=texture(uA,vU+vec2(x,y)*uPx).rgb;c/=9.;float l=max(c.r,max(c.g,c.b));o=vec4(c*smoothstep(.62,1.,l),1.);}`);
+const PBright = PPost(`void main(){vec3 c=vec3(0.);for(int x=-1;x<=1;x++)for(int y=-1;y<=1;y++)c+=texture(uA,vU+vec2(x,y)*uPx).rgb;c/=9.;float l=max(c.r,max(c.g,c.b));o=vec4(c*smoothstep(.58,.98,l),1.);}`);
 const PBlur = PPost(`void main(){vec3 c=texture(uA,vU).rgb*.227;vec2 d=uPx;c+=(texture(uA,vU+d*1.38).rgb+texture(uA,vU-d*1.38).rgb)*.316;c+=(texture(uA,vU+d*3.23).rgb+texture(uA,vU-d*3.23).rgb)*.07;o=vec4(c,1.);}`);
-const PComp = PPost(`void main(){vec3 c=texture(uA,vU).rgb;vec3 b=texture(uB,vU).rgb;c+=b*.55;
-float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,1.12);c=(c-.5)*1.06+.5;c*=vec3(1.02,1.,.97);
-vec2 v=vU-.5;c*=1.-dot(v,v)*.55;o=vec4(clamp(c,0.,1.),1.);}`);
+const PComp = PPost(`void main(){vec3 c=texture(uA,vU).rgb;vec3 b=texture(uB,vU).rgb;c+=b*.75*(vec3(.75,1.,.9));
+float l=dot(c,vec3(.299,.587,.114));
+c=mix(c,c*vec3(.78,1.04,1.12),(1.-l)*.6);c=mix(c,c*vec3(.96,1.05,.98),l*.5);
+c=mix(vec3(l),c,1.15);c=(c-.5)*1.14+.5;
+vec2 v=vU-.5;c*=1.-dot(v,v)*.75;o=vec4(clamp(c,0.,1.),1.);}`);
 let POSFB = null;
 function posPronto() {
   if (window.SEM_POS) return null; const W_ = cv.width, H_ = cv.height;

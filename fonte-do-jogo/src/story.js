@@ -77,7 +77,7 @@ async function completeMission(i, title) {
 }
 
 // ---------- montagem de cena por missão ----------
-const ENV0 = { ...R.env }, ENV_TRILHA = { ...R.env, sun: V.norm([.3, .88, .38]), sunC: [2.7, 2.2, 1.8], night: .12, fogD: .007 }, ENV_SERRA = { ...R.env, sun: V.norm([.35, .55, .6]), sunC: [2.2, 2.0, 1.8], skyA: lin(0x4f6c8e), skyB: lin(0xd0a890), fog: lin(0x7d8796), fogD: .011, riftN: V.norm([.6, .3, .7]), night: .2 };
+const ENV0 = { ...R.env }, ENV_TRILHA = { ...R.env, sun: V.norm([.3, .88, .38]), sunC: [2.5, 2.45, 2.2], night: .12, fogD: .007 }, ENV_SERRA = { ...R.env, sun: V.norm([.35, .55, .6]), sunC: [1.75, 1.8, 1.7], skyA: lin(0x1f5f7e), skyB: lin(0x92d8d0), fog: lin(0x4f8a92), fogD: .011, riftN: V.norm([.6, .3, .7]), night: .2 };
 function stage(i) {
   clearCombat(); NPCS.length = 0; RIFT.ts = 0; RIFT.s = 0; RIFT.bind = null; MARK = null; MIS.bossDead = false;
   P.hp = maxHp(); P.vig = 100; P.lume = 30; P.st = 'move'; P.cd = { q: 0, e: 0, r: 0 }; P.heal = null; P.rig.pitch = 0; P.trail.length = 0;
@@ -532,7 +532,7 @@ function frame(now) {
   if (S.mode !== 'menu') P.rig.draw(); if (S.mode !== 'lobby') { updNpcs(vdt); drawNpcs(); }
   for (const e of ENEMIES) enemyDraw(e, (S.mode === 'play' || S.mode === 'cut') ? dt : 0);
   if (typeof netDraw === 'function') netDraw(rdt);
-  drawTrail(); updWaves(S.mode === 'play' ? dt : 0); updUlt(S.mode === 'play' ? dt : 0); drawRift(vdt); updParts(S.mode === 'pause' || S.mode === 'over' ? 0 : vdt);
+  drawTrail(); drawRaios(S.mode === 'pause' || S.mode === 'over' ? 0 : vdt); updWaves(S.mode === 'play' ? dt : 0); updUlt(S.mode === 'play' ? dt : 0); drawRift(vdt); updParts(S.mode === 'pause' || S.mode === 'over' ? 0 : vdt);
   if (MIS.barrier) { for (const [z, w] of [[-68.4, 3.2], [-95.6, 4]]) for (let k = 0; k < 5; k++) { const y = .3 + k * .45; drawThread([-w, y, z], [w, y + .1, z], .05, [1, .3, .5], .05, S.time + k, false); } }
   if (!W.gate.off && !MIS.barrier) for (let k = 0; k < 4; k++) { const y = .4 + k * .5; drawThread([-3.6, y, -96], [3.6, y, -96], .1, [.9, .3, .5], .04, S.time + k, false); }
   { const pa = MIS.cur === 4 && NPCS.find(n => n.key === 'pastor' && n.act === 'kneel'); if (pa) for (let k = 0; k < 8; k++) { const an = k / 8 * 6.28 + S.time * .2; drawThread([pa.pos[0] + Math.sin(an) * 1.1, 0, pa.pos[2] + Math.cos(an) * 1.1], [pa.pos[0] + Math.sin(an + .6) * .4, 2.2, pa.pos[2] + Math.cos(an + .6) * .4], .05, [.95, .3, .6], .05, S.time + k, false); } }

@@ -494,7 +494,7 @@ gl.bindVertexArray(null);
 
 const R = {
   items: [], lights: [], view: M.I(), proj: M.I(), vp: M.I(), cam: [0, 5, 10], camR: [1, 0, 0], camU: [0, 1, 0],
-  env: { sun: V.norm([.55, .42, .35]), sunC: [2.6, 1.9, 1.35], skyA: lin(0x4d6fa0), skyB: lin(0xe9a07a), fog: lin(0xc3a08d), fogD: .011, rift: 1, riftN: V.norm([.25, .35, 1]), night: .35 },
+  env: { sun: V.norm([.5, .55, .35]), sunC: [2.35, 2.25, 2.0], skyA: lin(0x2b7896), skyB: lin(0xa6e4da), fog: lin(0x6aa3a0), fogD: .011, rift: 1, riftN: V.norm([.25, .35, 1]), night: .35 },
   draw(mesh, m, col = [1, 1, 1], o = {}) { this.items.push({ mesh, m, col, em: o.em || [0, 0, 0], spec: o.spec ?? .35, grain: o.grain || 0, rim: o.rim ?? .15, flash: o.flash || 0, sh: o.sh !== false }); },
   light(p, c, r) { this.lights.push({ p, c, r }); },
   quad(a, b, c, d, col, al, add = 1, hard = 0, uvs) {
@@ -570,11 +570,13 @@ const R = {
 const PPost = (fs) => prog(`#version 300 es
 in vec3 aP;out vec2 vU;void main(){vU=aP.xy*.5+.5;gl_Position=vec4(aP.xy,0.,1.);}`, `#version 300 es
 precision highp float;in vec2 vU;out vec4 o;uniform sampler2D uA,uB;uniform vec2 uPx;uniform float uK;` + fs);
-const PBright = PPost(`void main(){vec3 c=vec3(0.);for(int x=-1;x<=1;x++)for(int y=-1;y<=1;y++)c+=texture(uA,vU+vec2(x,y)*uPx).rgb;c/=9.;float l=max(c.r,max(c.g,c.b));o=vec4(c*smoothstep(.62,1.,l),1.);}`);
+const PBright = PPost(`void main(){vec3 c=vec3(0.);for(int x=-1;x<=1;x++)for(int y=-1;y<=1;y++)c+=texture(uA,vU+vec2(x,y)*uPx).rgb;c/=9.;float l=max(c.r,max(c.g,c.b));o=vec4(c*smoothstep(.58,.98,l),1.);}`);
 const PBlur = PPost(`void main(){vec3 c=texture(uA,vU).rgb*.227;vec2 d=uPx;c+=(texture(uA,vU+d*1.38).rgb+texture(uA,vU-d*1.38).rgb)*.316;c+=(texture(uA,vU+d*3.23).rgb+texture(uA,vU-d*3.23).rgb)*.07;o=vec4(c,1.);}`);
-const PComp = PPost(`void main(){vec3 c=texture(uA,vU).rgb;vec3 b=texture(uB,vU).rgb;c+=b*.55;
-float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,1.12);c=(c-.5)*1.06+.5;c*=vec3(1.02,1.,.97);
-vec2 v=vU-.5;c*=1.-dot(v,v)*.55;o=vec4(clamp(c,0.,1.),1.);}`);
+const PComp = PPost(`void main(){vec3 c=texture(uA,vU).rgb;vec3 b=texture(uB,vU).rgb;c+=b*.75*(vec3(.75,1.,.9));
+float l=dot(c,vec3(.299,.587,.114));
+c=mix(c,c*vec3(.78,1.04,1.12),(1.-l)*.6);c=mix(c,c*vec3(.96,1.05,.98),l*.5);
+c=mix(vec3(l),c,1.15);c=(c-.5)*1.14+.5;
+vec2 v=vU-.5;c*=1.-dot(v,v)*.75;o=vec4(clamp(c,0.,1.),1.);}`);
 let POSFB = null;
 function posPronto() {
   if (window.SEM_POS) return null; const W_ = cv.width, H_ = cv.height;
@@ -1422,6 +1424,10 @@ function icon(txt, cls = '') { const el = $('flashicon'); el.textContent = txt; 
 // ---------- partículas ----------
 const PART = [];
 function part(p, v, life, size, col, o = {}) { if (PART.length > 2500) return; PART.push({ p: [...p], v: [...v], life, max: life, size, col, add: o.add ?? 1, g: o.g ?? 0, drag: o.drag ?? 1.5, al: o.al ?? 1, grow: o.grow ?? 0 }); }
+const ENERGIA = [.3, 1, .5]; // cor da energia dos golpes (verde, no estilo dos poderes de anel)
+function raios(p, n = 3, r = 1.2) { for (let k = 0; k < n; k++) { let a = [...p]; for (let j = 0; j < 4; j++) { const b = V.add(a, [rnd(-r, r) * .5, rnd(-r, r) * .5, rnd(-r, r) * .5]); FXR.push({ a, b, t: .12 + rnd(0, .08) }); a = b; } } }
+const FXR = [];
+function drawRaios(dt) { for (let i = FXR.length - 1; i >= 0; i--) { const q = FXR[i]; q.t -= dt; if (q.t <= 0) { FXR.splice(i, 1); continue; } R.beam(q.a, q.b, .05, V.sc(ENERGIA, 1.6), Math.min(1, q.t * 8)); } }
 function sparks(p, col, n = 12, sp = 5) { for (let k = 0; k < n; k++) part(p, [rnd(-sp, sp), rnd(0, sp), rnd(-sp, sp)], rnd(.2, .5), rnd(.04, .09), col, { g: -9, drag: 2 }); }
 function puff(p, col, n = 8, s = .5, al = .3) { for (let k = 0; k < n; k++) part([p[0] + rnd(-.4, .4), p[1] + rnd(0, .4), p[2] + rnd(-.4, .4)], [rnd(-.6, .6), rnd(.2, 1), rnd(-.6, .6)], rnd(.8, 1.6), s, col, { add: 0, al, grow: .8 }); }
 function updParts(dt) {
@@ -1569,8 +1575,12 @@ function playerUpdate(dt, I) {
 }
 function drawTrail() {
   const T = P.trail; for (let k = 1; k < T.length; k++) { const a = T[k - 1], b = T[k], al = b[2] / .22;
-    const col = P.cur && P.cur.kind === 'c' ? [1, .5, .3] : (typeof HERO !== 'undefined' ? HERO.cor : [1, .85, .55]);
-    R.quad(a[0], a[1], b[1], b[0], col, .55 * al, 1, 0, [[0, -1], [0, 1], [0, 1], [0, -1]]); }
+    const hc = typeof HERO !== 'undefined' ? HERO.cor : [1, .85, .55], col = P.cur && P.cur.kind === 'c' ? [1, .55, .3] : V.lerp(hc, ENERGIA, .7);
+    // rastro de energia: núcleo claro + brilho largo por fora
+    const ea = V.lerp(a[0], a[1], -.25), eb = V.lerp(b[0], b[1], -.25), fa = V.lerp(a[0], a[1], 1.12), fb = V.lerp(b[0], b[1], 1.12);
+    R.quad(ea, fa, fb, eb, V.sc(col, 1.4), .35 * al, 1, 0, [[0, -1], [0, 1], [0, 1], [0, -1]]);
+    R.quad(a[0], a[1], b[1], b[0], V.lerp(col, [1, 1, 1], .45), .8 * al, 1, 0, [[0, -1], [0, 1], [0, 1], [0, -1]]); }
+  if (T.length && ['atk', 'ult', 'qcast'].includes(P.st)) R.light(T[T.length - 1][1], V.sc(ENERGIA, 2.2), 6);
 }
 function doHit(d) {
   let any = false; const a = atk() * d.mult;
@@ -1578,7 +1588,7 @@ function doHit(d) {
     if (dist > d.range + (e.rad || .4)) continue; if (Math.abs(angDiff(P.yaw, Math.atan2(dx, dz))) > d.arc / 2) continue;
     hurtEnemy(e, a, d.kind, d.post, { launch: d.launch, crit: d.crit, heavy: d.heavy }); any = true; }
   const dm = nearDummy();
-  if (dm && V.d2(dm.pos, P.pos) < d.range + .4) { dm.shake = 1; num(V.add(dm.pos, [0, 1.8, 0]), Math.round(a), d.heavy ? 'o' : 'w'); sparks(V.add(dm.pos, [0, 1.3, 0]), [1, .8, .5], 8); any = true; P.stats.dummy++; if (d.heavy) P.stats.dummyHeavy++; AU.hit(d.heavy); }
+  if (dm && V.d2(dm.pos, P.pos) < d.range + .4) { dm.shake = 1; num(V.add(dm.pos, [0, 1.8, 0]), Math.round(a), d.heavy ? 'o' : 'w'); sparks(V.add(dm.pos, [0, 1.3, 0]), V.lerp(ENERGIA, [1, 1, 1], .3), 8); raios(V.add(dm.pos, [0, 1.3, 0]), 2); any = true; P.stats.dummy++; if (d.heavy) P.stats.dummyHeavy++; AU.hit(d.heavy); }
   if (d.cuts) cutProjectiles(P.pos, d.range + .5, d.arc);
   if (d.fio) { for (let k = 0; k < 24; k++) { const an = k / 24 * 6.28; part(V.add(P.pos, [Math.sin(an) * 2.2, 1, Math.cos(an) * 2.2]), [Math.sin(an) * 2, .5, Math.cos(an) * 2], .4, .08, [1, .9, .6]); } }
   if (any) { S.hitstop = d.heavy ? .09 : .045; if (d.heavy) S.shake = .5; P.combatT = 4; }
@@ -1609,7 +1619,7 @@ function ultImpact() {
 const ULT = [];
 function updUlt(dt) { for (let i = ULT.length - 1; i >= 0; i--) { const u = ULT[i]; u.t += dt; if (u.t > 1.2) { ULT.splice(i, 1); continue; } const k = u.t / 1.2;
   R.ring(u.p[0], u.p[2], 6.5 * Math.min(1, u.t * 4), .5, [1, .8, .4], (1 - k)); R.disc(u.p[0], u.p[2], 6.5 * Math.min(1, u.t * 4), [1, .7, .3], .25 * (1 - k));
-  for (let j = 0; j < 6; j++) { const a = j / 6 * 6.28 + u.t; R.beam([u.p[0], 0, u.p[2]], [u.p[0] + Math.sin(a) * 2, 8 * (1 - k), u.p[2] + Math.cos(a) * 2], .2, [1, .9, .6], 1 - k); }
+  for (let j = 0; j < 6; j++) { const a = j / 6 * 6.28 + u.t; R.beam([u.p[0], 0, u.p[2]], [u.p[0] + Math.sin(a) * 2, 8 * (1 - k), u.p[2] + Math.cos(a) * 2], .2, V.lerp(ENERGIA, [1, 1, 1], .35), 1 - k); }
   R.light([u.p[0], 2, u.p[2]], V.sc([1, .8, .5], 6 * (1 - k)), 14); } }
 function toggleLock() { if (P.lock) { P.lock = null; return; } P.lock = nearestEnemy(22, true) || nearestEnemy(14); if (P.lock) AU.ui(); }
 function switchLock(dir) { const L = ENEMIES.filter(e => !e.dead && e.spawnT <= 0 && V.d2(e.pos, P.pos) < 22).sort((a, b) => Math.atan2(a.pos[0] - P.pos[0], a.pos[2] - P.pos[2]) - Math.atan2(b.pos[0] - P.pos[0], b.pos[2] - P.pos[2])); if (L.length < 2) return; const i = L.indexOf(P.lock); P.lock = L[(i + dir + L.length) % L.length]; }
@@ -1661,7 +1671,7 @@ function hurtEnemy(e, base, kind, post, o = {}) {
   e.hp -= dmg; e.flash = 1; P.hits++; P.hitT = 2; P.combatT = 4; P.lume = Math.min(100, P.lume + (kind === 'p' ? 2 : 5));
   const h = e.boss ? 2.6 * (e.rig.scale / 1.7) : e.type === 'larva' ? .7 : 2;
   num(V.add(e.pos, [0, h, 0]), dmg, crit ? 'c' : kind, crit || kind === 'p');
-  sparks(V.add(e.pos, [0, h * .55, 0]), crit ? [1, .4, .3] : [1, .8, .5], crit ? 16 : 9); AU.hit(o.heavy || crit);
+  { const hp_ = V.add(e.pos, [0, h * .55, 0]); sparks(hp_, crit ? [1, .55, .3] : V.lerp(ENERGIA, [1, 1, 1], .3), crit ? 18 : 11); raios(hp_, crit ? 5 : 3); R.light(hp_, V.sc(ENERGIA, 3), 5); } AU.hit(o.heavy || crit);
   if (!broken) { e.post -= post; if (e.post <= 0) { e.stun = e.boss ? 3.2 : 2.5; e.post = e.maxpost; e.st = 'stun'; e.t = 0; num(V.add(e.pos, [0, h + .5, 0]), 'Quebra de postura', 'g', true); icon('Postura quebrada!', 'gold'); S.hitstop = .12; AU.clang(); CAM.zoom = .4; } }
   const armor = (e.type === 'bruta' && (e.st === 'wind' || e.st === 'atk')) || (e.type === 'saltador' && (e.st === 'leap' || e.st === 'leapW'));
   if (e.markT > 0) e.hp -= Math.round(dmg * .25);
@@ -2099,7 +2109,7 @@ async function completeMission(i, title) {
 }
 
 // ---------- montagem de cena por missão ----------
-const ENV0 = { ...R.env }, ENV_TRILHA = { ...R.env, sun: V.norm([.3, .88, .38]), sunC: [2.7, 2.2, 1.8], night: .12, fogD: .007 }, ENV_SERRA = { ...R.env, sun: V.norm([.35, .55, .6]), sunC: [2.2, 2.0, 1.8], skyA: lin(0x4f6c8e), skyB: lin(0xd0a890), fog: lin(0x7d8796), fogD: .011, riftN: V.norm([.6, .3, .7]), night: .2 };
+const ENV0 = { ...R.env }, ENV_TRILHA = { ...R.env, sun: V.norm([.3, .88, .38]), sunC: [2.5, 2.45, 2.2], night: .12, fogD: .007 }, ENV_SERRA = { ...R.env, sun: V.norm([.35, .55, .6]), sunC: [1.75, 1.8, 1.7], skyA: lin(0x1f5f7e), skyB: lin(0x92d8d0), fog: lin(0x4f8a92), fogD: .011, riftN: V.norm([.6, .3, .7]), night: .2 };
 function stage(i) {
   clearCombat(); NPCS.length = 0; RIFT.ts = 0; RIFT.s = 0; RIFT.bind = null; MARK = null; MIS.bossDead = false;
   P.hp = maxHp(); P.vig = 100; P.lume = 30; P.st = 'move'; P.cd = { q: 0, e: 0, r: 0 }; P.heal = null; P.rig.pitch = 0; P.trail.length = 0;
@@ -2554,7 +2564,7 @@ function frame(now) {
   if (S.mode !== 'menu') P.rig.draw(); if (S.mode !== 'lobby') { updNpcs(vdt); drawNpcs(); }
   for (const e of ENEMIES) enemyDraw(e, (S.mode === 'play' || S.mode === 'cut') ? dt : 0);
   if (typeof netDraw === 'function') netDraw(rdt);
-  drawTrail(); updWaves(S.mode === 'play' ? dt : 0); updUlt(S.mode === 'play' ? dt : 0); drawRift(vdt); updParts(S.mode === 'pause' || S.mode === 'over' ? 0 : vdt);
+  drawTrail(); drawRaios(S.mode === 'pause' || S.mode === 'over' ? 0 : vdt); updWaves(S.mode === 'play' ? dt : 0); updUlt(S.mode === 'play' ? dt : 0); drawRift(vdt); updParts(S.mode === 'pause' || S.mode === 'over' ? 0 : vdt);
   if (MIS.barrier) { for (const [z, w] of [[-68.4, 3.2], [-95.6, 4]]) for (let k = 0; k < 5; k++) { const y = .3 + k * .45; drawThread([-w, y, z], [w, y + .1, z], .05, [1, .3, .5], .05, S.time + k, false); } }
   if (!W.gate.off && !MIS.barrier) for (let k = 0; k < 4; k++) { const y = .4 + k * .5; drawThread([-3.6, y, -96], [3.6, y, -96], .1, [.9, .3, .5], .04, S.time + k, false); }
   { const pa = MIS.cur === 4 && NPCS.find(n => n.key === 'pastor' && n.act === 'kneel'); if (pa) for (let k = 0; k < 8; k++) { const an = k / 8 * 6.28 + S.time * .2; drawThread([pa.pos[0] + Math.sin(an) * 1.1, 0, pa.pos[2] + Math.cos(an) * 1.1], [pa.pos[0] + Math.sin(an + .6) * .4, 2.2, pa.pos[2] + Math.cos(an + .6) * .4], .05, [.95, .3, .6], .05, S.time + k, false); } }

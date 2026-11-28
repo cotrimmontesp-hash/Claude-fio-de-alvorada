@@ -113,6 +113,10 @@ function icon(txt, cls = '') { const el = $('flashicon'); el.textContent = txt; 
 // ---------- partículas ----------
 const PART = [];
 function part(p, v, life, size, col, o = {}) { if (PART.length > 2500) return; PART.push({ p: [...p], v: [...v], life, max: life, size, col, add: o.add ?? 1, g: o.g ?? 0, drag: o.drag ?? 1.5, al: o.al ?? 1, grow: o.grow ?? 0 }); }
+const ENERGIA = [.3, 1, .5]; // cor da energia dos golpes (verde, no estilo dos poderes de anel)
+function raios(p, n = 3, r = 1.2) { for (let k = 0; k < n; k++) { let a = [...p]; for (let j = 0; j < 4; j++) { const b = V.add(a, [rnd(-r, r) * .5, rnd(-r, r) * .5, rnd(-r, r) * .5]); FXR.push({ a, b, t: .12 + rnd(0, .08) }); a = b; } } }
+const FXR = [];
+function drawRaios(dt) { for (let i = FXR.length - 1; i >= 0; i--) { const q = FXR[i]; q.t -= dt; if (q.t <= 0) { FXR.splice(i, 1); continue; } R.beam(q.a, q.b, .05, V.sc(ENERGIA, 1.6), Math.min(1, q.t * 8)); } }
 function sparks(p, col, n = 12, sp = 5) { for (let k = 0; k < n; k++) part(p, [rnd(-sp, sp), rnd(0, sp), rnd(-sp, sp)], rnd(.2, .5), rnd(.04, .09), col, { g: -9, drag: 2 }); }
 function puff(p, col, n = 8, s = .5, al = .3) { for (let k = 0; k < n; k++) part([p[0] + rnd(-.4, .4), p[1] + rnd(0, .4), p[2] + rnd(-.4, .4)], [rnd(-.6, .6), rnd(.2, 1), rnd(-.6, .6)], rnd(.8, 1.6), s, col, { add: 0, al, grow: .8 }); }
 function updParts(dt) {
@@ -260,8 +264,12 @@ function playerUpdate(dt, I) {
 }
 function drawTrail() {
   const T = P.trail; for (let k = 1; k < T.length; k++) { const a = T[k - 1], b = T[k], al = b[2] / .22;
-    const col = P.cur && P.cur.kind === 'c' ? [1, .5, .3] : (typeof HERO !== 'undefined' ? HERO.cor : [1, .85, .55]);
-    R.quad(a[0], a[1], b[1], b[0], col, .55 * al, 1, 0, [[0, -1], [0, 1], [0, 1], [0, -1]]); }
+    const hc = typeof HERO !== 'undefined' ? HERO.cor : [1, .85, .55], col = P.cur && P.cur.kind === 'c' ? [1, .55, .3] : V.lerp(hc, ENERGIA, .7);
+    // rastro de energia: núcleo claro + brilho largo por fora
+    const ea = V.lerp(a[0], a[1], -.25), eb = V.lerp(b[0], b[1], -.25), fa = V.lerp(a[0], a[1], 1.12), fb = V.lerp(b[0], b[1], 1.12);
+    R.quad(ea, fa, fb, eb, V.sc(col, 1.4), .35 * al, 1, 0, [[0, -1], [0, 1], [0, 1], [0, -1]]);
+    R.quad(a[0], a[1], b[1], b[0], V.lerp(col, [1, 1, 1], .45), .8 * al, 1, 0, [[0, -1], [0, 1], [0, 1], [0, -1]]); }
+  if (T.length && ['atk', 'ult', 'qcast'].includes(P.st)) R.light(T[T.length - 1][1], V.sc(ENERGIA, 2.2), 6);
 }
 function doHit(d) {
   let any = false; const a = atk() * d.mult;
@@ -269,7 +277,7 @@ function doHit(d) {
     if (dist > d.range + (e.rad || .4)) continue; if (Math.abs(angDiff(P.yaw, Math.atan2(dx, dz))) > d.arc / 2) continue;
     hurtEnemy(e, a, d.kind, d.post, { launch: d.launch, crit: d.crit, heavy: d.heavy }); any = true; }
   const dm = nearDummy();
-  if (dm && V.d2(dm.pos, P.pos) < d.range + .4) { dm.shake = 1; num(V.add(dm.pos, [0, 1.8, 0]), Math.round(a), d.heavy ? 'o' : 'w'); sparks(V.add(dm.pos, [0, 1.3, 0]), [1, .8, .5], 8); any = true; P.stats.dummy++; if (d.heavy) P.stats.dummyHeavy++; AU.hit(d.heavy); }
+  if (dm && V.d2(dm.pos, P.pos) < d.range + .4) { dm.shake = 1; num(V.add(dm.pos, [0, 1.8, 0]), Math.round(a), d.heavy ? 'o' : 'w'); sparks(V.add(dm.pos, [0, 1.3, 0]), V.lerp(ENERGIA, [1, 1, 1], .3), 8); raios(V.add(dm.pos, [0, 1.3, 0]), 2); any = true; P.stats.dummy++; if (d.heavy) P.stats.dummyHeavy++; AU.hit(d.heavy); }
   if (d.cuts) cutProjectiles(P.pos, d.range + .5, d.arc);
   if (d.fio) { for (let k = 0; k < 24; k++) { const an = k / 24 * 6.28; part(V.add(P.pos, [Math.sin(an) * 2.2, 1, Math.cos(an) * 2.2]), [Math.sin(an) * 2, .5, Math.cos(an) * 2], .4, .08, [1, .9, .6]); } }
   if (any) { S.hitstop = d.heavy ? .09 : .045; if (d.heavy) S.shake = .5; P.combatT = 4; }
@@ -300,7 +308,7 @@ function ultImpact() {
 const ULT = [];
 function updUlt(dt) { for (let i = ULT.length - 1; i >= 0; i--) { const u = ULT[i]; u.t += dt; if (u.t > 1.2) { ULT.splice(i, 1); continue; } const k = u.t / 1.2;
   R.ring(u.p[0], u.p[2], 6.5 * Math.min(1, u.t * 4), .5, [1, .8, .4], (1 - k)); R.disc(u.p[0], u.p[2], 6.5 * Math.min(1, u.t * 4), [1, .7, .3], .25 * (1 - k));
-  for (let j = 0; j < 6; j++) { const a = j / 6 * 6.28 + u.t; R.beam([u.p[0], 0, u.p[2]], [u.p[0] + Math.sin(a) * 2, 8 * (1 - k), u.p[2] + Math.cos(a) * 2], .2, [1, .9, .6], 1 - k); }
+  for (let j = 0; j < 6; j++) { const a = j / 6 * 6.28 + u.t; R.beam([u.p[0], 0, u.p[2]], [u.p[0] + Math.sin(a) * 2, 8 * (1 - k), u.p[2] + Math.cos(a) * 2], .2, V.lerp(ENERGIA, [1, 1, 1], .35), 1 - k); }
   R.light([u.p[0], 2, u.p[2]], V.sc([1, .8, .5], 6 * (1 - k)), 14); } }
 function toggleLock() { if (P.lock) { P.lock = null; return; } P.lock = nearestEnemy(22, true) || nearestEnemy(14); if (P.lock) AU.ui(); }
 function switchLock(dir) { const L = ENEMIES.filter(e => !e.dead && e.spawnT <= 0 && V.d2(e.pos, P.pos) < 22).sort((a, b) => Math.atan2(a.pos[0] - P.pos[0], a.pos[2] - P.pos[2]) - Math.atan2(b.pos[0] - P.pos[0], b.pos[2] - P.pos[2])); if (L.length < 2) return; const i = L.indexOf(P.lock); P.lock = L[(i + dir + L.length) % L.length]; }
@@ -352,7 +360,7 @@ function hurtEnemy(e, base, kind, post, o = {}) {
   e.hp -= dmg; e.flash = 1; P.hits++; P.hitT = 2; P.combatT = 4; P.lume = Math.min(100, P.lume + (kind === 'p' ? 2 : 5));
   const h = e.boss ? 2.6 * (e.rig.scale / 1.7) : e.type === 'larva' ? .7 : 2;
   num(V.add(e.pos, [0, h, 0]), dmg, crit ? 'c' : kind, crit || kind === 'p');
-  sparks(V.add(e.pos, [0, h * .55, 0]), crit ? [1, .4, .3] : [1, .8, .5], crit ? 16 : 9); AU.hit(o.heavy || crit);
+  { const hp_ = V.add(e.pos, [0, h * .55, 0]); sparks(hp_, crit ? [1, .55, .3] : V.lerp(ENERGIA, [1, 1, 1], .3), crit ? 18 : 11); raios(hp_, crit ? 5 : 3); R.light(hp_, V.sc(ENERGIA, 3), 5); } AU.hit(o.heavy || crit);
   if (!broken) { e.post -= post; if (e.post <= 0) { e.stun = e.boss ? 3.2 : 2.5; e.post = e.maxpost; e.st = 'stun'; e.t = 0; num(V.add(e.pos, [0, h + .5, 0]), 'Quebra de postura', 'g', true); icon('Postura quebrada!', 'gold'); S.hitstop = .12; AU.clang(); CAM.zoom = .4; } }
   const armor = (e.type === 'bruta' && (e.st === 'wind' || e.st === 'atk')) || (e.type === 'saltador' && (e.st === 'leap' || e.st === 'leapW'));
   if (e.markT > 0) e.hp -= Math.round(dmg * .25);
