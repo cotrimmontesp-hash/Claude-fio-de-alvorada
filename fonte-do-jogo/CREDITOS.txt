@@ -1,1 +1,2 @@
 Modelos de cenário: Quaternius (Stylized Nature MegaKit, Fantasy Props MegaKit, Medieval Village MegaKit), licença CC0.
+Texturas do chão: Poly Haven (forrest_ground_01, brown_mud_leaves_01, aerial_rocks_02), licença CC0.
