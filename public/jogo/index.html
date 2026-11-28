@@ -1105,7 +1105,7 @@ function buildWorld() {
   // ---- casas da vila ----
   const houses = [[-10.5, 9, 0], [10.5, 8, 1], [-10.5, -3, 2], [10.5, -4.5, 3], [-11, -24, 4], [10.5, -23, 5], [11, -34.5, 7], [-16.5, 3, 8], [17, -14, 9]];
   for (const [x, z, k] of houses) {
-    const w = 5.6 + hash(k, 1) * 1.5, d = 4.6 + hash(k, 2) * 1.2, h = 2.6 + hash(k, 3) * .8, face = x < 0 ? Math.PI / 2 : -Math.PI / 2;
+    const w = 6.3, d = 4.3, h = 2.6 + hash(k, 3) * .8, face = x < 0 ? Math.PI / 2 : -Math.PI / 2;
     const stone = V.lerp(C(0x8a8070), C(0x6e665a), hash(k, 4)), wood = V.lerp(C(0x6a4a30), C(0x50382a), hash(k, 5)), roof = V.lerp(C(0x5a3a2a), C(0x3e3a38), hash(k, 6));
     // base de pedra + andar de madeira + telhado em duas águas
     box(x, h * .5, z, d, h, w, stone, 0); box(x, h + .12, z, d + .2, .24, w + .2, wood);

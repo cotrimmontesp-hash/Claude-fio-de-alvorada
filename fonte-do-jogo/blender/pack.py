@@ -9,7 +9,7 @@ ESC = {NAT: ['CommonTree_1', 'CommonTree_2', 'CommonTree_3', 'CommonTree_4', 'Co
              'Rock_Medium_1', 'Rock_Medium_2', 'Rock_Medium_3', 'Pebble_Round_1', 'Pebble_Round_3', 'Pebble_Square_2', 'Grass_Common_Tall', 'Grass_Wispy_Tall', 'Flower_3_Group', 'Flower_4_Group', 'Clover_1',
              'RockPath_Round_Wide', 'RockPath_Square_Wide'],
        FAN: ['Barrel', 'Barrel_Apples', 'Crate_Wooden', 'FarmCrate_Apple', 'FarmCrate_Carrot', 'Stall_Cart_Empty', 'Stall_Empty', 'Banner_1', 'Banner_2', 'Bench', 'Anvil', 'Workbench', 'Torch_Metal', 'Bucket_Wooden_1', 'Cauldron', 'Lantern_Wall', 'WeaponStand', 'Table_Large', 'Pot_1', 'Vase_Rubble_Medium'],
-       MED: ['Prop_Wagon', 'Prop_WoodenFence_Single', 'Prop_WoodenFence_Extension1', 'Prop_MetalFence_Simple', 'Prop_Crate', 'Prop_Vine2', 'Prop_Support', 'Prop_Chimney']}
+       MED: ['Wall_Plaster_Straight', 'Wall_UnevenBrick_Straight', 'Wall_Plaster_WoodGrid', 'Wall_UnevenBrick_Door_Round', 'Wall_Plaster_Door_Round', 'Wall_Plaster_Window_Wide_Round', 'Wall_UnevenBrick_Window_Wide_Round', 'Window_Wide_Round1', 'WindowShutters_Wide_Round_Open', 'Door_1_Round', 'Corner_Exterior_Wood', 'Corner_Exterior_Brick', 'Roof_RoundTiles_4x6', 'Roof_Front_Brick4', 'Prop_Wagon', 'Prop_WoodenFence_Single', 'Prop_WoodenFence_Extension1', 'Prop_MetalFence_Simple', 'Prop_Crate', 'Prop_Vine2', 'Prop_Support', 'Prop_Chimney']}
 CT = {5120: np.int8, 5121: np.uint8, 5122: np.int16, 5123: np.uint16, 5125: np.uint32, 5126: np.float32}
 NC = {'SCALAR': 1, 'VEC2': 2, 'VEC3': 3, 'VEC4': 4, 'MAT4': 16}
 def acc(g, bins, i):
