@@ -367,7 +367,8 @@ def serra_cristas():
             sx = x + px * (LARG / 2 - .4); sz = z + pz * (LARG / 2 - .4)
             caixa('PosteLume', sx, sz, h + 1, .16, .16, 2, madeira); caixa('Lanterna', sx, sz, h + 2.1, .28, .28, .3, fogo, bev=0)
 CAV_S = []
-CAVERNAS = [('vila', V_CAVE[0] / 113, V_CAVE[1] / 113), ('ravina', .55, .7), ('monte', .30, .44), ('serra1', .40, .58), ('serra2', .35, .6), ('serra3', .38, .62)]
+CAV_IDX = []
+CAVERNAS = [('vila', V_CAVE[0] / 113, V_CAVE[1] / 113), ('ravina', .55, .7), ('monte', .50, .63), ('serra1', .40, .58), ('serra2', .35, .6), ('serra3', .38, .62)]
 @etapa
 def cavernas():
     TR = {'vila': T_VILA, 'ravina': T_RAVINA, 'monte': CAMINHO, 'serra1': T_SERRA[0], 'serra2': T_SERRA[1], 'serra3': T_SERRA[2]}
@@ -378,28 +379,57 @@ def cavernas():
         acc = [0]
         for q in range(1, len(T)): acc.append(acc[-1] + math.hypot(T[q][0] - T[q - 1][0], T[q][1] - T[q - 1][1]))
         CAV_S.append([nome, round(acc[i0], 2), round(acc[i1], 2)])
-        bm = bmesh.new(); aneis = []; NA = 14
-        for i in range(i0, i1 + 1):
-            x, z, h = T[i]; x2, z2, _ = T[min(i + 1, len(T) - 1)] if i < len(T) - 1 else T[i - 1]
-            a = math.atan2(x2 - x, z2 - z); px, pz = math.cos(a), -math.sin(a)
-            boca = min(i - i0, i1 - i) / 3.0; esc = .78 + .22 * min(1, boca)  # entrada um pouco mais baixa
-            anel = []
+        CAV_IDX.append((T, i0, i1))
+        # túnel de rocha irregular: muitas faces, ruído em 3 escalas, saliências e cores em camadas
+        bm = bmesh.new(); aneis = []; NA = 26; cl = bm.loops.layers.color.new('Col'); cores = []
+        amostras = []
+        for i in range(i0, i1):
+            for q in range(3): amostras.append((i, q / 3))
+        amostras.append((i1, 0))
+        for i, fr in amostras:
+            ax, az, ah = T[i]; bx, bz, bh = T[min(i + 1, len(T) - 1)]
+            x, z, h = ax + (bx - ax) * fr, az + (bz - az) * fr, ah + (bh - ah) * fr
+            if i < len(T) - 1: a = math.atan2(bx - ax, bz - az)
+            px, pz = math.cos(a), -math.sin(a)
+            boca = min((i + fr) - i0, i1 - (i + fr)) / 3.0; esc = .72 + .28 * min(1, boca)
+            anel = []; ca = []
             for k in range(NA + 1):
-                t = math.pi * (-.08 + 1.16 * k / NA); n = noise.noise(Vector((x * .3, z * .3, k * .7))) * .7
-                r = 6.6 + n; hx = math.cos(t) * r; hy = max(-.6, math.sin(t) * (6.0 + n) * esc)
-                anel.append(bm.verts.new(GP(x + px * hx, z + pz * hx, h - .4 + hy)))
-            aneis.append(anel)
+                t = math.pi * (-.1 + 1.2 * k / NA); P = Vector((x * .22, z * .22, k * .45))
+                n = noise.noise(P) * 1.1 + noise.noise(P * 2.7) * .55 + noise.noise(P * 6.1) * .22
+                sal = max(0, noise.noise(Vector((x * .5, z * .5, k * 1.3)))) * 1.4   # saliências de pedra
+                r = 6.8 + n - sal; hx = math.cos(t) * r; hy = max(-.7, math.sin(t) * (6.2 + n * .8 - sal * .5) * esc)
+                anel.append(bm.verts.new(GP(x + px * hx, z + pz * hx, h - .45 + hy)))
+                camada = noise.noise(Vector((hy * .9, x * .05, z * .05))) * .5 + .5; m2 = noise.noise(P * 4) * .5 + .5
+                base = (.2 + .1 * camada, .17 + .08 * camada, .15 + .06 * camada)
+                if hy < .3: base = (.16 + .05 * m2, .14 + .04 * m2, .12)
+                ca.append(tuple(v * (.75 + .45 * m2) for v in base))
+            aneis.append(anel); cores.append(ca)
         for j in range(len(aneis) - 1):
             for k in range(NA):
                 f = bm.faces.new((aneis[j][k], aneis[j + 1][k], aneis[j + 1][k + 1], aneis[j][k + 1])); f.smooth = True
-        me = bpy.data.meshes.new('Caverna'); bm.to_mesh(me); bm.free(); link(bpy.data.objects.new('Caverna', me), pedra)
-        for i in range(i0 + 1, i1, 2):  # cristais verdes nas paredes
+                for l, (jj, kk) in zip(f.loops, ((j, k), (j + 1, k), (j + 1, k + 1), (j, k + 1))): c_ = cores[jj][kk]; l[cl] = (c_[0], c_[1], c_[2], 1)
+        me = bpy.data.meshes.new('Caverna'); bm.to_mesh(me); bm.free(); link(bpy.data.objects.new('Caverna', me), mat('rocha_caverna_vc', 0xffffff, .95, vc=True))
+        pontas, veio = mat('rocha_ponta', 0x4a4038, .9), brilho('veio_verde', 0x3dff9a, 2.5)
+        for i in range(i0, i1):
             x, z, h = T[i]; x2, z2, _ = T[i + 1]; a = math.atan2(x2 - x, z2 - z); px, pz = math.cos(a), -math.sin(a)
-            for sg in (-1, 1):
-                if random.random() < .35: continue
-                d = 4.4 + random.random() * .8; s = random.uniform(.5, 1.1)
-                o = cil('CristalG' if (i - i0) % 6 == 1 and sg > 0 else 'Cristal', x + px * sg * d, z + pz * sg * d, h + .2 + s * .9, .28 * s, 2.2 * s, verde, 5, 0)
-                o.rotation_euler = (random.uniform(-.4, .4), random.uniform(-.4, .4), random.uniform(0, 3))
+            for q in range(random.randint(2, 4)):   # estalactites no teto
+                t = random.uniform(.3, .7) * math.pi; r = random.uniform(4.5, 6); ox = math.cos(t) * r; L = random.uniform(.7, 2.2)
+                topo = h - .45 + math.sin(t) * 5.6
+                if topo - L < h + 3.8: L = max(.3, topo - h - 3.8)
+                cil('Estalactite', x + px * ox, z + pz * ox, topo - L / 2, .01, L, pontas, 6, random.uniform(.25, .6))
+            for sg in (-1, 1):   # estalagmites e pedras na base da parede
+                if random.random() < .6:
+                    d = random.uniform(3.8, 5.6); L = random.uniform(.5, 2.4)
+                    cil('Estalagmite', x + px * sg * d, z + pz * sg * d, h + L / 2 - .2, random.uniform(.3, .7), L, pontas, 6, .01)
+                if random.random() < .5: rocha('PedraCaverna', x + px * sg * random.uniform(4.6, 6), z + pz * sg * random.uniform(4.6, 6), h + .1, (random.uniform(.6, 1.4), random.uniform(.6, 1.2), random.uniform(.4, 1)), pontas, i * 2 + sg)
+            if False:   # (veios tirados: ficavam soltos no ar)
+                sg = random.choice((-1, 1)); t = random.uniform(.15, .45) * math.pi; r = 6.1; ox = sg * math.cos(t) * r
+                caixa('Veio', x + px * ox, z + pz * ox, h - .45 + math.sin(t) * 5.6, .08, random.uniform(1.5, 3.5), .12, veio, a, rx=random.uniform(-.6, .6), bev=0)
+            if (i - i0) % 4 == 0:   # aglomerado de cristais
+                sg = random.choice((-1, 1)); d = random.uniform(4.2, 5.2); cx, cz = x + px * sg * d, z + pz * sg * d
+                for q in range(random.randint(3, 6)):
+                    s = random.uniform(.4, 1.2); o = cil('CristalG' if q == 0 and (i - i0) % 8 == 0 else 'Cristal', cx + random.uniform(-.5, .5), cz + random.uniform(-.5, .5), h + s * .9, .26 * s, 2.2 * s, verde, 5, 0)
+                    o.rotation_euler = (random.uniform(-.6, .6), random.uniform(-.6, .6), random.uniform(0, 3))
     # pedras de lume verdes na beira das trilhas (o caminho brilha de leve)
     for T in (T_VILA, T_RAVINA, CAMINHO) + tuple(T_SERRA):
         for i in range(3, len(T) - 1, 7):
@@ -586,6 +616,14 @@ def cenario_natureza():
         x, z = random.choice((-1, 1)) * random.uniform(8.5, 13.5), random.uniform(-95, -69)
         por(random.choice(['Mushroom_Common', 'Mushroom_Laetiporus', 'Fern_1', 'Plant_7_Big']), x, z, s=random.uniform(.8, 1.5))
 CASAS = [(-10.5, 9), (10.5, 8), (-10.5, -3), (10.5, -4.5), (-11, -24), (10.5, -23), (11, -34.5), (-16.5, 3), (17, -14)]
+@etapa
+def cavernas_pedras():
+    for T, i0, i1 in CAV_IDX:
+        for i in range(i0, i1, 2):
+            x, z, h, a = lado(T, i, random.choice((-1, 1)) * random.uniform(4.4, 5.8))
+            por(random.choice(['Rock_Medium_1', 'Rock_Medium_2', 'Rock_Medium_3']), x, z, s=random.uniform(.5, 1.1), y=T[i][2] - .2)
+            if random.random() < .6:
+                x, z, h, a = lado(T, i + 1, random.choice((-1, 1)) * random.uniform(3.5, 4.4)); por(random.choice(['Pebble_Round_1', 'Pebble_Round_3', 'Pebble_Square_2', 'Mushroom_Common']), x, z, s=random.uniform(.8, 1.4), y=T[i][2])
 @etapa
 def casas_modulares():  # casas montadas com as peças da vila medieval (4 m x 6 m, telhado de telhas)
     for k, (X, Z) in enumerate(CASAS):
