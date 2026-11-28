@@ -306,8 +306,8 @@ async function M1(retry) {
 async function M2(retry, chained) {
   const tok = MIS.token; stage(1); if (!chained) { P.pos = [0, 0, -36]; P.yaw = Math.PI; camRelease(); } AU.music('calm');
   if (!MIS.flags.bridge) {
-    if (!retry) { await jornada(TRILHAS.vila, tok, { texto: 'Siga a trilha das colinas até a ponte', pontos: [25, 60, 95, 125],
-      dica: 'O caminho até a ponte dá a volta pelas colinas. Cuidado: os Desfiadores fecharam a estrada.',
+    if (!retry) { await jornada(TRILHAS.vila, tok, { texto: 'Atravesse o desfiladeiro e a caverna até a ponte', pontos: [30, 70, 110, 150, 190, 230],
+      dica: 'A ponte fica do outro lado do paredão: o caminho passa por um desfiladeiro, por dentro da montanha e pela beira do lago. Os Desfiadores fecharam a estrada.',
       grupos: [[['tecelao', 0], ['tecelao', 1]], [['fieira', 0], ['tecelao', 1], ['larva', 0]], [['tecelao', 1], ['tecelao', 0], ['larva', 1], ['larva', 0]], [['fieira', 1], ['tecelao', 0], ['tecelao', 1]]] });
       if (tok !== MIS.token) return; await until(() => alive() === 0); if (tok !== MIS.token) return; }
     objective('Encontre Lira na ponte da ravina'); MARK = npcBy('lira').pos;
@@ -359,8 +359,8 @@ async function M3(retry, chained) {
   AU.music('calm');
   if (!P.unl.r) { P.unl.r = true; banner('Rasgo Dourado desbloqueado', TOUCH ? 'Botão R com a barra de lume cheia' : '<b>R</b> com a barra de lume cheia: golpe final em área'); }
   RIFT.p = [0, 10, -134]; RIFT.col = [1, .35, .6]; RIFT.ts = .5;
-  await jornada(TRILHAS.ravina, tok, { texto: 'Siga a trilha até a clareira do rasgo', pontos: [20, 50, 80, 105],
-    dica: 'O rasgo no céu fica depois da floresta. A trilha é longa e cheia de Desfiadores.',
+  await jornada(TRILHAS.ravina, tok, { texto: 'Suba as ruínas do templo até a clareira do rasgo', pontos: [25, 60, 95, 130, 160],
+    dica: 'O rasgo no céu fica do outro lado das ruínas do templo antigo. A trilha é longa e cheia de Desfiadores.',
     grupos: [[['tecelao', 0], ['fieira', 1], ['larva', 0]], [['tecelao', 1], ['tecelao', 0], ['fieira', 0]], [['fieira', 1], ['fieira', 0], ['larva', 1], ['larva', 0]], [['tecelao', 1], ['tecelao', 1], ['fieira', 0], ['tecelao', 0]]],
     fim: () => Math.hypot(P.pos[0] - BOSS_C[0], P.pos[2] - BOSS_C[1]) < BOSS_R - 1 }); if (tok !== MIS.token) return;
   await until(() => alive() === 0 || true); for (const e of ENEMIES) { e.dead = true; e.deadT = 9; }

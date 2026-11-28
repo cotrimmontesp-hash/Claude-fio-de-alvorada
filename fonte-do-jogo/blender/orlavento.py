@@ -65,7 +65,7 @@ def tronco_obj(x, z, h, s, m):
     o = bpy.data.objects.new('Tronco', TCACHE['t']); col.objects.link(o); o.location = GP(x, z, h); o.scale = (s, s, s); return o
 # ---------- áreas andáveis (iguais às do jogo) ----------
 WALK = [(-20, 20, 16, -42), (-4, 4, -49, -54.6), (-14, 14, -67.9, -96), (-3.5, 3.5, -95, -101)]
-BOSS = (0, -128, 17); CH = (-54.5, -68)
+BOSS = (0, -128, 17); CH = (-54.5, -68); CHX = (-96, 40)  # o lago/abismo da ponte vai de x -96 até 40
 def sst(a, b, x): t = max(0, min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t)
 def catmull(P, n=8):
     out = []
@@ -76,15 +76,21 @@ def catmull(P, n=8):
             out.append(tuple(.5 * ((2 * p1[j]) + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3) for j in range(3)))
     out.append(P[-1]); return out
 SX, HS, LARG = 170, 45, 6.0
-T_VILA = catmull([(-19, -34, 0), (-32, -33, 2), (-46, -22, 7), (-60, -28, 11), (-63, -42, 12), (-49, -49, 8), (-28, -51, 3), (-4, -51, 0)])
-T_RAVINA = catmull([(0, -100, 0), (-15, -104, 2), (-35, -98, 6), (-55, -108, 9), (-50, -128, 7), (-30, -140, 3), (-14, -134, 0)])
+T_VILA = catmull([(-19, -34, 0), (-32, -33, 1), (-46, -26, 2.5), (-58, -13, 4), (-74, -5, 6), (-92, -13, 7), (-104, -30, 8), (-117, -42, 8), (-120, -57, 7), (-106, -63, 6), (-92, -52, 5), (-74, -51, 4), (-52, -50, 3), (-30, -51, 1.5), (-4, -51, 0)])
+V_CAVE = (6 * 8, 10 * 8)  # trecho da caverna (antes dele: desfiladeiro; depois: beira do lago)
+T_RAVINA = catmull([(0, -100, 0), (-15, -104, 1.5), (-34, -98, 4), (-52, -104, 7), (-62, -118, 10), (-58, -134, 10), (-44, -148, 7), (-26, -150, 4), (-14, -140, 1.5), (-10, -135, 0)])
 PONTOS = [(16, -126, 0), (45, -120, 2), (100, -110, 7), (112, -95, 10), (60, -80, 15), (48, -65, 18), (100, -50, 24), (112, -35, 27),
           (60, -20, 32), (50, -5, 35), (105, 8, 40), (150, 18, 44), (170, 9, 45)]
 CAMINHO = catmull(PONTOS)
 T_SERRA = [catmull([(170, -9, 45), (188, -22, 46), (206, -13, 48), (223, -30, 49.5), (206, -50, 48), (186, -58, 47), (172, -72, 46), (170, -85, 45)]),
            catmull([(170, -117, 45), (192, -126, 46), (211, -145, 48), (196, -161, 47), (176, -168, 46), (170, -179, 45)]),
            catmull([(171, -216, 45), (195, -228, 47), (215, -245, 49), (201, -262, 47.5), (180, -267, 46), (172, -278, 45)])]
+BOX = {}
 def seg_perto(T, x, z):
+    k = id(T)
+    if k not in BOX: BOX[k] = (min(p[0] for p in T) - 45, max(p[0] for p in T) + 45, min(p[1] for p in T) - 45, max(p[1] for p in T) + 45)
+    bx = BOX[k]
+    if x < bx[0] or x > bx[1] or z < bx[2] or z > bx[3]: return (1e9, 0, 0)
     best = (1e9, 0, 0)
     for i in range(len(T) - 1):
         ax, az, ah = T[i]; bx, bz, bh = T[i + 1]; dx, dz = bx - ax, bz - az; L = dx * dx + dz * dz or 1
@@ -106,38 +112,64 @@ def alt_monte(x, z):  # encosta aberta: média das alturas da trilha (sem parede
         t = max(0, min(1, ((x - ax) * dx + (z - az) * dz) / L)); d = math.hypot(x - ax - dx * t, z - az - dz * t); w = 1 / (d * d + 6)
         sw += w; sh += w * (ah + (bh - ah) * t)
     return sh / sw
-BARREIRAS = [(-26, 24, -42.5, -47.8, 17), (-9, 22, -101.5, -110.5, 16)]  # morros que escondem a próxima área
+BARREIRAS = [(-26, 24, -42.5, -47.8, 26), (-9, 22, -101.5, -110.5, 18)]  # paredões que escondem a próxima área
+PONTES = [(4, .25, .75), (8, .25, .75)]  # trechos da subida que viram ponte de corda sobre o abismo (segmento, de, até)
+def massa(x, z):  # a montanha "cheia" entre as áreas
+    n = noise.noise(Vector((x * .03, z * .03, 2.7))) * .5 + .5; n2 = noise.noise(Vector((x * .11, z * .11, 5.1)))
+    return 18 + n * 14 + n2 * 2.5
+def em_ponte(x, z):
+    d, h, s = perto_caminho(x, z)
+    if d > 13: return False
+    for seg, a0, a1 in PONTES:
+        if seg * 8 + a0 * 8 <= s <= seg * 8 + a1 * 8: return True
+    return False
 def altura(x, z):
-    dL = dist_walk(x, z); dM, hp, _ = perto_caminho(x, z)
-    if dM <= LARG / 2: return hp - .03
-    dV, hV, _ = seg_perto(T_VILA, x, z); dR, hR, _ = seg_perto(T_RAVINA, x, z)
+    dM, hp, sM = perto_caminho(x, z)
+    if dM <= LARG / 2: return hp - .03 if not em_ponte(x, z) else -45
+    dV, hV, sV = seg_perto(T_VILA, x, z); dR, hR, _ = seg_perto(T_RAVINA, x, z)
     if dV <= LARG / 2: return hV - .03
     if dR <= LARG / 2: return hR - .03
-    if dL <= 0: return 0
-    n = noise.noise(Vector((x * .045, z * .045, 1.3))) * .5 + .5
-    base = max(hV * (1 - sst(LARG / 2, 22, dV)), hR * (1 - sst(LARG / 2, 22, dR)))
-    colina = base + sst(2.5, 22, dL) * (7 + n * 13) + noise.noise(Vector((x * .25, z * .25, 4))) * .4 * sst(1, 6, dL)
+    M = massa(x, z); low = M
+    def junta(d, a, b_, h):
+        nonlocal low
+        t = 0 if d <= a else 1 if d >= b_ else (d - a) / (b_ - a); low = min(low, h + sst(0, 1, t) * (M - h))
+    for (x0, x1, z0, z1), (a_, b_) in zip(WALK, ((3, 17), (1.5, 6), (3, 13), (1.5, 6))):
+        junta(math.hypot(max(x0 - x, 0, x - x1), max(z1 - z, 0, z - z0)), a_, b_, 0)
+    junta(max(0, math.hypot(x - BOSS[0], z - BOSS[1]) - BOSS[2]), 2, 14, 0)
+    junta(max(0, math.hypot(x, z - 30) - 13), 2, 12, .4)   # prado da Árvore-Tear
+    if dV < 60:
+        cav = V_CAVE[0] - 2 <= sV <= V_CAVE[1] + 2; beira = sV > V_CAVE[1]
+        junta(dV - LARG / 2, 0 if cav else .8, 3.5 if cav else 7 if beira else 8, hV)   # caverna: paredes retas; desfiladeiro: paredes bem inclinadas
+    if dR < 60: junta(dR - LARG / 2, 1, 11, hR)
+    h = low
+    dL = dist_walk(x, z)
     for x0, x1, z0, z1, H in BARREIRAS:
         dr = math.hypot(max(x0 - x, 0, x - x1), max(z1 - z, 0, z - z0))
-        colina = max(colina, H * sst(.4, 3, dL) * (1 - sst(0, 9, dr)) * (.85 + .3 * n))
+        h = max(h, H * sst(.4, 3, dL) * (1 - sst(0, 8, dr)))
+    if 22 < x < 31 and -40 < z < 54:   # rio da vila
+        h = min(h, h + (-1.7 - h) * (1 - sst(2.4, 4.2, abs(x - 26.5))))
     if x > 152 and dM > LARG / 2 + 1: return -70
-    if dM > 60: return colina
+    if em_ponte(x, z): return -45
+    if dM > 60: return h
     monte = alt_monte(x, z) + min(2.2, (dM - LARG / 2) * .22) + noise.noise(Vector((x * .08, z * .08, 2.2))) * 1.2 * sst(3, 10, dM)
     wL, wM = 1 / (dL * dL + 30), 1 / (dM * dM + 30)
-    return (wL * colina + wM * monte) / (wL + wM)
+    return (wL * h + wM * monte) / (wL + wM)
+def brilho(nome, hx, forca=3):
+    m = mat('janela_' + nome, hx, .4); b_ = m.node_tree.nodes['Principled BSDF']
+    b_.inputs['Emission Color'].default_value = srgb(hx); b_.inputs['Emission Strength'].default_value = forca; return m
 ETAPAS = []
 def etapa(f): ETAPAS.append(f); return f
 HGRID = {}
 @etapa
 def terreno():
-    S = 1.4; X0, X1, Z0, Z1 = -70, 158, 40, -172
+    S = 1.5; X0, X1, Z0, Z1 = -134, 158, 60, -172
     nx, nz = int((X1 - X0) / S), int((Z0 - Z1) / S)
     bm = bmesh.new(); vs = {}; hs = []
     cl = bm.loops.layers.color.new('Col')
     for j in range(nz + 1):
         for i in range(nx + 1):
             x, z = X0 + i * S, Z0 - j * S; y = altura(x, z)
-            if CH[1] < z < CH[0] and x < 40: y = -26
+            if CH[1] < z < CH[0] and CHX[0] < x < CHX[1]: y = -26
             vs[i, j] = bm.verts.new(GP(x, z, y)); hs.append(round(y, 2))
     HGRID.update({'x0': X0, 'z0': Z0, 's': S, 'nx': nx + 1, 'nz': nz + 1, 'h': hs})
     def cor(x, z):
@@ -152,7 +184,7 @@ def terreno():
     for j in range(nz):
         for i in range(nx):
             za, zb = Z0 - j * S, Z0 - (j + 1) * S; xa = X0 + i * S
-            if ((CH[1] < za < CH[0]) or (CH[1] < zb < CH[0])) and xa < 40: continue
+            if ((CH[1] < za < CH[0]) or (CH[1] < zb < CH[0])) and CHX[0] < xa < CHX[1] - S: continue
             f = bm.faces.new((vs[i, j], vs[i + 1, j], vs[i + 1, j + 1], vs[i, j + 1])); f.smooth = True
             c = cor(X0 + (i + .5) * S, Z0 - (j + .5) * S)
             for l in f.loops: l[cl] = (c[0], c[1], c[2], 1)
@@ -178,13 +210,16 @@ def paredao(nome, pts, topo, fundo, normal, m, rug=.9, seed=0):
 @etapa
 def fenda():
     m = mat('rocha_escura', 0x4a4038, .9)
-    xs = [-70 + k * 1.4 for k in range(79)]
+    xs = [CHX[0] + k * 1.5 for k in range(int((CHX[1] - CHX[0]) / 1.5) + 1)]
     paredao('ParedeN', [(x, CH[0]) for x in xs], lambda x, z: altura(x, z), -30, (0, -1), m, 1.0, 1)
     paredao('ParedeS', [(x, CH[1]) for x in xs], lambda x, z: altura(x, z), -30, (0, 1), m, 1.0, 5)
     f = mat('fundo', 0x07050a, 1)
-    caixa('Fundo', -15, -61.25, -29, 112, 16, 1, f, bev=0)
+    caixa('Fundo', -28, -61.25, -29, 138, 16, 1, f, bev=0)
+    agua = brilho('agua_lago', 0x2a5a78, .6); caixa('Lago', -28, -61.25, -17, 138, 14, .1, agua, bev=0)
     nev = mat('nevoa', 0x2a2236, 1); nev.node_tree.nodes['Principled BSDF'].inputs['Emission Color'].default_value = srgb(0x6a4a9a); nev.node_tree.nodes['Principled BSDF'].inputs['Emission Strength'].default_value = .6
-    caixa('Nevoa', -15, -61.25, -18, 112, 14, .05, nev, bev=0)
+    caixa('Nevoa', -28, -61.25, -13, 138, 14, .05, nev, bev=0)
+    queda = brilho('agua_queda', 0xcfe8ff, 1.2)
+    for x in (CHX[0] + .5, CHX[1] - .5): caixa('Cachoeira', x, -61.25, -6, .6, 9, 24, queda, bev=0)
 @etapa
 def casas():
     pedra, reboco, madeira, telha, porta, janela = mat('pedra', 0x837a6c, .9), mat('reboco', 0xd2c4a6, .85), mat('madeira', 0x5a3e28, .7), mat('telha', 0x5e3528, .75), mat('porta', 0x3a2618, .6), mat('janela', 0xffb060, .4)
@@ -230,7 +265,7 @@ def arvores():
     pos = [(-15, 12), (15, 12), (-14, -16), (15, -30), (-16, -38)]
     while len(pos) < 90:
         x, z = random.uniform(-64, 26), random.uniform(-166, 30)
-        if (CH[1] - 2 < z < CH[0] + 2 and x < 42) or dist_walk(x, z) < 1.5 or perto_caminho(x, z)[0] < 5: continue
+        if (CH[1] - 2 < z < CH[0] + 2 and CHX[0] - 2 < x < CHX[1] + 2) or dist_walk(x, z) < 1.5 or perto_caminho(x, z)[0] < 5: continue
         if dist_walk(x, z) < 6 and abs(x) < 15 and -97 < z < -66: continue
         pos.append((x, z))
     for k, (x, z) in enumerate(pos):
@@ -243,7 +278,7 @@ def pedras():
     m = mat('pedra_campo', 0x6e665a, .9)
     for k in range(70):
         x, z = random.uniform(-60, 26), random.uniform(-164, 30)
-        if (CH[1] - 1 < z < CH[0] + 1 and x < 42) or dist_walk(x, z) < 2 or perto_caminho(x, z)[0] < 5: continue
+        if (CH[1] - 1 < z < CH[0] + 1 and CHX[0] - 2 < x < CHX[1] + 2) or dist_walk(x, z) < 2 or perto_caminho(x, z)[0] < 5: continue
         s = random.uniform(.5, 2); rocha('Pedra', x, z, altura(x, z), (s * 1.2, s, s * .7), m, k)
 @etapa
 def ponte():
@@ -332,7 +367,7 @@ def serra_cristas():
             sx = x + px * (LARG / 2 - .4); sz = z + pz * (LARG / 2 - .4)
             caixa('PosteLume', sx, sz, h + 1, .16, .16, 2, madeira); caixa('Lanterna', sx, sz, h + 2.1, .28, .28, .3, fogo, bev=0)
 CAV_S = []
-CAVERNAS = [('vila', .34, .62), ('ravina', .38, .66), ('monte', .30, .44), ('serra1', .40, .58), ('serra2', .35, .6), ('serra3', .38, .62)]
+CAVERNAS = [('vila', V_CAVE[0] / 113, V_CAVE[1] / 113), ('ravina', .55, .7), ('monte', .30, .44), ('serra1', .40, .58), ('serra2', .35, .6), ('serra3', .38, .62)]
 @etapa
 def cavernas():
     TR = {'vila': T_VILA, 'ravina': T_RAVINA, 'monte': CAMINHO, 'serra1': T_SERRA[0], 'serra2': T_SERRA[1], 'serra3': T_SERRA[2]}
@@ -373,9 +408,6 @@ def cavernas():
 # ===================== MUNDO NOVO: marcos e detalhes de cada área =====================
 COLISAO = []
 def sol(x, z, r): COLISAO.append([round(x, 2), round(z, 2), round(r, 2)])
-def brilho(nome, hx, forca=3):
-    m = mat('janela_' + nome, hx, .4); b_ = m.node_tree.nodes['Principled BSDF']
-    b_.inputs['Emission Color'].default_value = srgb(hx); b_.inputs['Emission Strength'].default_value = forca; return m
 def lado(T, i, d):
     x, z, h = T[i]; x2, z2, _ = T[min(i + 1, len(T) - 1)] if i < len(T) - 1 else (T[i][0] + (T[i][0] - T[i - 1][0]), T[i][1] + (T[i][1] - T[i - 1][1]), 0)
     a = math.atan2(x2 - x, z2 - z); return x + math.cos(a) * d, z - math.sin(a) * d, h, a
@@ -406,7 +438,9 @@ def arco_natural():  # arco de pedra sobre a trilha das colinas
 def abismo():  # agulhas de pedra saindo da névoa do abismo
     m = mat('rocha_abismo', 0x4a4048, .9); cr = brilho('cristal_abismo', 0x7a5aff, 3)
     for k in range(16):
-        x = random.choice((-1, 1)) * random.uniform(8, 60); z = random.uniform(CH[1] + 2.5, CH[0] - 2.5); h = random.uniform(8, 22)
+        x = random.uniform(CHX[0] + 4, CHX[1] - 4)
+        if abs(x) < 8: continue
+        z = random.uniform(CH[1] + 2.5, CH[0] - 2.5); h = random.uniform(8, 22)
         cil('AgulhaAbismo', x, z, -18 + h / 2, random.uniform(1, 2.2), h, m, 7, .3)
         if k % 3 == 0: cil('CristalAbismo', x, z, -18 + h + .5, .4, 1.6, cr, 5, 0)
 @etapa
@@ -498,7 +532,8 @@ def por(nome, x, z, yaw=None, s=1.0, y=None, sol_r=None):
         if CEN is None: CEN = bpy.data.collections.new('Cenario'); scn.collection.children.link(CEN)
         o = bpy.data.objects.new('P_' + nome, src.data); CEN.objects.link(o); o.location = GP(x, z, y); o.rotation_euler = (math.radians(90) if abs(src.rotation_euler.x) > 1 else 0, 0, -yaw); o.scale = (s, s, s)
 def livre(x, z, folga=2.5):
-    if CH[1] - 3 < z < CH[0] + 3 and x < 42: return False
+    if CH[1] - 3 < z < CH[0] + 3 and CHX[0] - 3 < x < CHX[1] + 3: return False
+    if 21 < x < 32 and -42 < z < 56: return False  # rio
     if dist_walk(x, z) < folga: return False
     for T in (CAMINHO, T_VILA, T_RAVINA):
         if seg_perto(T, x, z)[0] < LARG / 2 + folga: return False
@@ -513,6 +548,7 @@ def cenario_natureza():
             x, z = gx + random.uniform(-3, 3), gz + random.uniform(-3, 3)
             if not livre(x, z): continue
             y = altura(x, z); r = random.random()
+            if y > 14 and dist_walk(x, z) > 12 and perto_caminho(x, z)[0] > 12 and random.random() < .6: continue  # em cima da montanha: menos árvores
             if z > -46 and abs(x) < 45:   # em volta da vila: árvores comuns e arbustos
                 if r < .45: por(random.choice(ARV), x, z, s=random.uniform(.8, 1.15), sol_r=.45)
                 elif r < .75: por(random.choice(['Bush_Common', 'Bush_Common_Flowers']), x, z, s=random.uniform(1, 1.6))
@@ -579,8 +615,49 @@ def cenario_vila():  # objetos da vila: barris, caixotes, barracas, carroça e a
         sg = random.choice((-1, 1)); x, z = sg * random.uniform(6, 7.6), random.uniform(-40, 13)
         if any(abs(z - zz) < 3 for zz in (-10, -15, -7, 2, 4.5, -1, -29, -33, -21, -18)): continue
         por(random.choice(['Barrel', 'Barrel_Apples', 'Crate_Wooden', 'FarmCrate_Apple', 'FarmCrate_Carrot', 'Prop_Crate', 'Bucket_Wooden_1', 'Pot_1']), x, z, s=1, y=0, sol_r=.45)
-    for z in (13, -41):   # estandartes na entrada e na saída
-        for sg in (-1, 1): por('Banner_1' if sg < 0 else 'Banner_2', sg * 3.6, z, math.pi / 2, 1.3, 2.6)
+    for z in (13, -41):   # estandartes na entrada e na saída (bem para os lados)
+        for sg in (-1, 1): por('Banner_1' if sg < 0 else 'Banner_2', sg * 5.4, z, math.pi / 2, 1.3, 2.6)
+@etapa
+def rio_moinho():  # rio do lado leste da vila, cachoeira no fundo do vale e um moinho
+    agua, queda = brilho('agua_rio', 0x3a7a9a, .5), brilho('agua_queda', 0xcfe8ff, 1.2)
+    madeira, pedra, telha = mat('madeira', 0x5a3e28), mat('pedra', 0x837a6c, .9), mat('telha', 0x5e3528, .75)
+    caixa('Rio', 26.5, 7, -.9, 5.2, 94, .08, agua, bev=0)
+    caixa('Cachoeira', 26.5, 53.5, 9, 4.2, .6, 22, queda, bev=0); caixa('Espuma', 26.5, 51.5, -.6, 6, 3, .3, brilho('espuma', 0xffffff, .8), bev=0)
+    X, Z = 33.5, -8   # moinho
+    caixa('Moinho', X, Z, 2.4, 5, 5, 4.8, pedra, bev=.1); caixa('TelhadoMoinho', X, Z, 5.4, 6, 6, .3, telha, .0, bev=.05)
+    cil('TelhadoMoinho', X, Z, 6.6, 3.6, 2.2, telha, 4, 0).rotation_euler.z = math.pi / 4
+    o = cil('Roda', 30.3, Z, 1.2, 2.4, .5, madeira, 16); o.rotation_euler = (0, math.pi / 2, 0)
+    for k in range(8):
+        a = k / 8 * math.tau; caixa('Pa', 30.3, Z + math.cos(a) * 2.2, 1.2 + math.sin(a) * 2.2, .6, .2, .9, madeira, rx=a, bev=0)
+    sol(X, Z, 3.4)
+    for z in range(-36, 50, 3):   # pedras na beira do rio
+        for sg in (-1, 1):
+            if random.random() < .5: rocha('PedraRio', 26.5 + sg * random.uniform(2.8, 3.6), z + random.uniform(-1, 1), -.6, (.7, .6, .4), pedra, z * 3 + sg)
+@etapa
+def beira_lago():  # cerca de corda na beira do lago (lado do abismo) e mirante
+    madeira, corda = mat('madeira', 0x5a3e28), mat('corda', 0x8a6a42, .9)
+    T = T_VILA; ant = None
+    for i in range(V_CAVE[1] + 2, len(T) - 1, 3):
+        x, z, h, a = lado(T, i, -(LARG / 2 + .25))
+        if z > -52.5: x, z, h, a = lado(T, i, LARG / 2 + .25)
+        caixa('PosteCorda', x, z, h + .55, .16, .16, 1.2, madeira, bev=0)
+        if ant and math.hypot(x - ant[0], z - ant[1]) < 12:
+            caixa('Corda', (x + ant[0]) / 2, (z + ant[1]) / 2, (h + ant[2]) / 2 + .95, .05, math.hypot(x - ant[0], z - ant[1]), .05, corda, math.atan2(x - ant[0], z - ant[1]), bev=0)
+        ant = (x, z, h)
+@etapa
+def pontes_corda():  # pontes de tábua e corda sobre o abismo na subida
+    madeira, corda = mat('madeira', 0x5a3e28), mat('corda', 0x8a6a42, .9)
+    T = CAMINHO
+    for seg, a0, a1 in PONTES:
+        i0, i1 = int(seg * 8 + a0 * 8) - 1, int(seg * 8 + a1 * 8) + 2
+        for i in range(i0, min(i1, len(T) - 1)):
+            x, z, h = T[i]; x2, z2, h2 = T[i + 1]; L = math.hypot(x2 - x, z2 - z); a = math.atan2(x2 - x, z2 - z)
+            for k in range(int(L / .6)):
+                t = (k + .5) / int(L / .6); caixa('Tabua', x + (x2 - x) * t, z + (z2 - z) * t, h + (h2 - h) * t - .08, LARG - .6, .45, .1, madeira, a, bev=0)
+            for sg in (-1, 1):
+                px, pz = math.cos(a) * sg * (LARG / 2 - .2), -math.sin(a) * sg * (LARG / 2 - .2)
+                caixa('Corda', (x + x2) / 2 + px, (z + z2) / 2 + pz, (h + h2) / 2 + .9, .05, L, .05, corda, a, bev=0)
+                caixa('PosteCorda', x + px, z + pz, h + .45, .14, .14, 1.0, madeira, bev=0)
 @etapa
 def exportar():
     import json
@@ -621,7 +698,7 @@ def vista(alvo, dist, alt):
         if a.type == 'VIEW_3D':
             sp = a.spaces[0]; sp.shading.type = 'SOLID'; sp.shading.color_type = 'MATERIAL'; r3 = sp.region_3d
             r3.view_location = alvo; r3.view_distance = dist; r3.view_rotation = mathutils.Euler((math.radians(alt), 0, math.radians(20)), 'XYZ').to_quaternion()
-VNOME = {'terreno': (GP(40, -60), 260, 55), 'casas': (GP(0, -10), 60, 58), 'arvore_tear': (GP(0, 22), 60, 70), 'arco_natural': (GP(-45, -35), 70, 55), 'abismo': (GP(0, -61), 90, 50), 'floresta_gigante': (GP(0, -82), 60, 55), 'ruinas': (GP(-30, -125), 90, 50), 'runas_arena': (GP(0, -128), 50, 40), 'cenario_natureza': (GP(0, -60), 160, 55), 'cenario_vila': (GP(0, -14), 45, 55), 'casas_modulares': (GP(-10, 0), 30, 60), 'montanha_cordas': (GP(90, -50), 200, 50), 'ilhas_flutuantes': (GP(200, -140), 300, 45), 'exportar': (GP(60, -80), 330, 50)}
+VNOME = {'terreno': (GP(40, -60), 260, 55), 'casas': (GP(0, -10), 60, 58), 'arvore_tear': (GP(0, 22), 60, 70), 'arco_natural': (GP(-45, -35), 70, 55), 'abismo': (GP(0, -61), 90, 50), 'floresta_gigante': (GP(0, -82), 60, 55), 'ruinas': (GP(-30, -125), 90, 50), 'runas_arena': (GP(0, -128), 50, 40), 'cenario_natureza': (GP(0, -60), 160, 55), 'cenario_vila': (GP(0, -14), 45, 55), 'casas_modulares': (GP(-10, 0), 30, 60), 'rio_moinho': (GP(26, -5), 40, 55), 'beira_lago': (GP(-50, -55), 80, 50), 'pontes_corda': (GP(60, -60), 70, 50), 'terreno': (GP(-20, -60), 300, 55), 'montanha_cordas': (GP(90, -50), 200, 50), 'ilhas_flutuantes': (GP(200, -140), 300, 45), 'exportar': (GP(60, -80), 330, 50)}
 VISTAS = {12: (GP(95, -55), 230, 50), 0: (GP(0, -50), 150, 55), 2: (GP(0, -10), 45, 60), 3: (GP(0, -12), 35, 62), 4: (GP(0, -30), 90, 58), 6: (GP(0, -60), 30, 62), 7: (GP(0, -85), 50, 58), 8: (GP(0, -128), 45, 55), 9: (GP(0, -60), 260, 70)}
 d = bpy.data.lights.new('Sol', 'SUN'); d.energy = 3.5; d.color = (1, .93, .82); d.angle = .05
 o = bpy.data.objects.new('Sol', d); col.objects.link(o); o.rotation_euler = (math.radians(50), math.radians(10), math.radians(35))

@@ -23,8 +23,8 @@ function trilhaDensa(P) { const out = [];
   out.box = [x0 - 6, x1 + 6, z0 - 6, z1 + 6]; out.total = acc; return out; }
 const TRILHA = trilhaDensa(TRILHA_P);
 const TRILHAS = { monte: TRILHA,
-  vila: trilhaDensa([[-19, -34, 0], [-32, -33, 2], [-46, -22, 7], [-60, -28, 11], [-63, -42, 12], [-49, -49, 8], [-28, -51, 3], [-4, -51, 0]]),
-  ravina: trilhaDensa([[0, -100, 0], [-15, -104, 2], [-35, -98, 6], [-55, -108, 9], [-50, -128, 7], [-30, -140, 3], [-14, -134, 0]]),
+  vila: trilhaDensa([[-19, -34, 0], [-32, -33, 1], [-46, -26, 2.5], [-58, -13, 4], [-74, -5, 6], [-92, -13, 7], [-104, -30, 8], [-117, -42, 8], [-120, -57, 7], [-106, -63, 6], [-92, -52, 5], [-74, -51, 4], [-52, -50, 3], [-30, -51, 1.5], [-4, -51, 0]]),
+  ravina: trilhaDensa([[0, -100, 0], [-15, -104, 1.5], [-34, -98, 4], [-52, -104, 7], [-62, -118, 10], [-58, -134, 10], [-44, -148, 7], [-26, -150, 4], [-14, -140, 1.5], [-10, -135, 0]]),
   serra1: trilhaDensa([[170, -9, 45], [188, -22, 46], [206, -13, 48], [223, -30, 49.5], [206, -50, 48], [186, -58, 47], [172, -72, 46], [170, -85, 45]]),
   serra2: trilhaDensa([[170, -117, 45], [192, -126, 46], [211, -145, 48], [196, -161, 47], [176, -168, 46], [170, -179, 45]]),
   serra3: trilhaDensa([[171, -216, 45], [195, -228, 47], [215, -245, 49], [201, -262, 47.5], [180, -267, 46], [172, -278, 45]]) };
@@ -239,6 +239,7 @@ function buildWorld() {
     for (const o of MAPA.objetos) { const base = o[0].split('.')[0], R = o[1]; if (!/^(PedraTrilha|Agulha|Pedra|Pedregulho|Trilha)$/.test(base)) continue;
       if (base !== 'Agulha') { const g = groundH(R[3], R[11]); if (Math.abs(R[7] - g) > .4) R[7] = g + .1; } const s = Math.hypot(R[0], R[4], R[8]), s2 = Math.hypot(R[2], R[6], R[10]); W.obst.push({ x: R[3], z: R[11], r: Math.max(.3, Math.min(s, s2) * .85) }); }
     for (const [x, z, r] of MAPA.colisao || []) W.obst.push({ x, z, r }); // colisão que vem junto do mapa do Blender
+    for (const [nm, R] of MAPA.objetos) if (nm.split('.')[0] === 'Lanterna' && Math.hypot(R[3], R[11] + 12) > 30) W.lights.push({ p: [R[3], R[7] + .3, R[11]], c: V.sc(C(0xffb070), 2.6), r: 11 }); // lanternas das trilhas iluminam o caminho
     for (const [nm, R] of MAPA.objetos) if (nm.split('.')[0] === 'CristalG') W.lights.push({ p: [R[3], R[7] + .6, R[11]], c: V.sc(C(0x40ff90), 2.4), r: 9 });
     const bm = blenderMap(MAPA, b => b === 'Boneco' || b === 'Palha'); if (bm.ground) { W.ground = bm.ground[0]; W.grounds = bm.ground.slice(1); } W.blender = mkMesh(bm.mesh); }
   W.mesh = mkMesh(g); W.vc = g.p.length / 3;
