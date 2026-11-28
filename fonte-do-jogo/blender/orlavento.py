@@ -211,7 +211,7 @@ def praca():
     for x, z, ry in [(-6, -10, .3), (-6.5, -15, -.2), (6.5, -7, .1)]:
         caixa('Banca', x, z, .45, 1.8, 1.0, .9, madeira, ry); caixa('Toldo', x, z, 2.4, 2.2, 1.5, .06, pano, ry, rx=.15)
         for s in (-1, 1): caixa('Poste', x + s * .8, z, 1.2, .1, .1, 2.4, madeira, ry)
-    for k in range(16):
+    for k in range(0):
         x = math.copysign(6 + random.random() * 2, random.random() - .5); z = 12 - random.random() * 52
         if random.random() < .5: caixa('Caixote', x, z, .3, .6, .6, .6, madeira, random.random() * 3)
         else: cil('Barril', x, z, .45, .32, .9, madeira, 14, .28)
@@ -288,11 +288,11 @@ def trilha_detalhes():
     for T, kk in [(T, kk) for T in (CAMINHO, T_VILA, T_RAVINA) for kk in range(0, len(T) - 1, 2)]:
         x, z, h = T[kk]; x2, z2, _ = T[kk + 1]; a = math.atan2(x2 - x, z2 - z); px, pz = math.cos(a), -math.sin(a)
         for sgn in (-1, 1):
-            if random.random() < .7: rocha('PedraTrilha', x + px * sgn * (LARG / 2 + .9), z + pz * sgn * (LARG / 2 + .9), altura(x + px * sgn * (LARG / 2 + .9), z + pz * sgn * (LARG / 2 + .9)) + .1, (.8, .7, .5), m, kk * 3 + sgn)
+            if False: rocha('PedraTrilha', x + px * sgn * (LARG / 2 + .9), z + pz * sgn * (LARG / 2 + .9), altura(x + px * sgn * (LARG / 2 + .9), z + pz * sgn * (LARG / 2 + .9)) + .1, (.8, .7, .5), m, kk * 3 + sgn)
         if kk % 10 == 0:  # tochas pelo caminho
             sx = x + px * (LARG / 2 - .4); sz = z + pz * (LARG / 2 - .4)
             caixa('PosteLume', sx, sz, h + 1, .16, .16, 2, madeira); caixa('Lanterna', sx, sz, h + 2.1, .28, .28, .3, fogo, bev=0)
-    for k in range(110):  # árvores pela encosta
+    for k in range(0):  # árvores pela encosta (agora vêm do pacote de natureza)
         x, z = random.uniform(30, 150), random.uniform(-160, 36); y = altura(x, z)
         if y < -5 or perto_caminho(x, z)[0] < LARG / 2 + 3 or dist_walk(x, z) < 3: continue
         s = random.uniform(.8, 1.3); tronco_obj(x, z, y + 1.6 * s, s, tronco)
@@ -412,7 +412,7 @@ def abismo():  # agulhas de pedra saindo da névoa do abismo
 @etapa
 def floresta_gigante():  # árvores enormes e cogumelos que brilham
     tronco, folha, cog, chapeu = mat('tronco_gigante', 0x3a2c20, .95), mat('folha_gigante', 0x2e4a24, .85), mat('cogumelo', 0xd8ccb8, .7), brilho('cogumelo', 0x50c8ff, 3)
-    for x, z in [(-12.5, -71), (12.5, -74), (-12.8, -82), (12.8, -88), (-12, -93), (12, -94.5), (-22, -78), (22, -84), (-24, -92), (24, -70)]:
+    for x, z in []:  # (as árvores gigantes agora são as retorcidas do pacote)
         s = random.uniform(1, 1.3); y = altura(x, z)
         cil('TroncoGigante', x, z, y + 7 * s, 1.25 * s, 15 * s, tronco, 10, .9 * s)
         for q in range(4):
@@ -472,6 +472,95 @@ def ilhas_flutuantes():  # pedaços de rocha flutuando em volta da Serra
         x = SX + random.choice((-1, 1)) * random.uniform(30, 75); z = random.uniform(-300, 20); y = HS + random.uniform(-10, 25); s = random.uniform(2, 6)
         rocha('IlhaFlutua', x, z, y, (s, s, s * 1.6), m, k); rocha('TopoIlha', x, z, y + s * 1.1, (s * .9, s * .9, .5), grama, k + 1)
         if k % 2 == 0: cil('CristalIlha', x, z, y + s * 1.4, .35, 1.8, cr, 5, 0)
+# ===================== CENÁRIO COM MODELOS PRONTOS (Quaternius, CC0) =====================
+INFO = {"CommonTree_1":{"h":7.02,"y0":-0.24,"r":2.52,"tris":0},"CommonTree_2":{"h":7.4,"y0":-0.24,"r":2.53,"tris":0},"CommonTree_3":{"h":9.18,"y0":-0.24,"r":2.35,"tris":0},"CommonTree_4":{"h":9.2,"y0":-0.24,"r":2.11,"tris":0},"CommonTree_5":{"h":6.76,"y0":-0.24,"r":2.16,"tris":0},"Pine_1":{"h":7.08,"y0":-0.24,"r":2.88,"tris":0},"Pine_2":{"h":7.14,"y0":-0.24,"r":3.3,"tris":0},"Pine_3":{"h":7.16,"y0":-0.24,"r":2.61,"tris":0},"Pine_4":{"h":10.0,"y0":-0.24,"r":3.34,"tris":0},"Pine_5":{"h":8.49,"y0":-0.24,"r":3.78,"tris":0},"TwistedTree_1":{"h":16.52,"y0":-0.2,"r":11.68,"tris":0},"TwistedTree_2":{"h":18.75,"y0":-0.2,"r":7.07,"tris":0},"TwistedTree_3":{"h":15.87,"y0":-0.2,"r":7.0,"tris":0},"TwistedTree_4":{"h":18.54,"y0":-0.2,"r":7.29,"tris":0},"TwistedTree_5":{"h":15.46,"y0":-0.2,"r":6.36,"tris":0},"DeadTree_1":{"h":9.16,"y0":-0.34,"r":3.73,"tris":0},"DeadTree_2":{"h":11.15,"y0":-0.34,"r":5.04,"tris":0},"DeadTree_3":{"h":12.94,"y0":-0.34,"r":4.07,"tris":0},"DeadTree_4":{"h":12.44,"y0":-0.34,"r":4.84,"tris":0},"Bush_Common":{"h":1.35,"y0":-0.23,"r":1.06,"tris":0},"Bush_Common_Flowers":{"h":1.35,"y0":-0.23,"r":1.06,"tris":0},"Fern_1":{"h":0.76,"y0":-0.08,"r":1.45,"tris":0},"Plant_1_Big":{"h":2.31,"y0":-0.04,"r":1.17,"tris":0},"Plant_7_Big":{"h":0.3,"y0":0.05,"r":0.89,"tris":0},"Mushroom_Common":{"h":0.45,"y0":-0.02,"r":0.51,"tris":0},"Mushroom_Laetiporus":{"h":0.61,"y0":-0.16,"r":0.84,"tris":0},"Rock_Medium_1":{"h":1.99,"y0":-0.27,"r":1.86,"tris":0},"Rock_Medium_2":{"h":1.85,"y0":-0.05,"r":1.88,"tris":0},"Rock_Medium_3":{"h":2.0,"y0":-0.32,"r":2.61,"tris":0},"Pebble_Round_1":{"h":0.09,"y0":-0.01,"r":0.28,"tris":0},"Pebble_Round_3":{"h":0.1,"y0":-0.0,"r":0.28,"tris":0},"Pebble_Square_2":{"h":0.14,"y0":-0.01,"r":0.25,"tris":0},"Grass_Common_Tall":{"h":1.84,"y0":-0.03,"r":0.57,"tris":0},"Grass_Wispy_Tall":{"h":1.64,"y0":-0.04,"r":0.92,"tris":0},"Flower_3_Group":{"h":2.02,"y0":-0.03,"r":0.89,"tris":0},"Flower_4_Group":{"h":2.43,"y0":-0.06,"r":0.99,"tris":0},"Clover_1":{"h":1.13,"y0":-0.01,"r":0.53,"tris":0},"RockPath_Round_Wide":{"h":0.1,"y0":-0.01,"r":1.35,"tris":0},"RockPath_Square_Wide":{"h":0.17,"y0":-0.01,"r":1.38,"tris":0},"Barrel":{"h":0.9,"y0":0.0,"r":0.35,"tris":0},"Barrel_Apples":{"h":0.9,"y0":0.0,"r":0.35,"tris":0},"Crate_Wooden":{"h":0.88,"y0":-0.05,"r":0.58,"tris":0},"FarmCrate_Apple":{"h":0.23,"y0":-0.02,"r":0.37,"tris":0},"FarmCrate_Carrot":{"h":0.4,"y0":-0.02,"r":0.43,"tris":0},"Stall_Cart_Empty":{"h":2.63,"y0":-0.0,"r":2.13,"tris":0},"Stall_Empty":{"h":2.62,"y0":-0.0,"r":1.01,"tris":0},"Banner_1":{"h":0.84,"y0":-1.55,"r":1.61,"tris":0},"Banner_2":{"h":0.84,"y0":-1.23,"r":1.61,"tris":0},"Bench":{"h":0.53,"y0":-0.01,"r":1.41,"tris":0},"Anvil":{"h":0.56,"y0":0.0,"r":0.6,"tris":0},"Workbench":{"h":0.89,"y0":0.0,"r":1.13,"tris":0},"Torch_Metal":{"h":0.37,"y0":-0.28,"r":0.39,"tris":0},"Bucket_Wooden_1":{"h":0.29,"y0":0.0,"r":0.22,"tris":0},"Cauldron":{"h":0.81,"y0":-0.0,"r":0.5,"tris":0},"Lantern_Wall":{"h":1.42,"y0":0.08,"r":1.25,"tris":0},"WeaponStand":{"h":1.11,"y0":-0.0,"r":0.84,"tris":0},"Table_Large":{"h":0.81,"y0":0.0,"r":1.53,"tris":0},"Pot_1":{"h":0.2,"y0":-0.02,"r":0.27,"tris":0},"Vase_Rubble_Medium":{"h":0.18,"y0":0.0,"r":0.42,"tris":0},"Prop_Wagon":{"h":1.53,"y0":0.0,"r":3.23,"tris":0},"Prop_WoodenFence_Single":{"h":0.81,"y0":-0.03,"r":1.03,"tris":0},"Prop_WoodenFence_Extension1":{"h":0.81,"y0":-0.03,"r":1.03,"tris":0},"Prop_MetalFence_Simple":{"h":2.87,"y0":-0.0,"r":0.98,"tris":0},"Prop_Crate":{"h":1.06,"y0":0.0,"r":0.77,"tris":0},"Prop_Vine2":{"h":0.48,"y0":-2.12,"r":0.89,"tris":0},"Prop_Support":{"h":2.92,"y0":1.21,"r":1.92,"tris":0},"Prop_Chimney":{"h":3.18,"y0":0.0,"r":0.71,"tris":0}}
+PROPS = []
+LIB = {}
+def carregar_biblioteca():
+    p = os.path.join(OUT, 'cenario.glb')
+    antes = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=p)
+    bib = bpy.data.collections.new('Biblioteca'); scn.collection.children.link(bib); bib.hide_viewport = True; bib.hide_render = True
+    for o in set(bpy.data.objects) - antes:
+        for c in list(o.users_collection): c.objects.unlink(o)
+        bib.objects.link(o)
+        if o.type == 'MESH': LIB[o.name.split('.')[0]] = o
+CEN = None
+def por(nome, x, z, yaw=None, s=1.0, y=None, sol_r=None):
+    global CEN
+    if nome not in INFO: return
+    if yaw is None: yaw = random.uniform(0, math.tau)
+    if y is None: y = altura(x, z)
+    PROPS.append([nome, round(x, 2), round(y, 2), round(z, 2), round(yaw, 3), round(s, 3)])
+    if sol_r: sol(x, z, sol_r * s)
+    src = LIB.get(nome)
+    if src is not None:
+        if CEN is None: CEN = bpy.data.collections.new('Cenario'); scn.collection.children.link(CEN)
+        o = bpy.data.objects.new('P_' + nome, src.data); CEN.objects.link(o); o.location = GP(x, z, y); o.rotation_euler = (math.radians(90) if abs(src.rotation_euler.x) > 1 else 0, 0, -yaw); o.scale = (s, s, s)
+def livre(x, z, folga=2.5):
+    if CH[1] - 3 < z < CH[0] + 3 and x < 42: return False
+    if dist_walk(x, z) < folga: return False
+    for T in (CAMINHO, T_VILA, T_RAVINA):
+        if seg_perto(T, x, z)[0] < LARG / 2 + folga: return False
+    if math.hypot(x, z - 31) < 9: return False  # Árvore-Tear
+    return altura(x, z) > -4
+@etapa
+def cenario_natureza():
+    carregar_biblioteca()
+    ARV = ['CommonTree_%d' % i for i in range(1, 6)]; PIN = ['Pine_%d' % i for i in range(1, 6)]; SEC = ['DeadTree_%d' % i for i in range(1, 5)]; TOR = ['TwistedTree_%d' % i for i in range(1, 6)]
+    for gx in range(-68, 158, 7):
+        for gz in range(38, -172, -7):
+            x, z = gx + random.uniform(-3, 3), gz + random.uniform(-3, 3)
+            if not livre(x, z): continue
+            y = altura(x, z); r = random.random()
+            if z > -46 and abs(x) < 45:   # em volta da vila: árvores comuns e arbustos
+                if r < .45: por(random.choice(ARV), x, z, s=random.uniform(.8, 1.15), sol_r=.45)
+                elif r < .75: por(random.choice(['Bush_Common', 'Bush_Common_Flowers']), x, z, s=random.uniform(1, 1.6))
+                elif r < .85: por(random.choice(['Rock_Medium_1', 'Rock_Medium_2', 'Rock_Medium_3']), x, z, s=random.uniform(.6, 1.2), sol_r=1.1)
+            elif -100 < z <= -46 and x < 30:   # floresta: pinheiros e árvores, bem fechada
+                if r < .7: por(random.choice(PIN + ARV[:3]), x, z, s=random.uniform(.9, 1.3), sol_r=.45)
+                elif r < .85: por(random.choice(['Fern_1', 'Plant_1_Big', 'Bush_Common']), x, z, s=random.uniform(1, 1.8))
+            elif z <= -100 and x < 30:   # ruínas e clareira: árvores secas e retorcidas
+                if r < .3: por(random.choice(SEC), x, z, s=random.uniform(.6, .9), sol_r=.6)
+                elif r < .4: por(random.choice(TOR), x, z, s=random.uniform(.45, .6), sol_r=1.2)
+                elif r < .6: por(random.choice(['Rock_Medium_1', 'Rock_Medium_3']), x, z, s=random.uniform(.8, 1.6), sol_r=1.2)
+            else:   # encosta da montanha: pinheiros, que rareiam lá no alto
+                if y > 30 and r < .5: continue
+                if r < .55: por(random.choice(PIN), x, z, s=random.uniform(.8, 1.25), sol_r=.45)
+                elif r < .75: por(random.choice(['Rock_Medium_1', 'Rock_Medium_2', 'Rock_Medium_3']), x, z, s=random.uniform(.7, 1.5), sol_r=1.1)
+    # árvores gigantes retorcidas na floresta (no lugar das que eu tinha feito à mão)
+    for x, z in [(-21, -72), (21, -77), (-23, -88), (22, -93), (-20, -99), (24, -66)]:
+        por(random.choice(TOR), x, z, s=random.uniform(.7, .85), sol_r=1.5)
+    # beira das trilhas: capim, flores, samambaias, pedrinhas e cogumelos
+    for T in (T_VILA, T_RAVINA, CAMINHO):
+        for i in range(0, len(T) - 1):
+            for sg in (-1, 1):
+                if random.random() < .45: continue
+                x, z, h, a = lado(T, i, sg * (LARG / 2 + random.uniform(.7, 2.6)))
+                if dist_walk(x, z) < .5: continue
+                k = random.random(); hy = altura(x, z)
+                nome = ('Grass_Common_Tall' if k < .3 else 'Grass_Wispy_Tall' if k < .5 else 'Flower_3_Group' if k < .6 and T is not CAMINHO else 'Flower_4_Group' if k < .67 and T is not CAMINHO
+                        else 'Fern_1' if k < .78 else 'Mushroom_Common' if k < .84 and T is T_RAVINA else 'Pebble_Round_1' if k < .9 else 'Clover_1')
+                por(nome, x, z, s=random.uniform(.7, 1.1), y=hy)
+    # flores e capim dentro e em volta da vila (sem tampar a rua)
+    for k in range(70):
+        x, z = random.choice((-1, 1)) * random.uniform(13, 19.3), random.uniform(-41, 15)
+        por(random.choice(['Grass_Common_Tall', 'Flower_3_Group', 'Flower_4_Group', 'Clover_1', 'Bush_Common_Flowers']), x, z, s=random.uniform(.6, 1))
+    for k in range(40):   # cogumelos e samambaias na floresta
+        x, z = random.choice((-1, 1)) * random.uniform(8.5, 13.5), random.uniform(-95, -69)
+        por(random.choice(['Mushroom_Common', 'Mushroom_Laetiporus', 'Fern_1', 'Plant_7_Big']), x, z, s=random.uniform(.8, 1.5))
+@etapa
+def cenario_vila():  # objetos da vila: barris, caixotes, barracas, carroça e a ferraria
+    for x, z, ry in [(-6.5, -10, .3), (-7, -15, -.2), (6.8, -7, .1)]: por('Stall_Empty', x, z, ry + math.pi / 2, 1.0, 0, 1.0)
+    por('Stall_Cart_Empty', 7, -29, -1.2, 1, 0, 1.4); por('Prop_Wagon', -15.5, -9, .4, .9, 0, 1.6)
+    por('Anvil', 7, 2, .3, 1, 0, .5); por('Workbench', 7.5, 4.5, -math.pi / 2, 1, 0, .9); por('WeaponStand', 6.6, -1, -math.pi / 2, 1, 0, .6)
+    por('Cauldron', -7, -33, 0, 1, 0, .5); por('Bench', -6.8, -21, math.pi / 2, 1, 0, .7); por('Bench', 6.8, -18, -math.pi / 2, 1, 0, .7)
+    for k in range(18):
+        sg = random.choice((-1, 1)); x, z = sg * random.uniform(6, 7.6), random.uniform(-40, 13)
+        if any(abs(z - zz) < 3 for zz in (-10, -15, -7, 2, 4.5, -1, -29, -33, -21, -18)): continue
+        por(random.choice(['Barrel', 'Barrel_Apples', 'Crate_Wooden', 'FarmCrate_Apple', 'FarmCrate_Carrot', 'Prop_Crate', 'Bucket_Wooden_1', 'Pot_1']), x, z, s=1, y=0, sol_r=.45)
+    for z in (13, -41):   # estandartes na entrada e na saída
+        for sg in (-1, 1): por('Banner_1' if sg < 0 else 'Banner_2', sg * 3.6, z, math.pi / 2, 1.3, 2.6)
 @etapa
 def exportar():
     import json
@@ -502,7 +591,7 @@ def exportar():
         R = [[mw[0][0], mw[0][2], -mw[0][1], mw[0][3]], [mw[2][0], mw[2][2], -mw[2][1], mw[2][3]], [-mw[1][0], -mw[1][2], mw[1][1], -mw[1][3]]]
         objs.append([me.name, [round(x, 4) for row in R for x in row], cor, emis])
     p = os.path.join(OUT, 'orlavento.json')
-    with open(p, 'w') as f: json.dump({'malhas': meshes, 'objetos': objs, 'caminho': {'pts': [[round(a, 2), round(b, 2), round(c, 2)] for a, b, c in CAMINHO], 'larg': LARG, 'sx': SX, 'hs': HS}, 'alturas': HGRID, 'cavernas': CAV_S, 'colisao': COLISAO}, f, separators=(',', ':'))
+    with open(p, 'w') as f: json.dump({'malhas': meshes, 'objetos': objs, 'caminho': {'pts': [[round(a, 2), round(b, 2), round(c, 2)] for a, b, c in CAMINHO], 'larg': LARG, 'sx': SX, 'hs': HS}, 'alturas': HGRID, 'cavernas': CAV_S, 'colisao': COLISAO, 'props': PROPS}, f, separators=(',', ':'))
     open(os.path.join(OUT, 'orlavento_log.txt'), 'a').write('EXPORTADO %d objetos, %d malhas, %d bytes\n' % (len(objs), len(meshes), os.path.getsize(p)))
 # ---------- câmera da vista para acompanhar ----------
 import mathutils
@@ -512,13 +601,14 @@ def vista(alvo, dist, alt):
         if a.type == 'VIEW_3D':
             sp = a.spaces[0]; sp.shading.type = 'SOLID'; sp.shading.color_type = 'MATERIAL'; r3 = sp.region_3d
             r3.view_location = alvo; r3.view_distance = dist; r3.view_rotation = mathutils.Euler((math.radians(alt), 0, math.radians(20)), 'XYZ').to_quaternion()
-VNOME = {'terreno': (GP(40, -60), 260, 55), 'casas': (GP(0, -10), 60, 58), 'arvore_tear': (GP(0, 22), 60, 70), 'arco_natural': (GP(-45, -35), 70, 55), 'abismo': (GP(0, -61), 90, 50), 'floresta_gigante': (GP(0, -82), 60, 55), 'ruinas': (GP(-30, -125), 90, 50), 'runas_arena': (GP(0, -128), 50, 40), 'montanha_cordas': (GP(90, -50), 200, 50), 'ilhas_flutuantes': (GP(200, -140), 300, 45), 'exportar': (GP(60, -80), 330, 50)}
+VNOME = {'terreno': (GP(40, -60), 260, 55), 'casas': (GP(0, -10), 60, 58), 'arvore_tear': (GP(0, 22), 60, 70), 'arco_natural': (GP(-45, -35), 70, 55), 'abismo': (GP(0, -61), 90, 50), 'floresta_gigante': (GP(0, -82), 60, 55), 'ruinas': (GP(-30, -125), 90, 50), 'runas_arena': (GP(0, -128), 50, 40), 'cenario_natureza': (GP(0, -60), 160, 55), 'cenario_vila': (GP(0, -14), 45, 55), 'montanha_cordas': (GP(90, -50), 200, 50), 'ilhas_flutuantes': (GP(200, -140), 300, 45), 'exportar': (GP(60, -80), 330, 50)}
 VISTAS = {12: (GP(95, -55), 230, 50), 0: (GP(0, -50), 150, 55), 2: (GP(0, -10), 45, 60), 3: (GP(0, -12), 35, 62), 4: (GP(0, -30), 90, 58), 6: (GP(0, -60), 30, 62), 7: (GP(0, -85), 50, 58), 8: (GP(0, -128), 45, 55), 9: (GP(0, -60), 260, 70)}
 d = bpy.data.lights.new('Sol', 'SUN'); d.energy = 3.5; d.color = (1, .93, .82); d.angle = .05
 o = bpy.data.objects.new('Sol', d); col.objects.link(o); o.rotation_euler = (math.radians(50), math.radians(10), math.radians(35))
 w = scn.world or bpy.data.worlds.new('Ceu'); scn.world = w; w.use_nodes = True
 bg = w.node_tree.nodes.get('Background')
 if bg: bg.inputs['Color'].default_value = (.45, .55, .75, 1); bg.inputs['Strength'].default_value = .8
+ETAPAS[:] = [f for f in ETAPAS if f.__name__ not in ('arvores', 'pedras')]
 LOG = os.path.join(OUT, 'orlavento_log.txt')
 for i, f in enumerate(ETAPAS):
     try:
